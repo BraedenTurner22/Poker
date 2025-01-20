@@ -12,6 +12,17 @@ public class Driver {
         game.addPlayer(playerTwo);
 
         game.start();
-
+        game.burnCard();
+        game.dealCardToPlayer(playerOne);
+        game.dealCardToPlayer(playerTwo);
+        game.dealCardToPlayer(playerOne);
+        game.dealCardToPlayer(playerTwo);
+        game.burnCard();
+        game.flop();
+        game.burnCard();
+        game.turn();
+        game.burnCard();
+        game.river();
+        game.determineWinner();
     }
 }

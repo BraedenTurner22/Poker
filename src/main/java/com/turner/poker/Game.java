@@ -73,7 +73,7 @@ public class Game {
         currentPlayer = (currentPlayer + 1) % players.size();
     }
 
-    public void determineWinner(List<Player> players) {}
+    public void determineWinner() {}
 
     public int getPot() {
         return pot;
