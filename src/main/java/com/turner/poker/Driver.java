@@ -11,7 +11,7 @@ public class Driver {
         game.addPlayer(playerOne);
         game.addPlayer(playerTwo);
 
-
+        game.start();
 
     }
 }

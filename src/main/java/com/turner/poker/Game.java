@@ -27,12 +27,12 @@ public class Game {
         players.remove(player);
     };
 
-    public void startGame() {
+    public void start() {
         for (Player player : players)
             dealCardToPlayer(player);
     };
 
-    public void endGame() {}
+    public void end() {}
 
     public void burnCard() {
         discardedCards.add(deck.getTopCard());
