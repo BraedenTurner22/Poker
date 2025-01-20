@@ -22,8 +22,8 @@ public class Card {
         return "Card [suit=" + suit + ", rank=" + rank + "]";
     }
 
-    public static void main(String[] args) {
-        Card card = new Card(Suit.CLUBS, Rank.ACE);
-        System.out.println(card);
-    }
+    // public static void main(String[] args) {
+    // Card card = new Card(Suit.CLUBS, Rank.ACE);
+    // System.out.println(card);
+    // }
 }

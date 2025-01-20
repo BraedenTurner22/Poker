@@ -1,0 +1,23 @@
+package com.turner.poker;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class Hand {
+
+    private ArrayList<Card> cards;
+
+    public void addCard(Card card) {
+        cards.add(card);
+    }
+
+    public void removeCard(Card card) {
+        cards.remove(card);
+    }
+
+    public ArrayList<Card> getHand() {
+        ArrayList<Card> copy = new ArrayList<>();
+        Collections.copy(cards, copy);
+        return copy;
+    }
+}
