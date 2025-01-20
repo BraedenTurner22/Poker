@@ -1,6 +1,6 @@
 package com.turner.poker;
 
-public class Poker {
+public class Driver {
 
     public static void main(String[] args) {
         Player playerOne = new Player(0, 0, 100);
