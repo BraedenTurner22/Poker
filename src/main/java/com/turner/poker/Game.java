@@ -127,7 +127,18 @@ public class Game {
     }
 
     public static Winner determineWinner(Map<String, Hand> bestHands) {
-        return null;
+        HandRank bestHandRank = HandRank.NOTHING;
+        String bestHandId = null;
+        List<Card> bestHand = null;
+        for (Map.Entry<String, Hand> entry : bestHands.entrySet()) {
+            if (entry.getValue().getHandRank().getValue() > bestHandRank.getValue()) {
+                bestHandId = entry.getKey();
+                bestHandRank = entry.getValue().getHandRank();
+                bestHand = entry.getValue().getBestCards();
+            }
+        }
+
+        return new Winner(bestHandId, bestHandRank, bestHand);
     }
 
     public static String staticToString() {

@@ -13,8 +13,6 @@ public class Driver {
         Deck.shuffle();
         Deck.dealCardsToPlayers(2);
 
-        // System.out.println(Players.staticToString());
-
         Game.burn();
         System.out.println("---FLOP-------------------------------------");
         Game.flop();
@@ -30,54 +28,18 @@ public class Driver {
         Game.river();
         System.out.println(Board.staticToString());
 
-        // System.out.println("Deck size: " + Deck.getDeckSize());
-
-
         System.out.println("---Players-------------------------------------");
-
-        // for (Player player : Players.getPlayers()) {
-        // System.out.println(player.toString());
-        // }
-
         System.out.println(Players.staticToString());
-
 
         Map<String, Hand> bestHandsForEachPlayer = Game.determineBestHandForEachPlayer();
 
-        // System.out.println("\nBest hands: " + bestHandsForEachPlayer);
+        System.out.println("---Best Hand For Each Player-------------------------------------");
+        System.out.println(Utils.bestHandsForEachPlayerToString(bestHandsForEachPlayer));
 
-        // System.out.println("Best Hands...");
-        // for (Map.Entry<String, Hand> entry : bestHandsForEachPlayer.entrySet()) {
-        // StringBuilder builder = new StringBuilder();
-        // builder.append("Player\n");
-        // builder.append(" ID: " + entry.getKey() + "\n");
-        // builder.append(" Card(s):\n");
-        // for (Card card : entry.getValue().getBestCards()) {
-        // builder.append(" " + card);
-        // }
-        // // builder.append("Best Hand: " + entry.getValue());
-        // System.out.println(builder.toString());
-        // }
 
-        System.out.println("\n---Best Cards-------------------------------------");
+        Winner winner = Game.determineWinner(bestHandsForEachPlayer);
 
-        for (Map.Entry<String, Hand> entry : bestHandsForEachPlayer.entrySet()) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("Player [");
-            builder.append("id: " + entry.getKey());
-            builder.append(", cards: ");
-            int count = 0;
-            for (Card card : entry.getValue().getBestCards()) {
-                count++;
-                builder.append(card.toString());
-                if (count < entry.getValue().getBestCards().size())
-                    builder.append(", ");
-            }
-            builder.append("]");
-            System.out.println(builder.toString());
-        }
-
-        // Winner winner = Game.determineWinner(bestHands);
+        System.out.println("Winner: " + winner);
 
         // Table.assignBlinds();
 

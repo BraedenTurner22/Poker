@@ -27,6 +27,21 @@ public class Winner {
 
     @Override
     public String toString() {
-        return "Winner [id=" + id + ", handRank=" + handRank + ", bestCards=" + bestCards + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Winner [");
+        builder.append("id: " + id + ", ");
+        builder.append("handRank: " + handRank + ", ");
+        builder.append("card(s): ");
+        // }
+        int count = 0;
+        for (Card card : bestCards) {
+            count++;
+            builder.append(card.toString());
+            if (count < bestCards.size())
+                builder.append(", ");
+        }
+        builder.append("]");
+        return builder.toString();
     }
+
 }
