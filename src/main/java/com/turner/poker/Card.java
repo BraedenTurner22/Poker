@@ -19,11 +19,6 @@ public class Card {
 
     @Override
     public String toString() {
-        return "Card [suit=" + suit + ", rank=" + rank + "]";
+        return "Card [rank=" + rank + ", suit=" + suit + "]";
     }
-
-    // public static void main(String[] args) {
-    // Card card = new Card(Suit.CLUBS, Rank.ACE);
-    // System.out.println(card);
-    // }
 }

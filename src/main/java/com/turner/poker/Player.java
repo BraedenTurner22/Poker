@@ -9,6 +9,8 @@ public class Player {
     private List<Card> cards;
     private int tablePosition;
     private int chips;
+    private boolean bigBlindPosition = false;
+    private boolean smallBlindPosition = false;
 
     public Player(int id, int tablePosition, int chips) {
         this.id = id;
@@ -17,7 +19,7 @@ public class Player {
         cards = new ArrayList<>();
     }
 
-    public void receiveCard(Card card) {
+    public void acceptCard(Card card) {
         cards.add(card);
     }
 
@@ -54,10 +56,18 @@ public class Player {
         return copy;
     }
 
+    public void play() {}
+
     @Override
     public String toString() {
         return "Player [id=" + id + ", cards=" + cards + ", tablePosition=" + tablePosition + "]";
     }
 
+    public void setBigBlindPosition(boolean value) {
+        bigBlindPosition = value;
+    }
 
+    public void setSmallBlindPosition(boolean value) {
+        smallBlindPosition = value;
+    }
 }

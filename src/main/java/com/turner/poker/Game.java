@@ -5,84 +5,71 @@ import java.util.List;
 
 public class Game {
 
-    private Deck deck;
-    private List<Player> players;
-    private List<Card> cardsOnTable;
-    private List<Card> discardedCards;
-    private int pot;
-    private int currentPlayer;
+    private Game() {}
 
-    public Game() {
-        deck = new Deck();
-        players = new ArrayList<>();
-        discardedCards = new ArrayList<>();
-        currentPlayer = 0;
-    }
-
-    public void addPlayer(Player player) {
-        players.add(player);
+    public static void addPlayer(Player player) {
+        Players.addPlayer(player);
     };
 
-    public void removePlayer(Player player) {
-        players.remove(player);
+    public static void removePlayer(Player player) {
+        Players.removePlayer(player);
     };
 
-    public void start() {
-        for (Player player : players)
+    public static void start() {
+        for (Player player : Players.getPlayers())
             dealCardToPlayer(player);
     };
 
-    public void end() {}
+    public static void end() {}
 
-    public void burnCard() {
-        discardedCards.add(deck.getTopCard());
+    public static void dealCardToPlayer(Player player) {
+        player.acceptCard(Deck.getTopCard());
     }
 
-    public void dealCardToPlayer(Player player) {
-        player.receiveCard(deck.getTopCard());
+    public static void flop() {
+        dealCards(3);
     }
 
-    public void flop() {
-        for (int i = 0; i < 3; i++)
-            cardsOnTable.add(deck.getTopCard());
+    public static void turn() {
+        dealCards(1);
     }
 
-    public void turn() {
-        cardsOnTable.add(deck.getTopCard());
+    public static void river() {
+        dealCards(1);
     }
 
-    public void river() {
-        cardsOnTable.add(deck.getTopCard());
+    private static void dealCards(int count) {
+        List<Card> cards = new ArrayList<>();
+        for (int i = 0; i < count; i++)
+            cards.add(Deck.getTopCard());
+        Board.dealCards(cards);
     }
 
-    public void playerFolds(Player player) {
-        discardedCards.addAll(player.removeCards());
-        incrementPlayer();
-    }
+    // public static void playerFolds(Player player) {
+    // discardedCards.addAll(player.removeCards());
+    // incrementPlayer();
+    // }
 
-    public void playerChecks(Player player) {
-        incrementPlayer();
-    }
+    // public static void playerChecks(Player player) {
+    // incrementPlayer();
+    // }
 
-    public void playerRaises(Player player, int raise) {
-        pot += raise;
-        incrementPlayer();
-    }
+    // public static void playerRaises(Player player, int raise) {
+    // pot += raise;
+    // incrementPlayer();
+    // }
 
-    private void incrementPlayer() {
-        currentPlayer = (currentPlayer + 1) % players.size();
-    }
+    // private static void incrementPlayer() {
+    // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
+    // }
 
-    public void determineWinner() {}
+    public static void determineWinner() {}
 
-    public int getPot() {
-        return pot;
-    }
+    // public static int getPot() {
+    // return pot;
+    // }
 
-    public int getCurrentPlayer() {
-        return currentPlayer;
-    }
-
-
-
+    // public static int getCurrentPlayer() {
+    // return currentPlayer;
+    // }
 }

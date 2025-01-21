@@ -2,13 +2,13 @@ package com.turner.poker;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class Deck {
 
-    private ArrayList<Card> deck;
+    private static List<Card> deck = new ArrayList<Card>();
 
-    public Deck() {
-        deck = new ArrayList<Card>();
+    static {
         for (Suit suit : Suit.values()) {
             for (Rank rank : Rank.values()) {
                 deck.add(new Card(suit, rank));
@@ -16,33 +16,32 @@ public class Deck {
         }
     }
 
-    // public ArrayList<Card> getDeckCopy() {
-    // ArrayList<Card> copy = new ArrayList<Card>();
-    // Collections.copy(deck, copy);
-    // return copy;
-    // }
+    private Deck() {}
 
-    public int getDeckSize() {
+    public static int getDeckSize() {
         return deck.size();
     }
 
-    public void shuffle() {
+    public static void shuffle() {
         Collections.shuffle(deck);
     }
 
-    public Card getTopCard() {
+    public static Card getTopCard() {
         Card topCard = deck.get(0);
         deck.remove(0);
         return topCard;
     }
 
-    // public ArrayList<Card> initializeDeck() {
-    // for (Suit suit : Suit.values()) {
-    // for (Rank rank : Rank.values()) {
-    // deck.add(new Card(suit, rank));
-    // }
-    // }
-    // return deck;
-    // }
+    public static void dealCardsToPlayers(int count) {
+        for (int i = 0; i < count; i++) {
+            for (Player player : Players.getPlayers()) {
+                player.acceptCard(Deck.getTopCard());
+            }
+        }
+    }
 
+    public static void printDeck() {
+        for (Card card : deck)
+            System.out.println(card + ", ");
+    }
 }

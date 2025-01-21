@@ -1,7 +1,0 @@
-package com.turner.poker;
-
-public class Pot {
-    private int value;
-
-    public 
-}
