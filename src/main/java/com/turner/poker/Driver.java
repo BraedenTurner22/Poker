@@ -13,7 +13,7 @@ public class Driver {
         Deck.shuffle();
         Deck.dealCardsToPlayers(2);
 
-        System.out.println(Players.staticToString());
+        // System.out.println(Players.staticToString());
 
         Game.burn();
         System.out.println("---FLOP-------------------------------------");
@@ -35,9 +35,12 @@ public class Driver {
 
         System.out.println("---Players-------------------------------------");
 
-        for (Player player : Players.getPlayers()) {
-            System.out.println(player.toString());
-        }
+        // for (Player player : Players.getPlayers()) {
+        // System.out.println(player.toString());
+        // }
+
+        System.out.println(Players.staticToString());
+
 
         Map<String, Hand> bestHandsForEachPlayer = Game.determineBestHandForEachPlayer();
 
@@ -56,7 +59,7 @@ public class Driver {
         // System.out.println(builder.toString());
         // }
 
-        System.out.println("---Best Cards-------------------------------------");
+        System.out.println("\n---Best Cards-------------------------------------");
 
         for (Map.Entry<String, Hand> entry : bestHandsForEachPlayer.entrySet()) {
             StringBuilder builder = new StringBuilder();
