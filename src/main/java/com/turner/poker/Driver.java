@@ -4,60 +4,53 @@ public class Driver {
 
     public static void main(String[] args) {
         for (int i = 0; i < 3; i++) {
-            Player player = new Player(i, i, 100);
+            Player player = new Player(Integer.toString(i), i, 100);
             Players.addPlayer(player);
         }
-        // Deck.printDeck();
-        // System.out.println("-----------------------------------------------");
-        Deck.shuffle();
-        // Deck.printDeck();
 
+        // Game.start();
+        Deck.shuffle();
         Deck.dealCardsToPlayers(2);
 
         Players.printPlayerCards();
 
+        Game.burn();
+        System.out.println("flop -------------------------------------");
         Game.flop();
         Board.printBoard();
-        System.out.println("-------------------------------------");
 
+        Game.burn();
+        System.out.println("turn -------------------------------------");
         Game.turn();
         Board.printBoard();
-        System.out.println("-------------------------------------");
 
+        Game.burn();
+        System.out.println("river -------------------------------------");
         Game.river();
         Board.printBoard();
-        System.out.println("-------------------------------------");
+
+        System.out.println("Deck size: " + Deck.getDeckSize());
+
+        Winner winner = Game.determineWinner();
 
         // Table.assignBlinds();
-
-
-        // Game.start();
 
         // Players.printPlayerCards();
 
         // Game.burnCard();
-        // Game.dealCardToPlayer(playerOne);
-        // Game.dealCardToPlayer(playerTwo);
-        // Game.dealCardToPlayer(playerOne);
-        // Game.dealCardToPlayer(playerTwo);
 
-        // playerOne.play();
-        // playerTwo.play();
+        // players.play()
 
         // Game.burnCard();
         // Game.flop();
-        // playerOne.play();
-        // playerTwo.play();
 
         // Game.burnCard();
         // Game.turn();
-        // playerOne.play();
-        // playerTwo.play();
+        // players.play()
 
         // Game.burnCard();
         // Game.river();
-        // playerOne.play();
-        // playerTwo.play();
+        // players.play()
 
         // Game.determineWinner();
     }

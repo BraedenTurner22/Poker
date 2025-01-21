@@ -2,15 +2,19 @@ package com.turner.poker;
 
 public class Table {
 
-    private static int bigBlindPosition = 1;
+    private static int currentPlayerPosition;
+    private static int currentBigBlindPosition = 1;
 
     private Table() {};
 
-    public static void assignBlinds() {
-        bigBlindPosition++;
-        bigBlindPosition = (bigBlindPosition + 1) % Players.getPlayers().size();
-        Players.assignBlindPositions(bigBlindPosition);
-
+    public static void updateBlindPositions() {
+        currentBigBlindPosition++;
+        currentBigBlindPosition = (currentBigBlindPosition + 1) % Players.getPlayers().size();
+        Players.assignBigBlindPosition(currentBigBlindPosition);
+        Players.assignSmallBlindPosition(currentBigBlindPosition - 1);
     }
 
+    public static void updateCurrentPlayerPosition() {
+        currentPlayerPosition = (currentPlayerPosition + 1) % Players.getPlayers().size();
+    }
 }

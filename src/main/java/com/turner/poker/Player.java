@@ -5,18 +5,22 @@ import java.util.Collections;
 import java.util.List;
 
 public class Player {
-    private int id;
+    private String id;
     private List<Card> cards;
     private int tablePosition;
     private int chips;
     private boolean bigBlindPosition = false;
     private boolean smallBlindPosition = false;
 
-    public Player(int id, int tablePosition, int chips) {
+    public Player(String id, int tablePosition, int chips) {
         this.id = id;
         this.tablePosition = tablePosition;
         this.chips = chips;
         cards = new ArrayList<>();
+    }
+
+    public String getId() {
+        return id;
     }
 
     public void acceptCard(Card card) {

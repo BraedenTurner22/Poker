@@ -14,6 +14,10 @@ public class Board {
         return Collections.unmodifiableList(cards);
     }
 
+    public static void burn() {
+        Deck.getTopCard();
+    }
+
     public static void dealCards(List<Card> cards) {
         Board.cards.addAll(cards);
     }
