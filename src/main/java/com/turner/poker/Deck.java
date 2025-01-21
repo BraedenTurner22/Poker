@@ -40,8 +40,15 @@ public class Deck {
         }
     }
 
-    public static void printDeck() {
+    // public static void printDeck() {
+    // for (Card card : deck)
+    // System.out.println(card + ", ");
+    // }
+
+    public static String staticToString() {
+        StringBuilder builder = new StringBuilder();
         for (Card card : deck)
-            System.out.println(card + ", ");
+            builder.append(card.toString() + "\n");
+        return builder.toString();
     }
 }

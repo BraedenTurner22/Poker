@@ -8,14 +8,14 @@ public class Player {
     private String id;
     private List<Card> cards;
     private int tablePosition;
-    private int chips;
-    private boolean bigBlindPosition = false;
-    private boolean smallBlindPosition = false;
+    // private int chips;
+    // private boolean bigBlindPosition = false;
+    // private boolean smallBlindPosition = false;
 
     public Player(String id, int tablePosition, int chips) {
         this.id = id;
         this.tablePosition = tablePosition;
-        this.chips = chips;
+        // this.chips = chips;
         cards = new ArrayList<>();
     }
 
@@ -27,51 +27,64 @@ public class Player {
         cards.add(card);
     }
 
-    public void discardCard(Card card) {
-        cards.remove(card);
-    }
+    // public void discardCard(Card card) {
+    // cards.remove(card);
+    // }
 
-    public void playBigBlind(int bigBlind) {
-        chips -= bigBlind;
-    }
+    // public void playBigBlind(int bigBlind) {
+    // chips -= bigBlind;
+    // }
 
-    public void playSmallBlind(int smallBlind) {
-        chips -= smallBlind;
-    }
+    // public void playSmallBlind(int smallBlind) {
+    // chips -= smallBlind;
+    // }
 
-    public int getTablePosition() {
-        return tablePosition;
-    }
+    // public int getTablePosition() {
+    // return tablePosition;
+    // }
 
-    public int getChips() {
-        return chips;
-    }
+    // public int getChips() {
+    // return chips;
+    // }
 
-    public List<Card> removeCards() {
-        List<Card> copy = new ArrayList<>();
-        Collections.copy(cards, copy);
-        cards.clear();
-        return copy;
-    }
+    // public List<Card> removeCards() {
+    // List<Card> copy = new ArrayList<>();
+    // Collections.copy(cards, copy);
+    // cards.clear();
+    // return copy;
+    // }
 
     public List<Card> getCards() {
-        List<Card> copy = new ArrayList<>();
-        Collections.copy(cards, copy);
-        return copy;
+        return Collections.unmodifiableList(cards);
     }
 
     public void play() {}
 
     @Override
     public String toString() {
-        return "Player [id=" + id + ", cards=" + cards + ", tablePosition=" + tablePosition + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append("Player [");
+        builder.append("id: " + id);
+        builder.append(", cards: ");
+        for (Card card : cards) {
+            builder.append(card.toString() + ", ");
+        }
+        int count = 0;
+        for (Card card : cards) {
+            count++;
+            builder.append(card.toString());
+            if (count < cards.size())
+                builder.append(", ");
+        }
+        builder.append("]");
+        return builder.toString();
     }
 
-    public void setBigBlindPosition(boolean value) {
-        bigBlindPosition = value;
-    }
+    // public void setBigBlindPosition(boolean value) {
+    // bigBlindPosition = value;
+    // }
 
-    public void setSmallBlindPosition(boolean value) {
-        smallBlindPosition = value;
-    }
+    // public void setSmallBlindPosition(boolean value) {
+    // smallBlindPosition = value;
+    // }
 }

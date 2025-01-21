@@ -22,8 +22,10 @@ public class Board {
         Board.cards.addAll(cards);
     }
 
-    public static void printBoard() {
+    public static String staticToString() {
+        StringBuilder builder = new StringBuilder();
         for (Card card : cards)
-            System.out.println(card);
+            builder.append(card.toString() + "\n");
+        return builder.toString();
     }
 }

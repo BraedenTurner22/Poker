@@ -1,7 +1,6 @@
 package com.turner.poker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,69 +65,73 @@ public class Game {
     // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
     // }
 
-    public static Winner determineWinner() {
-        // handRank playerHandRank = null;
-        // List<Card> allCards = new ArrayList<>();
-        // allCards.addAll(Board.getCards());
-        // allCards.addAll(player.getCards());
-        // boolean containsRoyalFlush = false;
-        // // Figure out how to pass in royal flush hands into containsAll() method
-        // // as I iterate through the suits
-        // for (card.suit suit : card.suit.values()) {
-        // ArrayList<card> royalFlush = new ArrayList<>();
-        // royalFlush.add(new card(suit, rank.TEN));
-        // royalFlush.add(new card(suit, rank.JACK));
-        // royalFlush.add(new card(suit, rank.QUEEN));
-        // royalFlush.add(new card(suit, rank.KING));
-        // royalFlush.add(new card(suit, rank.ACE));
-        // if (allCards.containsAll(royalFlush)) {
-        // playerHandRank = handRank.RFLUSH;
-        // }
-        // }
-        // for (card.suit suit: card.suit.values()) {
 
-        // }
+    // public static Winner determineWinner() {
+    // Map<String, Hand> standings = new HashMap<>();
 
-        Map<String, HandRank> standings = new HashMap<>();
+    // Hand hand;
+    // for (Player player : Players.getPlayers()) {
+    // List<Card> allCards = new ArrayList<>();
+    // allCards.addAll(player.getCards());
+    // allCards.addAll(Board.getCards());
 
-        for (Player player : Players.getPlayers()) {
-            List<Card> allCards = new ArrayList<>();
-            allCards.addAll(Board.getCards());
-            allCards.addAll(player.getCards());
+    // // HandRank handRank = HandRank.NOTHING;
+    // // handRank = AnalysisEngine.royalFlush(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.straightFlush(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.fourOfAKind(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.flush(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.straight(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.threeOfAKind(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.twoPair(allCards);
+    // // if (handRank == HandRank.NOTHING)
+    // // handRank = AnalysisEngine.onePair(allCards);
+    // hand = AnalysisEngine.highCard(allCards);
+    // // if (hand.getHandRank() == HandRank.NOTHING)
+    // // hand = AnalysisEngine.highCard(allCards);
 
-            HandRank handRank = HandRank.NOTHING;
-            handRank = AnalysisEngine.royalFlush(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.straightFlush(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.fourOfAKind(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.flush(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.straight(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.threeOfAKind(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.twoPair(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.onePair(allCards);
-            if (handRank == HandRank.NOTHING)
-                handRank = AnalysisEngine.highCard(allCards);
-            if (handRank != HandRank.NOTHING) {
-                standings.put(player.getId(), handRank);
-            }
-        }
+    // standings.put(player.getId(), hand);
+    // }
 
-        HandRank bestHandRank = HandRank.NOTHING;
-        String bestHandId = null;
-        for (Map.Entry<String, HandRank> entry : standings.entrySet()) {
-            if (entry.getValue().getValue() > bestHandRank.getValue()) {
-                bestHandId = entry.getKey();
-                bestHandRank = entry.getValue();
-            }
-        }
+    // for (Map.Entry<String, Hand> entry : standings.entrySet())
+    // System.out.println("\n....." + entry);
 
-        Winner winner = new Winner(bestHandId, bestHandRank);
-        return winner;
+    // // String winnerId = null;
+    // // List<Card> winningCards = new ArrayList<>();
+    // // HandRank winnerHandRank = HandRank.NOTHING;
+
+    // // for (Map.Entry<String, Hand> entry : standings.entrySet()) {
+    // // System.out.println("winnerId: " + entry.getKey());
+    // // System.out.println("bestHandRank: " + entry.getValue().getHandRank());
+    // // System.out.println("bestCards: " + entry.getValue().getBestCards());
+    // // if (entry.getValue().getHandRank().getValue() >= winnerHandRank.getValue()) {
+    // // for (Card card : entry.getValue().getBestCards()) {
+    // // if (card.getRank().getValue() >= )
+    // // }
+    // // winnerId = entry.getKey();
+    // // winnerHandRank = entry.getValue().getHandRank();
+    // // winningCards = entry.getValue().getBestCards();
+    // // }
+    // // }
+
+    // // return new Winner(winnerId, winnerHandRank, winningCards);
+    // }
+
+    public static Map<String, Hand> determineBestHandForEachPlayer() {
+        return AnalysisEngine.determineBestHandForEachPlayer();
+    }
+
+    public static Winner determineWinner(Map<String, Hand> bestHands) {
+        return null;
+    }
+
+    public static String staticToString() {
+        StringBuilder builder = new StringBuilder();
+        return builder.toString();
     }
 }

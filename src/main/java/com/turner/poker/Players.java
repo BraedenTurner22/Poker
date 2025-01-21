@@ -14,25 +14,32 @@ public class Players {
         players.add(player);
     }
 
-    public static void removePlayer(Player player) {
-        players.remove(player);
-    }
+    // public static void removePlayer(Player player) {
+    // players.remove(player);
+    // }
 
     public static List<Player> getPlayers() {
         return Collections.unmodifiableList(players);
     }
 
-    public static void assignBigBlindPosition(int position) {
-        players.get(position).setBigBlindPosition(true);
-    }
+    // public static void assignBigBlindPosition(int position) {
+    // players.get(position).setBigBlindPosition(true);
+    // }
 
-    public static void assignSmallBlindPosition(int position) {
-        players.get(position).setSmallBlindPosition(true);
-    }
+    // public static void assignSmallBlindPosition(int position) {
+    // players.get(position).setSmallBlindPosition(true);
+    // }
 
-    public static void printPlayerCards() {
-        for (Player player : players) {
-            System.out.println(player.toString());
-        }
+    // public static void printPlayerCards() {
+    // for (Player player : players) {
+    // System.out.println(player.toString());
+    // }
+    // }
+
+    public static String staticToString() {
+        StringBuilder builder = new StringBuilder();
+        for (Player player : players)
+            builder.append(player.toString() + "\n");
+        return builder.toString();
     }
 }

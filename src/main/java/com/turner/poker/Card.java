@@ -19,6 +19,8 @@ public class Card {
 
     @Override
     public String toString() {
-        return "Card [rank=" + rank + ", suit=" + suit + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append(rank + " of " + suit);
+        return builder.toString();
     }
 }
