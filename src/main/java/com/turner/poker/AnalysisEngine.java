@@ -42,8 +42,8 @@ public class AnalysisEngine {
         List<Card> allCards = new ArrayList<>();
         allCards.addAll(player.getCards());
         allCards.addAll(Board.getCards());
-        Collections.sort(allCards,
-                (c1, c2) -> Integer.compare(c1.getRank().getValue(), c2.getRank().getValue()));
+        Collections.sort(allCards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
+                card2.getRank().getValue()));
         Card highCard = allCards.get(allCards.size() - 1);
         List<Card> bestCards = new ArrayList<>();
         bestCards.add(highCard);

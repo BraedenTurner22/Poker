@@ -13,5 +13,4 @@ public enum HandRank {
     HandRank(int value) {
         this.value = value;
     }
-
 }

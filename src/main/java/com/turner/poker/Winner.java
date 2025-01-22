@@ -43,5 +43,4 @@ public class Winner {
         builder.append("]");
         return builder.toString();
     }
-
 }

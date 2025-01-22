@@ -41,6 +41,4 @@ public class PlayerResult {
         return "PlayerResult [id=" + id + ", handRank=" + handRank + ", allCards=" + allCards
                 + ", bestCards=" + bestCards + "]";
     }
-
-
 }

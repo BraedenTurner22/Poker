@@ -67,9 +67,6 @@ public class Player {
         builder.append("id: " + id + ", ");
         builder.append("tablePosition: " + tablePosition + ", ");
         builder.append("cards: ");
-        // for (Card card : cards) {
-        // builder.append(card.toString() + ", ");
-        // }
         int count = 0;
         for (Card card : cards) {
             count++;
