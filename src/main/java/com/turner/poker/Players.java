@@ -34,12 +34,6 @@ public class Players {
     // players.get(position).setSmallBlindPosition(true);
     // }
 
-    // public static void printPlayerCards() {
-    // for (Player player : players) {
-    // System.out.println(player.toString());
-    // }
-    // }
-
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();
         for (Player player : players)

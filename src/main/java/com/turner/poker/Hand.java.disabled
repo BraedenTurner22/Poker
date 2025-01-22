@@ -26,17 +26,6 @@ public class Hand {
         return bestCards;
     }
 
-
-    // public boolean isBestHandOnBoard() {
-    // return bestHandOnBoard;
-    // }
-
-    // @Override
-    // public String toString() {
-    // return "Hand [cards=" + cards + ", handRank=" + handRank + ", bestCards=" + bestCards
-    // + ", bestHandOnBoard=" + bestHandOnBoard + "]";
-    // }
-
     @Override
     public String toString() {
         return "Hand [allCards=" + allCards + ", handRank=" + handRank + ", bestCards=" + bestCards
