@@ -9,6 +9,13 @@ public class Deck {
     private static List<Card> deck = new ArrayList<Card>();
 
     static {
+        reset();
+    }
+
+    private Deck() {}
+
+    public static void reset() {
+        deck.clear();
         for (Suit suit : Suit.values()) {
             for (Rank rank : Rank.values()) {
                 deck.add(new Card(suit, rank));
@@ -16,7 +23,9 @@ public class Deck {
         }
     }
 
-    private Deck() {}
+    public static List<Card> getDeck() {
+        return Collections.unmodifiableList(deck);
+    }
 
     public static int getDeckSize() {
         return deck.size();

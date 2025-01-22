@@ -10,6 +10,10 @@ public class Players {
 
     private Players() {}
 
+    public static void reset() {
+        players.clear();
+    }
+
     public static void addPlayer(Player player) {
         players.add(player);
     }

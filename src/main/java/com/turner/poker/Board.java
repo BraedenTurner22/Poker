@@ -10,6 +10,10 @@ public class Board {
 
     private Board() {}
 
+    public static void reset() {
+        cards.clear();
+    }
+
     public static List<Card> getCards() {
         return Collections.unmodifiableList(cards);
     }
@@ -18,7 +22,7 @@ public class Board {
         Deck.getTopCard();
     }
 
-    public static void dealCards(List<Card> cards) {
+    public static void layoutCards(List<Card> cards) {
         Board.cards.addAll(cards);
     }
 

@@ -1,6 +1,6 @@
 package com.turner.poker;
 
-import java.util.Map;
+import java.util.List;
 
 public class Driver {
 
@@ -31,15 +31,31 @@ public class Driver {
         System.out.println("---Players-------------------------------------");
         System.out.println(Players.staticToString());
 
-        Map<String, Hand> bestHandsForEachPlayer = Game.determineBestHandForEachPlayer();
+        // Map<String, Hand> bestHandsForEachPlayer = Game.determineBestHandForEachPlayer();
 
-        System.out.println("---Best Hand For Each Player-------------------------------------");
-        System.out.println(Utils.bestHandsForEachPlayerToString(bestHandsForEachPlayer));
+        // System.out.println("---Best Hand For Each Player-------------------------------------");
+        // System.out.println(Utils.bestHandsForEachPlayerToString(bestHandsForEachPlayer));
 
 
-        Winner winner = Game.determineWinner(bestHandsForEachPlayer);
+        // List<Winner> winner = Game.determineWinners(bestHandsForEachPlayer);
 
-        System.out.println("Winner: " + winner);
+        // System.out.println("Winner: " + winner);
+
+        // Map<String, Hand> bestHandForEachPlayer = Game.determineBestHandForEachPlayer();
+        List<PlayerResult> playerResults = Game.xdetermineBestHandForEachPlayer();
+
+        for (PlayerResult playerResult : playerResults)
+            System.out.println(playerResult);
+
+        // System.out.println("---Best Hand For Each Player-------------------------------------");
+        // System.out.println(Utils.bestHandsForEachPlayerToString(bestHandForEachPlayer));
+
+        // List<Winner> winners = Game.determineWinners(bestHandForEachPlayer);
+
+        // System.out.println("---Winners-------------------------------------");
+        // for (Winner winner : winners) {
+        // System.out.println(winner);
+        // }
 
         // Table.assignBlinds();
 

@@ -2,7 +2,6 @@ package com.turner.poker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class Game {
 
@@ -29,22 +28,22 @@ public class Game {
     }
 
     public static void flop() {
-        dealCardsToBoard(3);
+        layoutCards(3);
     }
 
     public static void turn() {
-        dealCardsToBoard(1);
+        layoutCards(1);
     }
 
     public static void river() {
-        dealCardsToBoard(1);
+        layoutCards(1);
     }
 
-    private static void dealCardsToBoard(int count) {
+    private static void layoutCards(int count) {
         List<Card> cards = new ArrayList<>();
         for (int i = 0; i < count; i++)
             cards.add(Deck.getTopCard());
-        Board.dealCards(cards);
+        Board.layoutCards(cards);
     }
 
     // public static void playerFolds(Player player) {
@@ -65,81 +64,17 @@ public class Game {
     // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
     // }
 
-
-    // public static Winner determineWinner() {
-    // Map<String, Hand> standings = new HashMap<>();
-
-    // Hand hand;
-    // for (Player player : Players.getPlayers()) {
-    // List<Card> allCards = new ArrayList<>();
-    // allCards.addAll(player.getCards());
-    // allCards.addAll(Board.getCards());
-
-    // // HandRank handRank = HandRank.NOTHING;
-    // // handRank = AnalysisEngine.royalFlush(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.straightFlush(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.fourOfAKind(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.flush(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.straight(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.threeOfAKind(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.twoPair(allCards);
-    // // if (handRank == HandRank.NOTHING)
-    // // handRank = AnalysisEngine.onePair(allCards);
-    // hand = AnalysisEngine.highCard(allCards);
-    // // if (hand.getHandRank() == HandRank.NOTHING)
-    // // hand = AnalysisEngine.highCard(allCards);
-
-    // standings.put(player.getId(), hand);
+    // public static Map<String, Hand> determineBestHandForEachPlayer() {
+    // return AnalysisEngine.determineBestHandForEachPlayer();
     // }
 
-    // for (Map.Entry<String, Hand> entry : standings.entrySet())
-    // System.out.println("\n....." + entry);
+    public static List<PlayerResult> xdetermineBestHandForEachPlayer() {
+        return AnalysisEngine.xdetermineBestHandForEachPlayer();
+    }
 
-    // // String winnerId = null;
-    // // List<Card> winningCards = new ArrayList<>();
-    // // HandRank winnerHandRank = HandRank.NOTHING;
-
-    // // for (Map.Entry<String, Hand> entry : standings.entrySet()) {
-    // // System.out.println("winnerId: " + entry.getKey());
-    // // System.out.println("bestHandRank: " + entry.getValue().getHandRank());
-    // // System.out.println("bestCards: " + entry.getValue().getBestCards());
-    // // if (entry.getValue().getHandRank().getValue() >= winnerHandRank.getValue()) {
-    // // for (Card card : entry.getValue().getBestCards()) {
-    // // if (card.getRank().getValue() >= )
-    // // }
-    // // winnerId = entry.getKey();
-    // // winnerHandRank = entry.getValue().getHandRank();
-    // // winningCards = entry.getValue().getBestCards();
-    // // }
-    // // }
-
-    // // return new Winner(winnerId, winnerHandRank, winningCards);
+    // public static List<Winner> determineWinners(Map<String, Hand> bestHandForEachPlayer) {
+    // return AnalysisEngine.determineWinners(bestHandForEachPlayer);
     // }
-
-    public static Map<String, Hand> determineBestHandForEachPlayer() {
-        return AnalysisEngine.determineBestHandForEachPlayer();
-    }
-
-    public static Winner determineWinner(Map<String, Hand> bestHands) {
-        HandRank bestHandRank = HandRank.NOTHING;
-        String bestHandId = null;
-        List<Card> bestHand = null;
-        for (Map.Entry<String, Hand> entry : bestHands.entrySet()) {
-            if (entry.getValue().getHandRank().getValue() > bestHandRank.getValue()) {
-                bestHandId = entry.getKey();
-                bestHandRank = entry.getValue().getHandRank();
-                bestHand = entry.getValue().getBestCards();
-            }
-        }
-
-        return new Winner(bestHandId, bestHandRank, bestHand);
-    }
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();

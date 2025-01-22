@@ -1,7 +1,6 @@
 package com.turner.poker;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Player {
@@ -55,7 +54,8 @@ public class Player {
     // }
 
     public List<Card> getCards() {
-        return Collections.unmodifiableList(cards);
+        // return Collections.unmodifiableList(cards);
+        return cards;
     }
 
     public void play() {}
