@@ -79,16 +79,51 @@ public class AnalysisEngine {
         String bestHandPlayerId = null;
         HandRank bestHandRank = HandRank.NOTHING;
         List<Card> bestCards = null;
+        List<Winner> winners = new ArrayList<Winner>();
+
         for (PlayerResult playerResult : playerResults) {
+            System.out.println("pre.....");
+            System.out.println("pre.....bestHandPlayerId: " + bestHandPlayerId);
+            System.out.println("pre.....bestHandRank: " + bestHandRank);
+            System.out.println("pre.....bestCards: " + bestCards);
+            System.out.println("pre.....winners: " + winners);
+
+            System.out.println("pre.....playerResult.getId(): " + playerResult.getId());
+            System.out.println("pre.....playerResult.getHandRank(): " + playerResult.getHandRank());
+            System.out
+                    .println("pre.....playerResult.getBestCards(): " + playerResult.getBestCards());
+            System.out.println("pre.....winners: " + winners);
+
             if (playerResult.getHandRank().getValue() > bestHandRank.getValue()) {
+                winners.clear();
                 bestHandPlayerId = playerResult.getId();
                 bestHandRank = playerResult.getHandRank();
                 bestCards = playerResult.getBestCards();
+                Winner winner = new Winner(bestHandPlayerId, bestHandRank, bestCards);
+                winners.add(winner);
+            } else if (playerResult.getHandRank().getValue() == bestHandRank.getValue()) {
+                bestHandPlayerId = playerResult.getId();
+                bestHandRank = playerResult.getHandRank();
+                bestCards = playerResult.getBestCards();
+                Winner winner = new Winner(playerResult.getId(), playerResult.getHandRank(),
+                        playerResult.getBestCards());
+                winners.add(winner);
             }
+
+            System.out.println("post.....");
+            System.out.println("post.....bestHandPlayerId: " + bestHandPlayerId);
+            System.out.println("post.....bestHandRank: " + bestHandRank);
+            System.out.println("post.....bestCards: " + bestCards);
+            System.out.println("post.....winners: " + winners);
+
+            System.out.println("post.....playerResult.getId(): " + playerResult.getId());
+            System.out
+                    .println("post.....playerResult.getHandRank(): " + playerResult.getHandRank());
+            System.out.println(
+                    "post.....playerResult.getBestCards(): " + playerResult.getBestCards());
+            System.out.println("post.....winners: " + winners);
         }
-        Winner winner = new Winner(bestHandPlayerId, bestHandRank, bestCards);
-        List<Winner> winners = new ArrayList<Winner>();
-        winners.add(winner);
+        System.out.println("final.....winners: " + winners);
         return winners;
     }
 }
