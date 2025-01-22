@@ -14,43 +14,37 @@ public class Driver {
         Deck.dealCardsToPlayers(2);
 
         Game.burn();
-        System.out.println("---FLOP-------------------------------------");
+        // System.out.println("---FLOP-------------------------------------");
         Game.flop();
-        System.out.println(Board.staticToString());
+        // System.out.println(Board.staticToString());
 
         Game.burn();
-        System.out.println("---TURN-------------------------------------");
+        // System.out.println("---TURN-------------------------------------");
         Game.turn();
-        System.out.println(Board.staticToString());
+        // System.out.println(Board.staticToString());
 
         Game.burn();
-        System.out.println("---RIVER-------------------------------------");
+        // System.out.println("---RIVER-------------------------------------");
         Game.river();
+        // System.out.println(Board.staticToString());
+
+        System.out.println("---Board-------------------------------------");
         System.out.println(Board.staticToString());
 
         System.out.println("---Players-------------------------------------");
         System.out.println(Players.staticToString());
 
-        // Map<String, Hand> bestHandsForEachPlayer = Game.determineBestHandForEachPlayer();
+        List<PlayerResult> playerResults = Game.determineBestHandForEachPlayer();
 
-        // System.out.println("---Best Hand For Each Player-------------------------------------");
-        // System.out.println(Utils.bestHandsForEachPlayerToString(bestHandsForEachPlayer));
-
-
-        // List<Winner> winner = Game.determineWinners(bestHandsForEachPlayer);
-
-        // System.out.println("Winner: " + winner);
-
-        // Map<String, Hand> bestHandForEachPlayer = Game.determineBestHandForEachPlayer();
-        List<PlayerResult> playerResults = Game.xdetermineBestHandForEachPlayer();
-
+        System.out.println("---Player Result-------------------------------------");
         for (PlayerResult playerResult : playerResults)
             System.out.println(playerResult);
 
-        // System.out.println("---Best Hand For Each Player-------------------------------------");
-        // System.out.println(Utils.bestHandsForEachPlayerToString(bestHandForEachPlayer));
+        List<Winner> winners = Game.determineWinners(playerResults);
 
-        // List<Winner> winners = Game.determineWinners(bestHandForEachPlayer);
+        System.out.println("---Winners-------------------------------------");
+        for (Winner winner : winners)
+            System.out.println(winner);
 
         // System.out.println("---Winners-------------------------------------");
         // for (Winner winner : winners) {

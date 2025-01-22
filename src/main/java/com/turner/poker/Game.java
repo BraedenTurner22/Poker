@@ -64,17 +64,13 @@ public class Game {
     // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
     // }
 
-    // public static Map<String, Hand> determineBestHandForEachPlayer() {
-    // return AnalysisEngine.determineBestHandForEachPlayer();
-    // }
-
-    public static List<PlayerResult> xdetermineBestHandForEachPlayer() {
-        return AnalysisEngine.xdetermineBestHandForEachPlayer();
+    public static List<PlayerResult> determineBestHandForEachPlayer() {
+        return AnalysisEngine.determineBestHandForEachPlayer();
     }
 
-    // public static List<Winner> determineWinners(Map<String, Hand> bestHandForEachPlayer) {
-    // return AnalysisEngine.determineWinners(bestHandForEachPlayer);
-    // }
+    public static List<Winner> determineWinners(List<PlayerResult> playerResults) {
+        return AnalysisEngine.determineWinners(playerResults);
+    }
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();

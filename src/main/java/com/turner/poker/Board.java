@@ -30,14 +30,6 @@ public class Board {
         StringBuilder builder = new StringBuilder();
         for (Card card : cards)
             builder.append(card.toString() + "\n");
-
-        // int count = 0;
-        // for (Card card : cards) {
-        // count++;
-        // builder.append(card.toString());
-        // if (count < cards.size())
-        // builder.append(", ");
-        // }
         return builder.toString();
     }
 }
