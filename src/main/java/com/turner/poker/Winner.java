@@ -32,7 +32,6 @@ public class Winner {
         builder.append("id: " + id + ", ");
         builder.append("handRank: " + handRank + ", ");
         builder.append("card(s): ");
-        // }
         int count = 0;
         for (Card card : bestCards) {
             count++;
