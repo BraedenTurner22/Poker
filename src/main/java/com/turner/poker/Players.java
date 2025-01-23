@@ -26,6 +26,10 @@ public class Players {
         return Collections.unmodifiableList(players);
     }
 
+    public static Player getPlayer(int id) {
+        return players.get(id);
+    }
+
     // public static void assignBigBlindPosition(int position) {
     // players.get(position).setBigBlindPosition(true);
     // }
@@ -39,5 +43,13 @@ public class Players {
         for (Player player : players)
             builder.append(player.toString() + "\n");
         return builder.toString();
+    }
+
+    public static List<PlayerResult> getPlayerResults() {
+        List<PlayerResult> playerResults = new ArrayList<>();
+        for (Player player : players) {
+            playerResults.add(player.getPlayerResults());
+        }
+        return playerResults;
     }
 }

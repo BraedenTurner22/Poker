@@ -46,6 +46,10 @@ public class Game {
         Board.layoutCards(cards);
     }
 
+    public static void layoutTestCards(List<Card> testCards) {
+        Board.layoutCards(testCards);
+    }
+
     // public static void playerFolds(Player player) {
     // discardedCards.addAll(player.removeCards());
     // incrementPlayer();
@@ -64,13 +68,17 @@ public class Game {
     // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
     // }
 
-    public static List<PlayerResult> determineBestHandForEachPlayer() {
-        return AnalysisEngine.determineBestHandForEachPlayer();
+    public static void determineBestHandRankForEachPlayer() {
+        AnalysisEngine.determineBestHandRankForEachPlayer();
     }
 
-    public static List<Winner> determineWinners(List<PlayerResult> playerResults) {
-        return AnalysisEngine.determineWinners(playerResults);
+    public static List<PlayerResult> determineBestHandAmongstAllPlayers() {
+        return AnalysisEngine.determineBestHandRankAmongstAllPlayers();
     }
+
+    // public static List<Winner> determineWinners(List<PlayerResult> playerResults) {
+    // return AnalysisEngine.determineWinners(playerResults);
+    // }
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();

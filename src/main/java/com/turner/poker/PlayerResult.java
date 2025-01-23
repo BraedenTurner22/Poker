@@ -1,27 +1,21 @@
 package com.turner.poker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PlayerResult {
-    private String id;
+    Player player = null;
     private HandRank handRank;
-    private List<Card> allCards;
     private List<Card> bestCards;
 
-    public PlayerResult(String id, HandRank handRank) {
-        this.id = id;
+    public PlayerResult(Player player, HandRank handRank, List<Card> bestCards) {
+        this.player = player;
         this.handRank = handRank;
-    }
-
-    public PlayerResult(String id, HandRank handRank, List<Card> allCards, List<Card> bestCards) {
-        this.id = id;
-        this.handRank = handRank;
-        this.allCards = allCards;
         this.bestCards = bestCards;
     }
 
     public String getId() {
-        return id;
+        return player.getId();
     }
 
     public HandRank getHandRank() {
@@ -29,6 +23,9 @@ public class PlayerResult {
     }
 
     public List<Card> getAllCards() {
+        List<Card> allCards = new ArrayList<>();
+        allCards.addAll(player.getCards());
+        allCards.addAll(Board.getCards());
         return allCards;
     }
 
@@ -38,7 +35,7 @@ public class PlayerResult {
 
     @Override
     public String toString() {
-        return "PlayerResult [id=" + id + ", handRank=" + handRank + ", allCards=" + allCards
-                + ", bestCards=" + bestCards + "]";
+        return "PlayerResult [player=" + player + ", handRank=" + handRank + ", allCards="
+                + getAllCards() + ", bestCards=" + bestCards + "]";
     }
 }

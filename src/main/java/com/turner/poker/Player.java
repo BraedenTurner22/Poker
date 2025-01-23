@@ -10,6 +10,7 @@ public class Player {
     // private int chips;
     // private boolean bigBlindPosition = false;
     // private boolean smallBlindPosition = false;
+    private PlayerResult playerResult = null;
 
     public Player(String id, int tablePosition, int chips) {
         this.id = id;
@@ -85,4 +86,12 @@ public class Player {
     // public void setSmallBlindPosition(boolean value) {
     // smallBlindPosition = value;
     // }
+
+    public void setPlayerResult(PlayerResult playerResult) {
+        this.playerResult = playerResult;
+    }
+
+    public PlayerResult getPlayerResults() {
+        return playerResult;
+    }
 }

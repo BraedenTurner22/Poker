@@ -32,4 +32,5 @@ public class Board {
             builder.append(card.toString() + "\n");
         return builder.toString();
     }
+
 }

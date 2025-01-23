@@ -1,7 +1,6 @@
 package com.turner.poker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +10,7 @@ class CardTest {
 
     @BeforeEach
     void setUp() {
-        card = new Card(Suit.CLUBS, Rank.ACE);
+        card = new Card(Rank.ACE, Suit.CLUBS);
     }
 
     @Test
