@@ -13,16 +13,6 @@ public class AnalysisEngine {
 
     private final static Logger logger = LoggerFactory.getLogger(AnalysisEngine.class);
 
-    public static AnalysisResults checkForRoyalFlushV2(Player player) {
-        AnalysisResults analysisResultsForFlushCheck = null;
-
-        analysisResultsForFlushCheck = AnalysisEngine.checkForFlush(player);
-        if (analysisResultsForFlushCheck.handRank() == HandRank.FLUSH) {
-        }
-        logger.info("returning HandRank.NOTHING");
-        return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-    }
-
     public static AnalysisResults checkForRoyalFlush(Player player) {
         logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
         logger.debug("player.getAllCards(): " + player.getAllCards());
@@ -84,40 +74,6 @@ public class AnalysisEngine {
             return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
         }
     }
-
-    public static AnalysisResults checkForStraightFlushV2(Player player) {
-        AnalysisResults analysisResultsForStraightCheck = null;
-
-        analysisResultsForStraightCheck = AnalysisEngine.checkForStraight(player);
-        if (analysisResultsForStraightCheck.handRank() == HandRank.STRAIGHT) {
-
-            for (Suit suit : Suit.values()) {
-                int flushCount = 1;
-                for (int i = 0; i < player.getAllCards().size(); i++) {
-                    if (player.getAllCards().get(i).getSuit() == suit) {
-                        flushCount++;
-                    }
-                    if (flushCount == 5) {
-                        player.setBestCards(analysisResultsForStraightCheck.bestCards());
-                        logger.info("returning HandRank.STRAIGHT_FLUSH");
-                        return new AnalysisResults(player.getId(), HandRank.STRAIGHT_FLUSH,
-                                player.getBestCards());
-                    }
-                }
-            }
-
-            // SortedSet<Card> bestCards = new TreeSet<>();
-            // bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
-            // bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
-            // player.setBestCards(bestCards);
-            // logger.info("returning HandRank.NOTHING");
-            // return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
-            // } else {
-        }
-        logger.info("returning HandRank.NOTHING");
-        return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-    }
-
 
     public static AnalysisResults checkForStraightFlush(Player player) {
         logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
@@ -205,72 +161,50 @@ public class AnalysisEngine {
     }
 
     public static AnalysisResults checkForFullHouse(Player player) {
-        AnalysisResults analysisResultsForThreeOfAKindCheck = null;
-        AnalysisResults analysisResultsForOnePairCheck = null;
+        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
+        logger.debug("player.getAllCards(): " + player.getAllCards());
 
-        analysisResultsForThreeOfAKindCheck = AnalysisEngine.checkForThreeOfAKind(player);
-        if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
-            analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
+        SortedSet<Card> bestCards = new TreeSet<>();
+        for (int i = 0; i < player.getAllCards().size(); i++) {
+            logger.debug("player.getAllCards().get(i).getRank(): "
+                    + player.getAllCards().get(i).getRank());
+
+            if (i == player.getAllCards().size() - 2)
+                break;
+
+            if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1).getRank()
+                    && player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 2)
+                            .getRank()) {
+                bestCards.add(player.getAllCards().get(i));
+                bestCards.add(player.getAllCards().get(i + 1));
+                bestCards.add(player.getAllCards().get(i + 2));
+
+                logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
+                logger.debug("player.getAllCards(): " + player.getAllCards());
+                for (int j = 0; i < player.getAllCards().size(); j++) {
+                    logger.debug("player.getAllCards().get(" + i + ").getRank(): "
+                            + player.getAllCards().get(j).getRank());
+
+                    if (i == player.getAllCards().size() - 1)
+                        break;
+
+                    if (player.getAllCards().get(j).getRank() == player.getAllCards().get(j + 1)
+                            .getRank()) {
+                        bestCards.add(player.getAllCards().get(j));
+                        bestCards.add(player.getAllCards().get(j + 1));
+                        player.setBestCards(bestCards);
+                        logger.info("returning HandRank.FULL_HOUSE");
+                        return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
+                    }
+                }
+                logger.info("returning HandRank.NOTHING");
+                return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+            }
         }
+        logger.info("returning HandRank.NOTHING");
+        return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
 
-        if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
-
-            SortedSet<Card> bestCards = new TreeSet<>();
-            bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
-            bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
-            player.setBestCards(bestCards);
-            logger.info("returning HandRank.NOTHING");
-            return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
-        } else {
-            logger.info("returning HandRank.NOTHING");
-            return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-        }
     }
-
-    // public static AnalysisResults checkForFullHouseV1(Player player) {
-    // logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-    // logger.debug("player.getAllCards(): " + player.getAllCards());
-
-    // SortedSet<Card> bestCards = new TreeSet<>();
-    // for (int i = 0; i < player.getAllCards().size(); i++) {
-    // logger.debug("player.getAllCards().get(i).getRank(): "
-    // + player.getAllCards().get(i).getRank());
-
-    // if (i == player.getAllCards().size() - 2)
-    // break;
-
-    // if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1).getRank()
-    // && player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 2)
-    // .getRank()) {
-    // bestCards.add(player.getAllCards().get(i));
-    // bestCards.add(player.getAllCards().get(i + 1));
-    // bestCards.add(player.getAllCards().get(i + 2));
-
-    // logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-    // logger.debug("player.getAllCards(): " + player.getAllCards());
-    // for (int j = 0; i < player.getAllCards().size(); j++) {
-    // logger.debug("player.getAllCards().get(" + i + ").getRank(): "
-    // + player.getAllCards().get(j).getRank());
-
-    // if (i == player.getAllCards().size() - 1)
-    // break;
-
-    // if (player.getAllCards().get(j).getRank() == player.getAllCards().get(j + 1)
-    // .getRank()) {
-    // bestCards.add(player.getAllCards().get(j));
-    // bestCards.add(player.getAllCards().get(j + 1));
-    // player.setBestCards(bestCards);
-    // logger.info("returning HandRank.FULL_HOUSE");
-    // return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
-    // }
-    // }
-    // logger.info("returning HandRank.NOTHING");
-    // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-    // }
-    // }
-    // logger.info("returning HandRank.NOTHING");
-    // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-    // }
 
     public static AnalysisResults checkForFlush(Player player) {
         logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
