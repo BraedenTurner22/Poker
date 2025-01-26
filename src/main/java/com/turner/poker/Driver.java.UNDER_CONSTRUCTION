@@ -1,7 +1,7 @@
 package com.turner.poker;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Driver {
 
@@ -12,13 +12,13 @@ public class Driver {
 
         // Game.start();
         Deck.shuffle();
-        // Deck.dealCardsToPlayers(2);
-        List<Card> testCardsToPlayers = new ArrayList<>();
-        testCardsToPlayers.add(new Card(Rank.ACE, Suit.DIAMONDS));
-        testCardsToPlayers.add(new Card(Rank.TEN, Suit.HEARTS));
-        testCardsToPlayers.add(new Card(Rank.FIVE, Suit.CLUBS));
-        testCardsToPlayers.add(new Card(Rank.TEN, Suit.SPADES));
-        Deck.dealTestCardsToPlayers(testCardsToPlayers);
+        Deck.dealCardsToPlayers(2);
+        // List<Card> testCardsToPlayers = new ArrayList<>();
+        // testCardsToPlayers.add(new Card(Rank.ACE, Suit.DIAMONDS));
+        // testCardsToPlayers.add(new Card(Rank.TEN, Suit.HEARTS));
+        // testCardsToPlayers.add(new Card(Rank.FIVE, Suit.CLUBS));
+        // testCardsToPlayers.add(new Card(Rank.TEN, Suit.SPADES));
+        // Deck.dealTestCardsToPlayers(testCardsToPlayers);
 
         // Game.burn();
         // // System.out.println("---FLOP-------------------------------------");
@@ -35,13 +35,7 @@ public class Driver {
         // Game.river();
         // // System.out.println(Board.staticToString());
 
-        List<Card> testCardsToBoard = new ArrayList<>();
-        testCardsToBoard.add(new Card(Rank.TWO, Suit.DIAMONDS));
-        testCardsToBoard.add(new Card(Rank.FOUR, Suit.DIAMONDS));
-        testCardsToBoard.add(new Card(Rank.SIX, Suit.DIAMONDS));
-        testCardsToBoard.add(new Card(Rank.EIGHT, Suit.DIAMONDS));
-        testCardsToBoard.add(new Card(Rank.TEN, Suit.DIAMONDS));
-        Game.layoutTestCards(testCardsToBoard);
+
 
         System.out.println("---Board-------------------------------------");
         System.out.println(Board.staticToString());
@@ -60,13 +54,20 @@ public class Driver {
             System.out.println(player);
         }
 
-        System.out.println(
-                "\n---Best Hand Rank Amongst All Players-------------------------------------");
-        List<PlayerResult> bestHandAmongstAllPlayers = Game.determineBestHandAmongstAllPlayers();
-        for (PlayerResult playerResult : bestHandAmongstAllPlayers) {
-            // System.out.println(playerResult.getId() + " : " + playerResult.getBestCards());
-            System.out.println(playerResult + "\n");
-        }
+        // System.out.println(
+        // "\n---Best Hand Rank Amongst All Players-------------------------------------");
+        // Map<String, List<Card>> bestHandRanks = Game.determineBestHandRankAmongstAllPlayers();
+        // for (Map.Entry<String, List<Card>> entry : bestHandRanks.entrySet()) {
+        // System.out.println(entry.getValue() + "\n");
+        // }
+
+        System.out.println("\n---Hand Rank To Player Id Map-------------------------------------");
+        Map<HandRank, List<String>> handRankToPlayerIdMap = Game.getHandRankToPlayerIdMap();
+        // // for (Player winner : winners) {
+        // for (Map.Entry<String, List<Card>> entry : winners.entrySet()) {
+        // System.out.println("winner: " + entry.getKey() + ", cards: " + "\n");
+        // }
+
 
         // System.out.println("---Winners-------------------------------------");
         // for (Winner winner : winners)

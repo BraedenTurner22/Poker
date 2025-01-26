@@ -12,7 +12,7 @@ public class Deck {
         reset();
     }
 
-    private Deck() {}
+    protected Deck() {}
 
     public static void reset() {
         deck.clear();
@@ -32,37 +32,38 @@ public class Deck {
     }
 
     public static void shuffle() {
-        Collections.shuffle(deck);
+        List<Card> list = new ArrayList<>(deck);
+        // Shuffle the List
+        Collections.shuffle(list);
+        deck.clear();
+        deck.addAll(list);
     }
 
     public static Card getTopCard() {
-        Card topCard = deck.get(0);
-        deck.remove(0);
-        return topCard;
+        return deck.get(0);
     }
 
     public static void dealCardsToPlayers(int count) {
         for (int i = 0; i < count; i++) {
-            for (Player player : Players.getPlayers()) {
+            for (Player player : Players.getPlayers().values()) {
                 player.acceptCard(Deck.getTopCard());
             }
         }
     }
 
-    public static void dealTestCardsToPlayers(List<Card> testCards) {
-        // for (int i = 0; i < count; i++) {
-        // for (Player player : Players.getPlayers()) {
-        // player.acceptCard(Deck.getTopCard());
-        // }
-        // }
-        Player player = Players.getPlayer(0);
-        player.acceptCard(testCards.get(0));
-        player.acceptCard(testCards.get(1));
-        player = Players.getPlayer(1);
-        player.acceptCard(testCards.get(2));
-        player.acceptCard(testCards.get(3));
-
-    }
+    // static void dealTestCardsToPlayers(List<Card> testCards) {
+    // // for (int i = 0; i < count; i++) {
+    // // for (Player player : Players.getPlayers()) {
+    // // player.acceptCard(Deck.getTopCard());
+    // // }
+    // // }
+    // Player player = Players.getPlayer(0);
+    // player.acceptCard(testCards.get(0));
+    // player.acceptCard(testCards.get(1));
+    // player = Players.getPlayer(1);
+    // player.acceptCard(testCards.get(2));
+    // player.acceptCard(testCards.get(3));
+    // }
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();

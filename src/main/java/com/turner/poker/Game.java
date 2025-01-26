@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Game {
 
-    private Game() {}
+    protected Game() {}
 
     // public static void addPlayer(Player player) {
     // Players.addPlayer(player);
@@ -46,10 +46,6 @@ public class Game {
         Board.layoutCards(cards);
     }
 
-    public static void layoutTestCards(List<Card> testCards) {
-        Board.layoutCards(testCards);
-    }
-
     // public static void playerFolds(Player player) {
     // discardedCards.addAll(player.removeCards());
     // incrementPlayer();
@@ -68,17 +64,25 @@ public class Game {
     // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
     // }
 
-    public static void determineBestHandRankForEachPlayer() {
-        AnalysisEngine.determineBestHandRankForEachPlayer();
-    }
-
-    public static List<PlayerResult> determineBestHandAmongstAllPlayers() {
-        return AnalysisEngine.determineBestHandRankAmongstAllPlayers();
-    }
-
-    // public static List<Winner> determineWinners(List<PlayerResult> playerResults) {
-    // return AnalysisEngine.determineWinners(playerResults);
+    // public static void determineBestHandRankForEachPlayer() {
+    // AnalysisEngine.determineBestHandRankForEachPlayer();
     // }
+
+    // public static Map<String, List<Card>> determineBestHandRankAmongstAllPlayers() {
+    // return AnalysisEngine.determineBestHandRankAmongstAllPlayers();
+    // }
+
+    // public static Map<HandRank, List<String>> getHandRankToPlayerIdMap() {
+    // return AnalysisEngine.getHandRankToPlayerIdMap();
+    // }
+
+    // public static List<Winner> getWinners(Map<HandRank, List<String>> handRankToPlayerIdMap) {
+    // return AnalysisEngine.getWinners(handRankToPlayerIdMap);
+    // }
+
+    public static List<Winner> getWinners() {
+        return AnalysisEngine.getWinners();
+    }
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();

@@ -63,7 +63,7 @@ class DeckTest {
     void testDealCardsToPlayersTwoPlayers() {
         // There are two players so the deck size should be 48
         for (int i = 0; i < 2; i++) {
-            Players.addPlayer(new Player(Integer.toString(i), i, 100));
+            Players.addPlayer(new Player(Integer.toString(i), 100));
         }
         Deck.dealCardsToPlayers(2);
         assertEquals(48, Deck.getDeckSize(), "Size of deck should be 48");

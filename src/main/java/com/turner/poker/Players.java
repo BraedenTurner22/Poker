@@ -1,12 +1,11 @@
 package com.turner.poker;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Players {
 
-    private static List<Player> players = new ArrayList<>();
+    private static Map<String, Player> players = new HashMap<>();
 
     private Players() {}
 
@@ -15,18 +14,19 @@ public class Players {
     }
 
     public static void addPlayer(Player player) {
-        players.add(player);
+        players.put(player.getId(), player);
     }
 
     // public static void removePlayer(Player player) {
     // players.remove(player);
     // }
 
-    public static List<Player> getPlayers() {
-        return Collections.unmodifiableList(players);
+    public static Map<String, Player> getPlayers() {
+        // return Collections.unmodifiableMap(players);
+        return players;
     }
 
-    public static Player getPlayer(int id) {
+    public static Player getPlayer(String id) {
         return players.get(id);
     }
 
@@ -40,16 +40,17 @@ public class Players {
 
     public static String staticToString() {
         StringBuilder builder = new StringBuilder();
-        for (Player player : players)
-            builder.append(player.toString() + "\n");
+        for (Map.Entry<String, Player> entry : players.entrySet()) {
+            builder.append(entry.getValue().toString() + "\n\n");
+        }
         return builder.toString();
     }
 
-    public static List<PlayerResult> getPlayerResults() {
-        List<PlayerResult> playerResults = new ArrayList<>();
-        for (Player player : players) {
-            playerResults.add(player.getPlayerResults());
-        }
-        return playerResults;
-    }
+    // public static List<PlayerResult> getPlayerResults() {
+    // List<PlayerResult> playerResults = new ArrayList<>();
+    // for (Player player : players) {
+    // playerResults.add(player.getPlayerResults());
+    // }
+    // return playerResults;
+    // }
 }
