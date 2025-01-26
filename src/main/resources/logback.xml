@@ -19,6 +19,10 @@
         <appender-ref ref="CONSOLE" />
     </logger>
 
+    <logger name="com.turner.poker.ForcedCardsTestDriver" level="info">
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
     <!-- Root Logger -->
     <!-- <root level="error">
         <appender-ref ref="CONSOLE"/>

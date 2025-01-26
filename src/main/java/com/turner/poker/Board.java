@@ -25,11 +25,13 @@ public class Board {
         Deck.getTopCard();
     }
 
+    // public void setCards(List<Card> cards) {
+    // Board.cards = cards;
+    // }
+
     public static void layoutCards(List<Card> cards) {
-        logger.info("Board: layoutCards: cards: " + cards);
         Board.cards.addAll(cards);
         for (Player player : Players.getPlayers().values()) {
-            logger.info("Board: layoutCards: player: " + player);
             for (Card card : cards)
                 player.acceptCard(card);
         }

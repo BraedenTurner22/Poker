@@ -43,26 +43,12 @@ public class Deck {
         return deck.get(0);
     }
 
-    public static void dealCardsToPlayers(int count) {
-        for (int i = 0; i < count; i++) {
-            for (Player player : Players.getPlayers().values()) {
-                player.acceptCard(Deck.getTopCard());
-            }
-        }
-    }
-
-    // static void dealTestCardsToPlayers(List<Card> testCards) {
-    // // for (int i = 0; i < count; i++) {
-    // // for (Player player : Players.getPlayers()) {
-    // // player.acceptCard(Deck.getTopCard());
-    // // }
-    // // }
-    // Player player = Players.getPlayer(0);
-    // player.acceptCard(testCards.get(0));
-    // player.acceptCard(testCards.get(1));
-    // player = Players.getPlayer(1);
-    // player.acceptCard(testCards.get(2));
-    // player.acceptCard(testCards.get(3));
+    // static void dealCardsToPlayers(int count) {
+    // for (int i = 0; i < count; i++) {
+    // for (Player player : Players.getPlayers().values()) {
+    // player.acceptCard(Deck.getTopCard());
+    // }
+    // }
     // }
 
     public static String staticToString() {

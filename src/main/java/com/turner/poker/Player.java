@@ -1,6 +1,5 @@
 package com.turner.poker;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -18,12 +17,14 @@ public class Player {
     private HandRank handRank;
     private List<Card> bestCards;
 
+    public Player() {}
+
     // public Player(String id, int tablePosition, int chips) {
-    public Player(String id, int chips) {
+    public Player(String id, List<Card> cards, int chips) {
         this.id = id;
+        this.cards = cards;
         // this.tablePosition = tablePosition;
         // this.chips = chips;
-        cards = new ArrayList<>();
     }
 
     public String getId() {
@@ -39,9 +40,14 @@ public class Player {
             Collections.sort(cards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
                     card2.getRank().getValue()));
             Collections.reverse(cards);
-            // cards = cards.reversed();
-            AnalysisEngine.setHandRank(this);
+            AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
+            setHandRank(analysisResults.handRank());
+            setBestCards(analysisResults.bestCards());
         }
+    }
+
+    public void setCards(List<Card> cards) {
+        this.cards = cards;
     }
 
     // public void discardCard(Card card) {

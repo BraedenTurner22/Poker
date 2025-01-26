@@ -1,8 +1,10 @@
 package com.turner.poker;
 
 public class Card {
-    private final Suit suit;
-    private final Rank rank;
+    private Suit suit = null;
+    private Rank rank = null;
+
+    protected Card() {}
 
     public Card(Rank rank, Suit suit) {
         this.rank = rank;

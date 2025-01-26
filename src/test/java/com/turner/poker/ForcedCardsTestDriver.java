@@ -1,28 +1,33 @@
 package com.turner.poker;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ForcedCardsTestDriver {
 
+    private static ObjectMapper objectMapper = new ObjectMapper();
     private final static Logger logger = LoggerFactory.getLogger(ForcedCardsTestDriver.class);
 
     public static void main(String[] args) {
-        Players.addPlayer(new Player(Integer.toString(0), 100));
+        try {
+            for (int i = 1; i <= Integer.parseInt(args[0]); i++) {
+                String path = "src/main/resources/player-" + i + "-cards.json";
+                Player player = objectMapper.readValue(new File(path), Player.class);
+                Players.addPlayer(player);
+            }
 
-        Players.getPlayer(Integer.toString(0)).acceptCard(new Card(Rank.SEVEN, Suit.DIAMONDS));
-        Players.getPlayer(Integer.toString(0)).acceptCard(new Card(Rank.SEVEN, Suit.HEARTS));
-        // Players.getPlayer(Integer.toString(0)).acceptCard(new Card(Rank.FIVE, Suit.CLUBS));
-
-        List<Card> boardCards = new ArrayList<>();
-        boardCards.add(new Card(Rank.SEVEN, Suit.CLUBS));
-        boardCards.add(new Card(Rank.TEN, Suit.HEARTS));
-        boardCards.add(new Card(Rank.TEN, Suit.DIAMONDS));
-        boardCards.add(new Card(Rank.EIGHT, Suit.DIAMONDS));
-        boardCards.add(new Card(Rank.FIVE, Suit.DIAMONDS));
-        Board.layoutCards(boardCards);
+            List<Card> boardCards =
+                    objectMapper.readValue(new File("src/main/resources/board-cards.json"),
+                            new TypeReference<List<Card>>() {});
+            Board.layoutCards(boardCards);
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            System.exit(1);
+        }
 
         logger.info("---Board---");
         logger.info(Board.staticToString());

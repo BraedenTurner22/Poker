@@ -1,0 +1,7 @@
+{
+  "id": "0",
+  "cards": [
+    { "rank": "TWO", "suit": "DIAMONDS" },
+    { "rank": "TWO", "suit": "HEARTS" }
+  ]
+}
