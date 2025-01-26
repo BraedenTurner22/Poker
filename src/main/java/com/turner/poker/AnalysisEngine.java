@@ -65,8 +65,6 @@ public class AnalysisEngine {
         }
     }
 
-    }
-
     public static HandRank checkForStraightFlush(Player player) {
         logger.info("player.getAllCards(): " + player.getAllCards());
 
