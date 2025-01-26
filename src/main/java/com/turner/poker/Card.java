@@ -1,6 +1,6 @@
 package com.turner.poker;
 
-public class Card {
+public class Card implements Comparable<Card> {
     private Suit suit = null;
     private Rank rank = null;
 
@@ -25,4 +25,11 @@ public class Card {
         builder.append(rank + " of " + suit);
         return builder.toString();
     }
+
+    // Override compareTo
+    @Override
+    public int compareTo(Card other) {
+        return Integer.compare(this.rank.getValue(), other.rank.getValue());
+    }
+
 }

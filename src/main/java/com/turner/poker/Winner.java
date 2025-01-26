@@ -1,13 +1,13 @@
 package com.turner.poker;
 
-import java.util.List;
+import java.util.SortedSet;
 
 public class Winner {
     private String id;
     private HandRank handRank;
-    private List<Card> winningCards;
+    private SortedSet<Card> winningCards;
 
-    public Winner(String id, HandRank handRank, List<Card> winningCards) {
+    public Winner(String id, HandRank handRank, SortedSet<Card> winningCards) {
         this.id = id;
         this.handRank = handRank;
         this.winningCards = winningCards;

@@ -2,6 +2,7 @@ package com.turner.poker;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,7 @@ public class Player {
     // private boolean bigBlindPosition = false;
     // private boolean smallBlindPosition = false;
     private HandRank handRank;
-    private List<Card> bestCards;
+    private SortedSet<Card> bestCards;
 
     public Player() {}
 
@@ -86,11 +87,11 @@ public class Player {
         return cards;
     }
 
-    public List<Card> getBestCards() {
+    public SortedSet<Card> getBestCards() {
         return bestCards;
     }
 
-    public void setBestCards(List<Card> bestCards) {
+    public void setBestCards(SortedSet<Card> bestCards) {
         this.bestCards = bestCards;
     }
 
@@ -103,12 +104,24 @@ public class Player {
         builder.append("id: " + id + ", ");
         // builder.append("tablePosition: " + tablePosition + ", ");
         builder.append("handRank: " + handRank + ", ");
-        builder.append("cards: ");
+        builder.append("cards: [");
         int count = 0;
         for (Card card : cards) {
             count++;
             builder.append(card.toString());
+            // count < cards.size() ? builder.append(", ") : builder.append(" ")
             if (count < cards.size())
+                builder.append(", ");
+            // else
+            // builder.append(" ");
+        }
+        builder.append("], ");
+        builder.append("bestCards: [");
+        count = 0;
+        for (Card card : bestCards) {
+            count++;
+            builder.append(card.toString());
+            if (count < bestCards.size())
                 builder.append(", ");
         }
         builder.append("]");
