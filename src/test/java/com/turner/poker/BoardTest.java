@@ -6,7 +6,7 @@ public class BoardTest {
 
     @BeforeEach
     void setUp() {
-        Board.reset();
+        // Board.reset();
     }
 
     // @Test

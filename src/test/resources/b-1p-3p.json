@@ -1,7 +1,7 @@
 {
   "board": [
     { "rank": "TWO", "suit": "DIAMONDS" },
-    { "rank": "FOUR", "suit": "DIAMONDS" },
+    { "rank": "TWO", "suit": "CLUBS" },
     { "rank": "SIX", "suit": "DIAMONDS" },
     { "rank": "EIGHT", "suit": "DIAMONDS" },
     { "rank": "TEN", "suit": "DIAMONDS" }
@@ -12,6 +12,20 @@
       "cards": [
         { "rank": "JACK", "suit": "CLUBS" },
         { "rank": "QUEEN", "suit": "CLUBS" }
+      ]
+    },
+    {
+      "id": "2",
+      "cards": [
+        { "rank": "JACK", "suit": "HEARTS" },
+        { "rank": "QUEEN", "suit": "HEARTS" }
+      ]
+    },
+    {
+      "id": "3",
+      "cards": [
+        { "rank": "JACK", "suit": "SPADES" },
+        { "rank": "QUEEN", "suit": "SPADES" }
       ]
     }
   ]

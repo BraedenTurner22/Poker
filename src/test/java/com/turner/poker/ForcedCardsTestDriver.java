@@ -18,7 +18,7 @@ public class ForcedCardsTestDriver {
         }
 
         try {
-            String file = "src/main/resources/" + args[0];
+            String file = "test/main/resources/" + args[0];
             Game game = objectMapper.readValue(new File(file), Game.class);
 
             logger.info("game: " + game);
