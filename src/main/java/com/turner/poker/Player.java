@@ -11,84 +11,39 @@ public class Player {
 
     private String id;
     private List<Card> cards;
-    // private int tablePosition;
-    // private int chips;
-    // private boolean bigBlindPosition = false;
-    // private boolean smallBlindPosition = false;
-    private HandRank handRank;
     private SortedSet<Card> bestCards;
+    private HandRank handRank;
 
-    public Player() {}
-
-    // public Player(String id, int tablePosition, int chips) {
-    public Player(String id, List<Card> cards) {
-        this.id = id;
-        this.cards = cards;
-        // this.tablePosition = tablePosition;
-        // this.chips = chips;
+    // Getters and Setters
+    public String getId() {
+        return id;
     }
 
     public void setId(String id) {
         this.id = id;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void acceptCard(Card card) {
-        logger.info("Player: acceptCard: card: " + card);
-        cards.add(card);
-        logger.info("Player: acceptCard: cards.size(): " + cards.size());
-
-        if (cards.size() == 7) {
-            Collections.sort(cards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
-                    card2.getRank().getValue()));
-            Collections.reverse(cards);
-            AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
-            setHandRank(analysisResults.handRank());
-            setBestCards(analysisResults.bestCards());
-        }
+    public List<Card> getCards() {
+        return cards;
     }
 
     public void setCards(List<Card> cards) {
+        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
         this.cards = cards;
-    }
 
-    // public void discardCard(Card card) {
-    // cards.remove(card);
-    // }
+        // if (cards.size() == 7) {
+        this.cards.addAll(Game.getInstance().getBoard());
+        Collections.sort(cards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
+                card2.getRank().getValue()));
+        Collections.reverse(cards);
+        AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
+        logger.info("analysisResults: " + analysisResults);
+        setHandRank(analysisResults.handRank());
+        setBestCards(analysisResults.bestCards());
+        // }
 
-    // public void playBigBlind(int bigBlind) {
-    // chips -= bigBlind;
-    // }
+        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
 
-    // public void playSmallBlind(int smallBlind) {
-    // chips -= smallBlind;
-    // }
-
-    // public int getTablePosition() {
-    // return tablePosition;
-    // }
-
-    // public int getChips() {
-    // return chips;
-    // }
-
-    // public List<Card> removeCards() {
-    // List<Card> copy = new ArrayList<>();
-    // Collections.copy(cards, copy);
-    // cards.clear();
-    // return copy;
-    // }
-
-    // public List<Card> getCardsInHand() {
-    // // return Collections.unmodifiableList(cards);
-    // return cards;
-    // }
-
-    public List<Card> getAllCards() {
-        return cards;
     }
 
     public SortedSet<Card> getBestCards() {
@@ -99,55 +54,6 @@ public class Player {
         this.bestCards = bestCards;
     }
 
-    public void play() {}
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("\nPlayer [");
-        builder.append("id: " + id + ", ");
-        // builder.append("tablePosition: " + tablePosition + ", ");
-        builder.append("handRank: " + handRank + ", ");
-        builder.append("cards: [");
-        int count = 0;
-        for (Card card : cards) {
-            count++;
-            builder.append(card.toString());
-            // count < cards.size() ? builder.append(", ") : builder.append(" ")
-            if (count < cards.size())
-                builder.append(", ");
-            // else
-            // builder.append(" ");
-        }
-        builder.append("], ");
-        builder.append("bestCards: [");
-        count = 0;
-        for (Card card : bestCards) {
-            count++;
-            builder.append(card.toString());
-            if (count < bestCards.size())
-                builder.append(", ");
-        }
-        builder.append("]");
-        return builder.toString();
-    }
-
-    // public void setBigBlindPosition(boolean value) {
-    // bigBlindPosition = value;
-    // }
-
-    // public void setSmallBlindPosition(boolean value) {
-    // smallBlindPosition = value;
-    // }
-
-    // public void setPlayerResult(PlayerResult playerResult) {
-    // this.playerResult = playerResult;
-    // }
-
-    // public PlayerResult getPlayerResults() {
-    // return playerResult;
-    // }
-
     public HandRank getHandRank() {
         return handRank;
     }
@@ -155,4 +61,11 @@ public class Player {
     public void setHandRank(HandRank handRank) {
         this.handRank = handRank;
     }
+
+
+    @Override
+    public String toString() {
+        return "Player{id='" + id + "', cards=" + cards + "}";
+    }
+
 }

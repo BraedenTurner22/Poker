@@ -1,91 +1,54 @@
 package com.turner.poker;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Game {
+    private Deck deck;
+    private List<Card> board;
+    private List<Player> players;
+    private AnalysisEngine analysisEngine = new AnalysisEngine();
+    private static Game instance;
 
-    protected Game() {}
-
-    // public static void addPlayer(Player player) {
-    // Players.addPlayer(player);
-    // };
-
-    // public static void removePlayer(Player player) {
-    // Players.removePlayer(player);
-    // };
-
-    public static void start() {};
-
-    public static void end() {}
-
-    public static void dealCardToPlayer(Player player) {
-        player.acceptCard(Deck.getTopCard());
+    public Game() {
+        instance = this;
     }
 
-    public static void burn() {
-        Board.burn();
+    public static Game getInstance() {
+        return instance;
     }
 
-    public static void flop() {
-        layoutCards(3);
+    public Deck getDeck() {
+        return deck;
     }
 
-    public static void turn() {
-        layoutCards(1);
+    public void setDeck(Deck deck) {
+        this.deck = deck;
     }
 
-    public static void river() {
-        layoutCards(1);
+    public List<Card> getBoard() {
+        return board;
     }
 
-    private static void layoutCards(int count) {
-        List<Card> cards = new ArrayList<>();
-        for (int i = 0; i < count; i++)
-            cards.add(Deck.getTopCard());
-        Board.layoutCards(cards);
+    public void setBoard(List<Card> board) {
+        this.board = board;
     }
 
-    // public static void playerFolds(Player player) {
-    // discardedCards.addAll(player.removeCards());
-    // incrementPlayer();
-    // }
-
-    // public static void playerChecks(Player player) {
-    // incrementPlayer();
-    // }
-
-    // public static void playerRaises(Player player, int raise) {
-    // pot += raise;
-    // incrementPlayer();
-    // }
-
-    // private static void incrementPlayer() {
-    // currentPlayer = (currentPlayer + 1) % Players.getPlayers().size();
-    // }
-
-    // public static void determineBestHandRankForEachPlayer() {
-    // AnalysisEngine.determineBestHandRankForEachPlayer();
-    // }
-
-    // public static Map<String, List<Card>> determineBestHandRankAmongstAllPlayers() {
-    // return AnalysisEngine.determineBestHandRankAmongstAllPlayers();
-    // }
-
-    // public static Map<HandRank, List<String>> getHandRankToPlayerIdMap() {
-    // return AnalysisEngine.getHandRankToPlayerIdMap();
-    // }
-
-    // public static List<Winner> getWinners(Map<HandRank, List<String>> handRankToPlayerIdMap) {
-    // return AnalysisEngine.getWinners(handRankToPlayerIdMap);
-    // }
-
-    public static List<Winner> getWinners() {
-        return AnalysisEngine.getWinners();
+    public List<Player> getPlayers() {
+        return players;
     }
 
-    public static String staticToString() {
-        StringBuilder builder = new StringBuilder();
-        return builder.toString();
+    public void setPlayers(List<Player> players) {
+        this.players = players;
+    }
+
+    public void play() {}
+
+    public List<Winner> getWinners() {
+        return analysisEngine.getWinners(players);
+    }
+
+    @Override
+    public String toString() {
+        return "Game{board=" + board + ", players=" + players + "}";
     }
 }

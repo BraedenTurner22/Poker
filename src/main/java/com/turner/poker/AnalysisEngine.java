@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AnalysisEngine {
-
     private final static Logger logger = LoggerFactory.getLogger(AnalysisEngine.class);
 
     // ==========================================================================================
@@ -26,20 +25,20 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForRoyalFlush(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
-        // Suit suit = player.getAllCards().get(0).getSuit();
-        // if (player.getAllCards().get(0).getRank() == Rank.ACE
-        // && player.getAllCards().get(1).getRank() == Rank.KING
-        // && player.getAllCards().get(2).getRank() == Rank.QUEEN
-        // && player.getAllCards().get(3).getRank() == Rank.JACK
-        // && player.getAllCards().get(4).getRank() == Rank.TEN
-        // && suit == player.getAllCards().get(1).getSuit()
-        // && suit == player.getAllCards().get(2).getSuit()
-        // && suit == player.getAllCards().get(3).getSuit()
-        // && suit == player.getAllCards().get(4).getSuit()
-        // && suit == player.getAllCards().get(5).getSuit())
+        // Suit suit = player.getCards().get(0).getSuit();
+        // if (player.getCards().get(0).getRank() == Rank.ACE
+        // && player.getCards().get(1).getRank() == Rank.KING
+        // && player.getCards().get(2).getRank() == Rank.QUEEN
+        // && player.getCards().get(3).getRank() == Rank.JACK
+        // && player.getCards().get(4).getRank() == Rank.TEN
+        // && suit == player.getCards().get(1).getSuit()
+        // && suit == player.getCards().get(2).getSuit()
+        // && suit == player.getCards().get(3).getSuit()
+        // && suit == player.getCards().get(4).getSuit()
+        // && suit == player.getCards().get(5).getSuit())
         // return HandRank.ROYAL_FLUSH;
         // else {
         // return HandRank.NOTHING;
@@ -56,26 +55,26 @@ public class AnalysisEngine {
             for (int i = pass; i < pass + 5; i++) {
                 logger.debug("i: " + i);
 
-                if (player.getAllCards().get(i).getRank() != Rank.ACE)
+                if (player.getCards().get(i).getRank() != Rank.ACE)
                     continue;
 
-                if (i == player.getAllCards().size() - 1)
+                if (i == player.getCards().size() - 1)
                     break;
 
-                int currentCardRankValue = player.getAllCards().get(i).getRank().getValue();
-                int nextCardRankValue = player.getAllCards().get(i + 1).getRank().getValue();
-                logger.debug("currentCard: " + player.getAllCards().get(i).getRank().getValue());
-                logger.debug("nextCard: " + player.getAllCards().get(i + 1).getRank().getValue());
+                int currentCardRankValue = player.getCards().get(i).getRank().getValue();
+                int nextCardRankValue = player.getCards().get(i + 1).getRank().getValue();
+                logger.debug("currentCard: " + player.getCards().get(i).getRank().getValue());
+                logger.debug("nextCard: " + player.getCards().get(i + 1).getRank().getValue());
 
                 if (currentCardRankValue == nextCardRankValue + 1) {
                     consecutiveCardCount++;
-                    bestCards.add(player.getAllCards().get(i));
-                    bestCards.add(player.getAllCards().get(i + 1));
+                    bestCards.add(player.getCards().get(i));
+                    bestCards.add(player.getCards().get(i + 1));
                 }
 
                 logger.debug("consecutiveCardCount: " + consecutiveCardCount);
 
-                if (consecutiveCardCount == 5 || i + 1 == player.getAllCards().size())
+                if (consecutiveCardCount == 5 || i + 1 == player.getCards().size())
                     break;
             }
         }
@@ -99,8 +98,8 @@ public class AnalysisEngine {
             for (Suit suit : Suit.values()) {
                 logger.debug("suit: " + suit);
                 int flushCount = 0;
-                for (int i = 0; i < player.getAllCards().size(); i++) {
-                    if (player.getAllCards().get(i).getSuit() == suit) {
+                for (int i = 0; i < player.getCards().size(); i++) {
+                    if (player.getCards().get(i).getSuit() == suit) {
                         flushCount++;
                     }
 
@@ -121,26 +120,25 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForFourOfAKind(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
-        for (int i = 0; i < player.getAllCards().size(); i++) {
-            logger.debug("player.getAllCards().get(i).getRank(): "
-                    + player.getAllCards().get(i).getRank());
+        for (int i = 0; i < player.getCards().size(); i++) {
+            logger.debug(
+                    "player.getCards().get(i).getRank(): " + player.getCards().get(i).getRank());
 
-            if (i == player.getAllCards().size() - 3)
+            if (i == player.getCards().size() - 3)
                 break;
 
-            if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1).getRank()
-                    && player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 2)
-                            .getRank()
-                    && player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 3)
+            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
+                    && player.getCards().get(i).getRank() == player.getCards().get(i + 2).getRank()
+                    && player.getCards().get(i).getRank() == player.getCards().get(i + 3)
                             .getRank()) {
-                bestCards.add(player.getAllCards().get(i));
-                bestCards.add(player.getAllCards().get(i + 1));
-                bestCards.add(player.getAllCards().get(i + 2));
-                bestCards.add(player.getAllCards().get(i + 3));
+                bestCards.add(player.getCards().get(i));
+                bestCards.add(player.getCards().get(i + 1));
+                bestCards.add(player.getCards().get(i + 2));
+                bestCards.add(player.getCards().get(i + 3));
                 player.setBestCards(bestCards);
                 logger.info("returning HandRank.FOUR_OF_A_KIND");
                 return new AnalysisResults(player.getId(), HandRank.FOUR_OF_A_KIND, bestCards);
@@ -173,8 +171,8 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForFlush(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         int flushCount = 0;
@@ -182,10 +180,10 @@ public class AnalysisEngine {
             logger.debug("suit: " + suit);
             bestCards.clear();
             flushCount = 0;
-            for (int i = 0; i < player.getAllCards().size(); i++) {
-                if (player.getAllCards().get(i).getSuit() == suit) {
+            for (int i = 0; i < player.getCards().size(); i++) {
+                if (player.getCards().get(i).getSuit() == suit) {
                     flushCount++;
-                    bestCards.add(player.getAllCards().get(i));
+                    bestCards.add(player.getCards().get(i));
                 }
                 logger.debug("flushCount: " + flushCount);
                 if (flushCount == 5) {
@@ -201,8 +199,8 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForStraight(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         int consecutiveCardCount = 1;
@@ -215,23 +213,23 @@ public class AnalysisEngine {
                 bestCards.clear();
                 logger.info("i: " + i);
 
-                if (i == player.getAllCards().size() - 1)
+                if (i == player.getCards().size() - 1)
                     break;
 
-                int currentCardValue = player.getAllCards().get(i).getRank().getValue();
-                int nextCardValue = player.getAllCards().get(i + 1).getRank().getValue();
-                logger.debug("currentCard: " + player.getAllCards().get(i).getRank().getValue());
-                logger.debug("nextCard: " + player.getAllCards().get(i + 1).getRank().getValue());
+                int currentCardValue = player.getCards().get(i).getRank().getValue();
+                int nextCardValue = player.getCards().get(i + 1).getRank().getValue();
+                logger.debug("currentCard: " + player.getCards().get(i).getRank().getValue());
+                logger.debug("nextCard: " + player.getCards().get(i + 1).getRank().getValue());
 
                 if (currentCardValue == nextCardValue + 1) {
                     consecutiveCardCount++;
-                    bestCards.add(player.getAllCards().get(i));
-                    bestCards.add(player.getAllCards().get(i + 1));
+                    bestCards.add(player.getCards().get(i));
+                    bestCards.add(player.getCards().get(i + 1));
                 }
 
                 logger.debug("consecutiveCardCount: " + consecutiveCardCount);
 
-                if (consecutiveCardCount == 5 || i + 1 == player.getAllCards().size())
+                if (consecutiveCardCount == 5 || i + 1 == player.getCards().size())
                     break;
             }
         }
@@ -248,22 +246,22 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForThreeOfAKind(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
-        for (int i = 0; i < player.getAllCards().size(); i++) {
-            logger.debug("player.getAllCards().get(i).getRank(): "
-                    + player.getAllCards().get(i).getRank());
+        for (int i = 0; i < player.getCards().size(); i++) {
+            logger.debug(
+                    "player.getCards().get(i).getRank(): " + player.getCards().get(i).getRank());
 
-            if (i == player.getAllCards().size() - 2)
+            if (i == player.getCards().size() - 2)
                 break;
-            if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1).getRank()
-                    && player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 2)
+            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
+                    && player.getCards().get(i).getRank() == player.getCards().get(i + 2)
                             .getRank()) {
-                bestCards.add(player.getAllCards().get(i));
-                bestCards.add(player.getAllCards().get(i + 1));
-                bestCards.add(player.getAllCards().get(i + 2));
+                bestCards.add(player.getCards().get(i));
+                bestCards.add(player.getCards().get(i + 1));
+                bestCards.add(player.getCards().get(i + 2));
                 player.setBestCards(bestCards);
                 logger.info("returning HandRank.THREE_OF_A_KIND");
                 return new AnalysisResults(player.getId(), HandRank.THREE_OF_A_KIND, bestCards);
@@ -275,19 +273,18 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForTwoPair(Player player) {
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
 
         int pairCount = 0;
         SortedSet<Card> bestCards = new TreeSet<>();
-        for (int i = 0; i < player.getAllCards().size(); i++) {
-            if (i == player.getAllCards().size() - 1)
+        for (int i = 0; i < player.getCards().size(); i++) {
+            if (i == player.getCards().size() - 1)
                 break;
-            if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1)
-                    .getRank()) {
+            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
                 pairCount++;
-                bestCards.add(player.getAllCards().get(i));
-                bestCards.add(player.getAllCards().get(i + 1));
+                bestCards.add(player.getCards().get(i));
+                bestCards.add(player.getCards().get(i + 1));
             }
         }
 
@@ -305,19 +302,18 @@ public class AnalysisEngine {
     // ==========================================================================================
     public static AnalysisResults checkForOnePair(Player player) {
         SortedSet<Card> bestCards = new TreeSet<>();
-        logger.debug("player.getAllCards().size(): " + player.getAllCards().size());
-        logger.debug("player.getAllCards(): " + player.getAllCards());
-        for (int i = 0; i < player.getAllCards().size(); i++) {
-            logger.debug("player.getAllCards().get(" + i + ").getRank(): "
-                    + player.getAllCards().get(i).getRank());
+        logger.debug("player.getCards().size(): " + player.getCards().size());
+        logger.debug("player.getCards(): " + player.getCards());
+        for (int i = 0; i < player.getCards().size(); i++) {
+            logger.debug("player.getCards().get(" + i + ").getRank(): "
+                    + player.getCards().get(i).getRank());
 
-            if (i == player.getAllCards().size() - 1)
+            if (i == player.getCards().size() - 1)
                 break;
 
-            if (player.getAllCards().get(i).getRank() == player.getAllCards().get(i + 1)
-                    .getRank()) {
-                bestCards.add(player.getAllCards().get(i));
-                bestCards.add(player.getAllCards().get(i + 1));
+            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
+                bestCards.add(player.getCards().get(i));
+                bestCards.add(player.getCards().get(i + 1));
                 player.setBestCards(bestCards);
                 logger.info("returning HandRank.ONE_PAIR");
                 return new AnalysisResults(player.getId(), HandRank.ONE_PAIR, bestCards);
@@ -329,7 +325,7 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     public static AnalysisResults checkForHighCard(Player player) {
-        Card highCard = player.getAllCards().get(player.getAllCards().size() - 1);
+        Card highCard = player.getCards().get(player.getCards().size() - 1);
         SortedSet<Card> bestCards = new TreeSet<>();
         bestCards.add(highCard);
         player.setBestCards(bestCards);
@@ -363,14 +359,14 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static Map<HandRank, List<String>> getHandRankToPlayerIdMap() {
+    private static Map<HandRank, List<String>> getHandRankToPlayerIdMap(List<Player> players) {
         Map<HandRank, List<String>> handRankToPlayerIdMap = new LinkedHashMap<>();
 
         for (HandRank handRank : HandRank.values()) {
             handRankToPlayerIdMap.put(handRank, new ArrayList<>());
         }
 
-        for (Player player : Players.getPlayers().values()) {
+        for (Player player : players) {
             switch (player.getHandRank()) {
                 case HandRank.ROYAL_FLUSH:
                     handRankToPlayerIdMap.get(HandRank.ROYAL_FLUSH).add(player.getId());
@@ -413,8 +409,37 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    public static List<Winner> getWinners() {
-        Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap();
+    // public static List<Winner> getWinners(List<Player> players) {
+    // Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
+    // logger.info("handRankToPlayerIdMap: " + handRankToPlayerIdMap);
+
+    // Map<HandRank, List<String>> reversedMap = new LinkedHashMap<>();
+
+    // List<Map.Entry<HandRank, List<String>>> entryList =
+    // new ArrayList<>(handRankToPlayerIdMap.entrySet());
+
+    // for (int i = entryList.size() - 1; i >= 0; i--) {
+    // Map.Entry<HandRank, List<String>> entry = entryList.get(i);
+    // reversedMap.put(entry.getKey(), entry.getValue());
+    // }
+
+    // boolean winnersFound = false;
+    // List<Winner> winners = new ArrayList<>();
+    // for (Map.Entry<HandRank, List<String>> entry : reversedMap.entrySet()) {
+    // if (!winnersFound && entry.getValue().size() > 0) {
+    // winnersFound = true;
+    // for (String id : entry.getValue()) {
+    // winners.add(new Winner(id, entry.getKey(),
+    // Game.getPlayers().get(id).getBestCards()));
+    // }
+    // }
+    // }
+
+    // return winners;
+    // }
+
+    public List<Winner> getWinners(List<Player> players) {
+        Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
         logger.info("handRankToPlayerIdMap: " + handRankToPlayerIdMap);
 
         Map<HandRank, List<String>> reversedMap = new LinkedHashMap<>();
@@ -433,8 +458,8 @@ public class AnalysisEngine {
             if (!winnersFound && entry.getValue().size() > 0) {
                 winnersFound = true;
                 for (String id : entry.getValue()) {
-                    winners.add(
-                            new Winner(id, entry.getKey(), Players.getPlayer(id).getBestCards()));
+                    // winners.add(new Winner(id, entry.getKey(),
+                    // Game.getPlayers().get(id).getBestCards()));
                 }
             }
         }

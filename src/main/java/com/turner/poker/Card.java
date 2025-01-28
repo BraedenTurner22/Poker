@@ -1,35 +1,40 @@
 package com.turner.poker;
 
 public class Card implements Comparable<Card> {
-    private Suit suit = null;
-    private Rank rank = null;
+    private Rank rank;
+    private Suit suit;
 
-    protected Card() {}
+    public Card() {}
 
     public Card(Rank rank, Suit suit) {
         this.rank = rank;
         this.suit = suit;
     }
 
-    public Suit getSuit() {
-        return suit;
-    }
-
+    // Getters and Setters
     public Rank getRank() {
         return rank;
     }
 
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(rank + " of " + suit);
-        return builder.toString();
+    public void setRank(Rank rank) {
+        this.rank = rank;
     }
 
-    // Override compareTo
+    public Suit getSuit() {
+        return suit;
+    }
+
+    public void setSuit(Suit suit) {
+        this.suit = suit;
+    }
+
+    @Override
+    public String toString() {
+        return "Card{rank='" + rank + "', suit='" + suit + "'}";
+    }
+
     @Override
     public int compareTo(Card other) {
         return Integer.compare(this.rank.getValue(), other.rank.getValue());
     }
-
 }
