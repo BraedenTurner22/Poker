@@ -21,11 +21,15 @@ public class Player {
     public Player() {}
 
     // public Player(String id, int tablePosition, int chips) {
-    public Player(String id, List<Card> cards, int chips) {
+    public Player(String id, List<Card> cards) {
         this.id = id;
         this.cards = cards;
         // this.tablePosition = tablePosition;
         // this.chips = chips;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getId() {
@@ -100,7 +104,7 @@ public class Player {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("Player [");
+        builder.append("\nPlayer [");
         builder.append("id: " + id + ", ");
         // builder.append("tablePosition: " + tablePosition + ", ");
         builder.append("handRank: " + handRank + ", ");

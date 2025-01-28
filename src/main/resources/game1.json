@@ -1,0 +1,18 @@
+{
+  "board": [
+    { "rank": "TWO", "suit": "CLUBS" },
+    { "rank": "TWO", "suit": "DIAMONDS" },
+    { "rank": "THREE", "suit": "CLUBS" },
+    { "rank": "FOUR", "suit": "DIAMONDS" },
+    { "rank": "SIX", "suit": "CLUBS" }
+  ],
+  "players": [
+    {
+      "id": "1",
+      "cards": [
+        { "rank": "ACE", "suit": "CLUBS" },
+        { "rank": "THREE", "suit": "CLUBS" }
+      ]
+    }
+  ]
+}

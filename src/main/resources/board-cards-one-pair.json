@@ -1,0 +1,7 @@
+[
+  { "rank": "TWO", "suit": "CLUBS" },
+  { "rank": "TWO", "suit": "DIAMONDS" },
+  { "rank": "THREE", "suit": "CLUBS" },
+  { "rank": "FOUR", "suit": "DIAMONDS" },
+  { "rank": "SIX", "suit": "CLUBS" }
+]

@@ -15,7 +15,7 @@
         </encoder>
     </appender> -->
 
-    <logger name="com.turner.poker.AnalysisEngine" level="info">
+    <logger name="com.turner.poker.AnalysisEngine" level="debug">
         <appender-ref ref="CONSOLE" />
     </logger>
 

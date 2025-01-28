@@ -1,7 +1,7 @@
 {
-  "id": "0",
+  "id": "1",
   "cards": [
-    { "rank": "FOUR", "suit": "CLUBS" },
-    { "rank": "FIVE", "suit": "CLUBS" }
+    { "rank": "NINE", "suit": "CLUBS" },
+    { "rank": "THREE", "suit": "CLUBS" }
   ]
 }
