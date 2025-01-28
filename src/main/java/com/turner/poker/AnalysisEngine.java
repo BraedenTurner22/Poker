@@ -19,14 +19,14 @@ public class AnalysisEngine {
     // analysisResultsForFlushCheck = AnalysisEngine.checkForFlush(player);
     // if (analysisResultsForFlushCheck.handRank() == HandRank.FLUSH) {
     // }
-    // logger.info("returning HandRank.NOTHING");
+    // logger.info("return HandRank.NOTHING");
     // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     // }
 
     // ==========================================================================================
     public static AnalysisResults checkForRoyalFlush(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         // Suit suit = player.getCards().get(0).getSuit();
         // if (player.getCards().get(0).getRank() == Rank.ACE
@@ -81,10 +81,10 @@ public class AnalysisEngine {
 
         if (consecutiveCardCount == 5) {
             player.setBestCards(bestCards);
-            logger.info("returning HandRank.ROYAL_FLUSH");
+            logger.info("return HandRank.ROYAL_FLUSH");
             return new AnalysisResults(player.getId(), HandRank.ROYAL_FLUSH, bestCards);
         } else {
-            logger.info("returning HandRank.NOTHING");
+            logger.info("return HandRank.NOTHING");
             return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
         }
     }
@@ -107,26 +107,25 @@ public class AnalysisEngine {
 
                     if (flushCount == 5) {
                         player.setBestCards(analysisResultsForStraightCheck.bestCards());
-                        logger.info("returning HandRank.STRAIGHT_FLUSH");
+                        logger.info("return HandRank.STRAIGHT_FLUSH");
                         return new AnalysisResults(player.getId(), HandRank.STRAIGHT_FLUSH,
                                 player.getBestCards());
                     }
                 }
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForFourOfAKind(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         for (int i = 0; i < player.getCards().size(); i++) {
-            logger.debug(
-                    "player.getCards().get(i).getRank(): " + player.getCards().get(i).getRank());
+            logger.debug("rank: " + player.getCards().get(i).getRank());
 
             if (i == player.getCards().size() - 3)
                 break;
@@ -140,39 +139,94 @@ public class AnalysisEngine {
                 bestCards.add(player.getCards().get(i + 2));
                 bestCards.add(player.getCards().get(i + 3));
                 player.setBestCards(bestCards);
-                logger.info("returning HandRank.FOUR_OF_A_KIND");
+                logger.info("return HandRank.FOUR_OF_A_KIND");
                 return new AnalysisResults(player.getId(), HandRank.FOUR_OF_A_KIND, bestCards);
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
+    // // ==========================================================================================
+    // public static AnalysisResults checkForFullHouse(Player player) {
+    // AnalysisResults analysisResultsForThreeOfAKindCheck = null;
+    // AnalysisResults analysisResultsForOnePairCheck = null;
+
+    // analysisResultsForThreeOfAKindCheck = AnalysisEngine.checkForThreeOfAKind(player);
+    // if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
+    // analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
+    // if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
+    // SortedSet<Card> bestCards = new TreeSet<>();
+    // bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
+    // bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
+    // player.setBestCards(bestCards);
+    // logger.info("return HandRank.FULL_HOUSE");
+    // return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
+    // }
+    // }
+    // logger.info("return HandRank.NOTHING");
+    // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+    // }
+
     // ==========================================================================================
     public static AnalysisResults checkForFullHouse(Player player) {
-        AnalysisResults analysisResultsForThreeOfAKindCheck = null;
-        AnalysisResults analysisResultsForOnePairCheck = null;
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
-        analysisResultsForThreeOfAKindCheck = AnalysisEngine.checkForThreeOfAKind(player);
-        if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
-            analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
-            if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
-                SortedSet<Card> bestCards = new TreeSet<>();
-                bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
-                bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
-                player.setBestCards(bestCards);
-                logger.info("returning HandRank.FULL_HOUSE");
-                return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
+        SortedSet<Card> bestCards = new TreeSet<>();
+        for (int i = 0; i < player.getCards().size(); i++) {
+            logger.debug("i: " + i);
+            logger.debug("rank: " + player.getCards().get(i).getRank());
+
+            if (i == player.getCards().size() - 2)
+                break;
+            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
+                    && player.getCards().get(i).getRank() == player.getCards().get(i + 2)
+                            .getRank()) {
+
+                bestCards.add(player.getCards().get(i));
+                bestCards.add(player.getCards().get(i + 1));
+                bestCards.add(player.getCards().get(i + 2));
+
+                Rank threeOfAKindRank = player.getCards().get(i).getRank();
+
+                for (int j = 0; j < player.getCards().size(); j++) {
+                    logger.debug("j: " + j);
+
+                    if (j == player.getCards().size() - 1) {
+                        logger.info("return HandRank.NOTHING");
+                        return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+                    }
+
+                    logger.debug("cards[" + j + "].rank: " + player.getCards().get(j).getRank());
+
+                    if (player.getCards().get(j).getRank() == player.getCards().get(j + 1)
+                            .getRank()) {
+                        if (player.getCards().get(j).getRank() == threeOfAKindRank) {
+                            logger.info("return HandRank.NOTHING");
+                            return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+                        }
+
+                        bestCards.add(player.getCards().get(j));
+                        bestCards.add(player.getCards().get(j + 1));
+                        player.setBestCards(bestCards);
+                        logger.info("return HandRank.FULL_HOUSE");
+                        return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
+                    }
+                }
+                // logger.info("return HandRank.NOTHING");
+                // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForFlush(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         int flushCount = 0;
@@ -188,19 +242,19 @@ public class AnalysisEngine {
                 logger.debug("flushCount: " + flushCount);
                 if (flushCount == 5) {
                     player.setBestCards(bestCards);
-                    logger.info("returning HandRank.FLUSH");
+                    logger.info("return HandRank.FLUSH");
                     return new AnalysisResults(player.getId(), HandRank.FLUSH, bestCards);
                 }
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForStraight(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         int consecutiveCardCount = 1;
@@ -236,23 +290,22 @@ public class AnalysisEngine {
 
         if (consecutiveCardCount == 5) {
             player.setBestCards(bestCards);
-            logger.info("returning HandRank.STRAIGHT");
+            logger.info("return HandRank.STRAIGHT");
             return new AnalysisResults(player.getId(), HandRank.STRAIGHT, bestCards);
         } else {
-            logger.info("returning HandRank.NOTHING");
+            logger.info("return HandRank.NOTHING");
             return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
         }
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForThreeOfAKind(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         SortedSet<Card> bestCards = new TreeSet<>();
         for (int i = 0; i < player.getCards().size(); i++) {
-            logger.debug(
-                    "player.getCards().get(i).getRank(): " + player.getCards().get(i).getRank());
+            logger.debug("rank: " + player.getCards().get(i).getRank());
 
             if (i == player.getCards().size() - 2)
                 break;
@@ -263,18 +316,18 @@ public class AnalysisEngine {
                 bestCards.add(player.getCards().get(i + 1));
                 bestCards.add(player.getCards().get(i + 2));
                 player.setBestCards(bestCards);
-                logger.info("returning HandRank.THREE_OF_A_KIND");
+                logger.info("return HandRank.THREE_OF_A_KIND");
                 return new AnalysisResults(player.getId(), HandRank.THREE_OF_A_KIND, bestCards);
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForTwoPair(Player player) {
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
 
         int pairCount = 0;
         SortedSet<Card> bestCards = new TreeSet<>();
@@ -290,23 +343,22 @@ public class AnalysisEngine {
 
         if (pairCount == 2) {
             player.setBestCards(bestCards);
-            logger.info("returning HandRank.TWO_PAIR");
+            logger.info("return HandRank.TWO_PAIR");
             return new AnalysisResults(player.getId(), HandRank.TWO_PAIR, bestCards);
 
         }
 
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
     // ==========================================================================================
     public static AnalysisResults checkForOnePair(Player player) {
         SortedSet<Card> bestCards = new TreeSet<>();
-        logger.debug("player.getCards().size(): " + player.getCards().size());
-        logger.debug("player.getCards(): " + player.getCards());
+        logger.debug("size: " + player.getCards().size());
+        logger.debug("cards: " + player.getCards());
         for (int i = 0; i < player.getCards().size(); i++) {
-            logger.debug("player.getCards().get(" + i + ").getRank(): "
-                    + player.getCards().get(i).getRank());
+            logger.debug("cards[" + i + "].rank: " + player.getCards().get(i).getRank());
 
             if (i == player.getCards().size() - 1)
                 break;
@@ -315,11 +367,11 @@ public class AnalysisEngine {
                 bestCards.add(player.getCards().get(i));
                 bestCards.add(player.getCards().get(i + 1));
                 player.setBestCards(bestCards);
-                logger.info("returning HandRank.ONE_PAIR");
+                logger.info("return HandRank.ONE_PAIR");
                 return new AnalysisResults(player.getId(), HandRank.ONE_PAIR, bestCards);
             }
         }
-        logger.info("returning HandRank.NOTHING");
+        logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
@@ -329,32 +381,53 @@ public class AnalysisEngine {
         SortedSet<Card> bestCards = new TreeSet<>();
         bestCards.add(highCard);
         player.setBestCards(bestCards);
-        logger.info("returning HandRank.HIGH_CARD");
+        logger.info("return HandRank.HIGH_CARD");
         return new AnalysisResults(player.getId(), HandRank.HIGH_CARD, bestCards);
     }
 
     // ==========================================================================================
     public static AnalysisResults analyzeHand(Player player) {
         AnalysisResults analysisResults = AnalysisEngine.checkForRoyalFlush(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForStraightFlush(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForFourOfAKind(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForFullHouse(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForFlush(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForStraight(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForThreeOfAKind(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForTwoPair(player);
-        if (analysisResults.handRank() == HandRank.NOTHING)
-            analysisResults = AnalysisEngine.checkForOnePair(player);
-        if (analysisResults.handRank() == HandRank.NOTHING) {
-            analysisResults = AnalysisEngine.checkForHighCard(player);
-        }
+
+        if (analysisResults.handRank() == HandRank.ROYAL_FLUSH)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForStraightFlush(player);
+        if (analysisResults.handRank() == HandRank.STRAIGHT_FLUSH)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForFourOfAKind(player);
+        if (analysisResults.handRank() == HandRank.FOUR_OF_A_KIND)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForFullHouse(player);
+        if (analysisResults.handRank() == HandRank.FULL_HOUSE)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForFlush(player);
+        if (analysisResults.handRank() == HandRank.FLUSH)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForStraight(player);
+        if (analysisResults.handRank() == HandRank.STRAIGHT)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForThreeOfAKind(player);
+        if (analysisResults.handRank() == HandRank.THREE_OF_A_KIND)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForTwoPair(player);
+        if (analysisResults.handRank() == HandRank.TWO_PAIR)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForOnePair(player);
+        if (analysisResults.handRank() == HandRank.ONE_PAIR)
+            return analysisResults;
+
+        analysisResults = AnalysisEngine.checkForHighCard(player);
+        if (analysisResults.handRank() == HandRank.HIGH_CARD)
+            return analysisResults;
+
         return analysisResults;
     }
 
