@@ -150,26 +150,26 @@ public class AnalysisEngine {
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
-    // // ==========================================================================================
-    // public static AnalysisResults checkForFullHouse(Player player) {
-    // AnalysisResults analysisResultsForThreeOfAKindCheck = null;
-    // AnalysisResults analysisResultsForOnePairCheck = null;
+    // ==========================================================================================
+    public static AnalysisResults checkForFullHouseV2(Player player) {
+        AnalysisResults analysisResultsForThreeOfAKindCheck = null;
+        AnalysisResults analysisResultsForOnePairCheck = null;
 
-    // analysisResultsForThreeOfAKindCheck = AnalysisEngine.checkForThreeOfAKind(player);
-    // if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
-    // analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
-    // if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
-    // SortedSet<Card> bestCards = new TreeSet<>();
-    // bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
-    // bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
-    // player.setBestCards(bestCards);
-    // logger.info("return HandRank.FULL_HOUSE");
-    // return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
-    // }
-    // }
-    // logger.info("return HandRank.NOTHING");
-    // return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
-    // }
+        analysisResultsForThreeOfAKindCheck = AnalysisEngine.checkForThreeOfAKind(player);
+        if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
+            analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
+            if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
+                SortedSet<Card> bestCards = new TreeSet<>();
+                bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
+                bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
+                player.setBestCards(bestCards);
+                logger.info("return HandRank.FULL_HOUSE");
+                return new AnalysisResults(player.getId(), HandRank.FULL_HOUSE, bestCards);
+            }
+        }
+        logger.info("return HandRank.NOTHING");
+        return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
+    }
 
     // ==========================================================================================
     public static AnalysisResults checkForFullHouse(Player player) {
@@ -531,6 +531,7 @@ public class AnalysisEngine {
     // }
 
     // ==========================================================================================
+    @SuppressWarnings("unchecked")
     public List<Winner> getWinners(List<Player> players) {
         Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
         logger.info("handRankToPlayerIdMap: " + handRankToPlayerIdMap);
@@ -550,9 +551,16 @@ public class AnalysisEngine {
         for (Map.Entry<HandRank, List<String>> entry : reversedMap.entrySet()) {
             if (!winnersFound && entry.getValue().size() > 0) {
                 winnersFound = true;
+                int index = 0;
                 for (String id : entry.getValue()) {
-                    // winners.add(new Winner(id, entry.getKey(),
-                    // Game.getPlayers().get(id).getBestCards()));
+                    SortedSet<Card> bestCards =
+                            Game.getInstance().getPlayers().get(index).getBestCards();
+                    Winner winner = new Winner(id, entry.getKey(), bestCards);
+                    winners.add(winner);
+                    // SortedSet<Card> bestCards = entry.getValue();
+                    // winners.add(new Winner(id, entry.getKey(), new
+                    // SortedSet<Card>(entry.getValue()));
+                    // // Game.getInstance().getPlayers().get(id).getBestCards()));
                 }
             }
         }
