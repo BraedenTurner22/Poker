@@ -1,6 +1,6 @@
 package com.turner.poker;
 
-import java.util.SortedSet;
+import java.util.List;
 
-public record AnalysisResults(String id, HandRank handRank, SortedSet<Card> bestCards) {
+public record AnalysisResults(String id, HandRank handRank, List<Card> bestCards) {
 }

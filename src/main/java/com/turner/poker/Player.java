@@ -2,7 +2,6 @@ package com.turner.poker;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.SortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +10,7 @@ public class Player {
 
     private String id;
     private List<Card> cards;
-    private SortedSet<Card> bestCards;
+    private List<Card> bestCards;
     private HandRank handRank;
 
     // Getters and Setters
@@ -46,11 +45,11 @@ public class Player {
 
     }
 
-    public SortedSet<Card> getBestCards() {
+    public List<Card> getBestCards() {
         return bestCards;
     }
 
-    public void setBestCards(SortedSet<Card> bestCards) {
+    public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;
     }
 

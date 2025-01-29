@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,7 @@ public class AnalysisEngine {
         // return HandRank.NOTHING;
         // }
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         int consecutiveCardCount = 1;
         int size = player.getCards().size();
         for (int pass = 0; pass < 3; pass++) {
@@ -126,7 +124,7 @@ public class AnalysisEngine {
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             logger.debug("rank: " + player.getCards().get(i).getRank());
 
@@ -159,7 +157,7 @@ public class AnalysisEngine {
         if (analysisResultsForThreeOfAKindCheck.handRank() == HandRank.THREE_OF_A_KIND) {
             analysisResultsForOnePairCheck = AnalysisEngine.checkForOnePair(player);
             if (analysisResultsForOnePairCheck.handRank() == HandRank.ONE_PAIR) {
-                SortedSet<Card> bestCards = new TreeSet<>();
+                List<Card> bestCards = new ArrayList<>();
                 bestCards.addAll(analysisResultsForThreeOfAKindCheck.bestCards());
                 bestCards.addAll(analysisResultsForOnePairCheck.bestCards());
                 player.setBestCards(bestCards);
@@ -178,7 +176,7 @@ public class AnalysisEngine {
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             logger.debug("i: " + i);
             logger.debug("rank: " + player.getCards().get(i).getRank());
@@ -235,7 +233,7 @@ public class AnalysisEngine {
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         int flushCount = 0;
         for (Suit suit : Suit.values()) {
             logger.debug("suit: " + suit);
@@ -265,7 +263,7 @@ public class AnalysisEngine {
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         int consecutiveCardCount = 1;
         for (int pass = 0; pass < 3; pass++) {
             if (consecutiveCardCount == 5)
@@ -314,7 +312,7 @@ public class AnalysisEngine {
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             logger.debug("rank: " + player.getCards().get(i).getRank());
 
@@ -343,7 +341,7 @@ public class AnalysisEngine {
         logger.debug("cards: " + player.getCards());
 
         int pairCount = 0;
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             if (i == size - 1)
                 break;
@@ -371,7 +369,7 @@ public class AnalysisEngine {
         logger.debug("size: " + player.getCards().size());
         logger.debug("cards: " + player.getCards());
 
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             logger.debug("cards[" + i + "].rank: " + player.getCards().get(i).getRank());
 
@@ -397,7 +395,7 @@ public class AnalysisEngine {
         logger.debug("cards: " + player.getCards());
 
         Card highCard = player.getCards().get(size - 1);
-        SortedSet<Card> bestCards = new TreeSet<>();
+        List<Card> bestCards = new ArrayList<>();
         bestCards.add(highCard);
         player.setBestCards(bestCards);
         logger.info("return HandRank.HIGH_CARD");
@@ -531,7 +529,6 @@ public class AnalysisEngine {
     // }
 
     // ==========================================================================================
-    @SuppressWarnings("unchecked")
     public List<Winner> getWinners(List<Player> players) {
         Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
         logger.info("handRankToPlayerIdMap: " + handRankToPlayerIdMap);
@@ -553,14 +550,10 @@ public class AnalysisEngine {
                 winnersFound = true;
                 int index = 0;
                 for (String id : entry.getValue()) {
-                    SortedSet<Card> bestCards =
+                    List<Card> bestCards =
                             Game.getInstance().getPlayers().get(index).getBestCards();
                     Winner winner = new Winner(id, entry.getKey(), bestCards);
                     winners.add(winner);
-                    // SortedSet<Card> bestCards = entry.getValue();
-                    // winners.add(new Winner(id, entry.getKey(), new
-                    // SortedSet<Card>(entry.getValue()));
-                    // // Game.getInstance().getPlayers().get(id).getBestCards()));
                 }
             }
         }
