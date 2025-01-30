@@ -3,7 +3,7 @@ package com.turner.poker;
 import java.util.List;
 
 public class Game {
-    private Deck deck;
+    // private Deck deck;
     private List<Card> board;
     private List<Player> players;
     private AnalysisEngine analysisEngine = new AnalysisEngine();
@@ -17,13 +17,13 @@ public class Game {
         return instance;
     }
 
-    public Deck getDeck() {
-        return deck;
-    }
+    // public Deck getDeck() {
+    // return deck;
+    // }
 
-    public void setDeck(Deck deck) {
-        this.deck = deck;
-    }
+    // public void setDeck(Deck deck) {
+    // this.deck = deck;
+    // }
 
     public List<Card> getBoard() {
         return board;

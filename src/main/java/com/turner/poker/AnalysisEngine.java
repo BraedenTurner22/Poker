@@ -1,6 +1,7 @@
 package com.turner.poker;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -552,6 +553,7 @@ public class AnalysisEngine {
                 for (String id : entry.getValue()) {
                     List<Card> bestCards =
                             Game.getInstance().getPlayers().get(index).getBestCards();
+                    Collections.sort(bestCards);
                     Winner winner = new Winner(id, entry.getKey(), bestCards);
                     winners.add(winner);
                 }

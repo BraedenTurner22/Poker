@@ -51,6 +51,7 @@ public class Player {
 
     public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;
+        Collections.sort(this.bestCards);
     }
 
     public HandRank getHandRank() {
@@ -64,7 +65,12 @@ public class Player {
 
     @Override
     public String toString() {
-        return "Player{id='" + id + "', cards=" + cards + "}";
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("\n");
+        stringBuilder.append("Player");
+        stringBuilder.append("\n...id: " + id);
+        stringBuilder.append("\n...cards: " + cards);
+        return stringBuilder.toString();
     }
 
 }
