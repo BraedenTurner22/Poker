@@ -11,7 +11,6 @@ public class Card implements Comparable<Card> {
         this.suit = suit;
     }
 
-    // Getters and Setters
     public Rank getRank() {
         return rank;
     }
