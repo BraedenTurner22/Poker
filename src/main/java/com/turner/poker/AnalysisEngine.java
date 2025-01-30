@@ -274,7 +274,7 @@ public class AnalysisEngine {
             logger.debug("pass: " + pass);
             for (int i = pass; i < pass + 5; i++) {
                 bestCards.clear();
-                logger.info("i: " + i);
+                logger.debug("i: " + i);
 
                 if (i == size - 1)
                     break;
@@ -532,7 +532,14 @@ public class AnalysisEngine {
     // ==========================================================================================
     public List<Winner> getWinners(List<Player> players) {
         Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
-        logger.info("handRankToPlayerIdMap: " + handRankToPlayerIdMap);
+        logger.info("\nhandRankToPlayerIdMap: " + handRankToPlayerIdMap);
+
+        if (logger.isInfoEnabled()) {
+            for (Map.Entry<HandRank, List<String>> entry : handRankToPlayerIdMap.entrySet()) {
+                logger.info(entry.getKey() + entry.getValue().toString());
+            }
+
+        }
 
         Map<HandRank, List<String>> reversedMap = new LinkedHashMap<>();
 

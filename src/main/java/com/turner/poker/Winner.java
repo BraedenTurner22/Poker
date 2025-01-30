@@ -15,9 +15,11 @@ public class Winner {
 
     @Override
     public String toString() {
-        return "Winner [id=" + id + ", handRank=" + handRank + ", winningCards=" + winningCards
-                + "]";
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("\nWinner...");
+        stringBuilder.append("\n...id: " + id);
+        stringBuilder.append("\n...handRank: " + handRank);
+        stringBuilder.append("\n...winningCards: " + winningCards);
+        return stringBuilder.toString();
     }
-
-
 }

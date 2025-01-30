@@ -67,7 +67,7 @@ public class Player {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
-        stringBuilder.append("Player");
+        stringBuilder.append("Player...");
         stringBuilder.append("\n...id: " + id);
         stringBuilder.append("\n...cards: " + cards);
         return stringBuilder.toString();

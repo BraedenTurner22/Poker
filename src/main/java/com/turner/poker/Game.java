@@ -51,7 +51,7 @@ public class Game {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
-        stringBuilder.append("Game");
+        stringBuilder.append("Game...");
         stringBuilder.append("\n...board: " + board);
         stringBuilder.append("\n...players: " + players);
         return stringBuilder.toString();

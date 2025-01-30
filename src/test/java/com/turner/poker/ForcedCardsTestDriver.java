@@ -21,13 +21,10 @@ public class ForcedCardsTestDriver {
             String file = "src/test/resources/" + args[0];
             Game game = objectMapper.readValue(new File(file), Game.class);
 
-            logger.info("\ngame: " + game);
-
+            logger.info(game.toString());
             game.play();
+            logger.info(game.getWinners().toString());
 
-            logger.info("\n\nwinner: " + game.getWinners());
-
-            // Print the parsed Game object
         } catch (Exception exception) {
             exception.printStackTrace();
             System.exit(1);
