@@ -13,7 +13,6 @@ public class Player {
     private List<Card> bestCards;
     private HandRank handRank;
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
