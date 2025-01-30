@@ -49,6 +49,11 @@ public class Game {
 
     @Override
     public String toString() {
-        return "Game{board=" + board + ", players=" + players + "}";
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("\n");
+        stringBuilder.append("Game");
+        stringBuilder.append("\n...board: " + board);
+        stringBuilder.append("\n...players: " + players);
+        return stringBuilder.toString();
     }
 }
