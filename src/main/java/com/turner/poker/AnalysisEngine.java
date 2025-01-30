@@ -72,9 +72,8 @@ public class AnalysisEngine {
                 logger.debug("suit: " + suit);
                 int flushCount = 0;
                 for (int i = 0; i < size; i++) {
-                    if (player.getCards().get(i).getSuit() == suit) {
+                    if (player.getCards().get(i).getSuit() == suit)
                         flushCount++;
-                    }
 
                     logger.debug("flushCount: " + flushCount);
 
@@ -157,6 +156,7 @@ public class AnalysisEngine {
 
             if (i == size - 2)
                 break;
+
             if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
                     && player.getCards().get(i).getRank() == player.getCards().get(i + 2)
                             .getRank()) {
@@ -237,8 +237,10 @@ public class AnalysisEngine {
         List<Card> bestCards = new ArrayList<>();
         int consecutiveCardCount = 1;
         for (int pass = 0; pass < 3; pass++) {
+
             if (consecutiveCardCount == 5)
                 break;
+
             consecutiveCardCount = 1;
             logger.debug("\n");
             logger.debug("pass: " + pass);
@@ -289,6 +291,7 @@ public class AnalysisEngine {
 
             if (i == size - 2)
                 break;
+
             if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
                     && player.getCards().get(i).getRank() == player.getCards().get(i + 2)
                             .getRank()) {
@@ -314,8 +317,10 @@ public class AnalysisEngine {
         int pairCount = 0;
         List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size; i++) {
+
             if (i == size - 1)
                 break;
+
             if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
                 pairCount++;
                 bestCards.add(player.getCards().get(i));
@@ -329,7 +334,6 @@ public class AnalysisEngine {
             return new AnalysisResults(player.getId(), HandRank.TWO_PAIR, bestCards);
 
         }
-
         logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
@@ -423,9 +427,8 @@ public class AnalysisEngine {
     private static Map<HandRank, List<String>> getHandRankToPlayerIdMap(List<Player> players) {
         Map<HandRank, List<String>> handRankToPlayerIdMap = new LinkedHashMap<>();
 
-        for (HandRank handRank : HandRank.values()) {
+        for (HandRank handRank : HandRank.values())
             handRankToPlayerIdMap.put(handRank, new ArrayList<>());
-        }
 
         for (Player player : players) {
             switch (player.getHandRank()) {
@@ -475,10 +478,8 @@ public class AnalysisEngine {
         logger.info("\nhandRankToPlayerIdMap: " + handRankToPlayerIdMap);
 
         if (logger.isInfoEnabled()) {
-            for (Map.Entry<HandRank, List<String>> entry : handRankToPlayerIdMap.entrySet()) {
+            for (Map.Entry<HandRank, List<String>> entry : handRankToPlayerIdMap.entrySet())
                 logger.info(entry.getKey() + entry.getValue().toString());
-            }
-
         }
 
         Map<HandRank, List<String>> reversedMap = new LinkedHashMap<>();
