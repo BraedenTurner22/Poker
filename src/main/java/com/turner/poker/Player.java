@@ -62,7 +62,6 @@ public class Player {
         this.handRank = handRank;
     }
 
-
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
@@ -72,5 +71,4 @@ public class Player {
         stringBuilder.append("\n...cards: " + cards);
         return stringBuilder.toString();
     }
-
 }
