@@ -1,8 +1,8 @@
 {
   "board": [
-    { "rank": "QUEEN", "suit": "DIAMONDS" },
-    { "rank": "JACK", "suit": "DIAMONDS" },
-    { "rank": "TEN", "suit": "DIAMONDS" },
+    { "rank": "TWO", "suit": "DIAMONDS" },
+    { "rank": "THREE", "suit": "DIAMONDS" },
+    { "rank": "FOUR", "suit": "DIAMONDS" },
     { "rank": "FIVE", "suit": "DIAMONDS" },
     { "rank": "SIX", "suit": "DIAMONDS" }
   ],
@@ -10,8 +10,8 @@
     {
       "id": "1",
       "cards": [
-        { "rank": "ACE", "suit": "DIAMONDS" },
-        { "rank": "KING", "suit": "DIAMONDS" }
+        { "rank": "TWO", "suit": "SPADES" },
+        { "rank": "THREE", "suit": "DIAMONDS" }
       ]
     },
     {

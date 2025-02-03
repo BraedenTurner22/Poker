@@ -31,9 +31,13 @@ public class Player {
 
         // if (cards.size() == 7) {
         this.cards.addAll(Game.getInstance().getBoard());
+        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
+
         Collections.sort(cards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
                 card2.getRank().getValue()));
+        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
         Collections.reverse(cards);
+        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
         AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
         logger.info("analysisResults: " + analysisResults);
         setHandRank(analysisResults.handRank());
@@ -47,6 +51,8 @@ public class Player {
     public List<Card> getBestCards() {
         return bestCards;
     }
+
+
 
     public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;

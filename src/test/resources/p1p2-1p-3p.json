@@ -17,15 +17,15 @@
     {
       "id": "2",
       "cards": [
-        { "rank": "JACK", "suit": "HEARTS" },
-        { "rank": "QUEEN", "suit": "HEARTS" }
+        { "rank": "QUEEN", "suit": "HEARTS" },
+        { "rank": "QUEEN", "suit": "SPADES" }
       ]
     },
     {
       "id": "3",
       "cards": [
         { "rank": "JACK", "suit": "SPADES" },
-        { "rank": "QUEEN", "suit": "SPADES" }
+        { "rank": "KING", "suit": "SPADES" }
       ]
     }
   ]

@@ -6,7 +6,7 @@ public class Game {
     // private Deck deck;
     private List<Card> board;
     private List<Player> players;
-    private AnalysisEngine analysisEngine = new AnalysisEngine();
+    // private AnalysisEngine analysisEngine;
     private static Game instance;
 
     public Game() {
@@ -44,7 +44,7 @@ public class Game {
     public void play() {}
 
     public List<Winner> getWinners() {
-        return analysisEngine.getWinners(players);
+        return AnalysisEngine.getWinners(players);
     }
 
     @Override

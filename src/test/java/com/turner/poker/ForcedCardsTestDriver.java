@@ -23,7 +23,7 @@ public class ForcedCardsTestDriver {
 
             logger.info(game.toString());
             game.play();
-            logger.info(game.getWinners().toString());
+            logger.info("winners:" + game.getWinners().toString());
 
         } catch (Exception exception) {
             exception.printStackTrace();
