@@ -69,15 +69,16 @@ public class AnalysisEngine {
         logger.debug("cards: " + player.getCards());
 
         AnalysisResults flushAnalysisResults = checkForFlush(player);
-        AnalysisResults straightAnalysisResults = checkForStraight(player);
 
-        if (flushAnalysisResults.handRank() == HandRank.FLUSH
-                && straightAnalysisResults.handRank() == HandRank.STRAIGHT) {
+        if (flushAnalysisResults.handRank() == HandRank.FLUSH) {
+            AnalysisResults straightAnalysisResults = checkForStraight(player);
+            if (straightAnalysisResults.handRank() == HandRank.STRAIGHT) {
 
-            player.setBestCards(flushAnalysisResults.bestCards());
-            logger.info("return HandRank.STRAIGHT_FLUSH");
-            return new AnalysisResults(player.getId(), HandRank.STRAIGHT_FLUSH,
-                    flushAnalysisResults.bestCards());
+                player.setBestCards(flushAnalysisResults.bestCards());
+                logger.info("return HandRank.STRAIGHT_FLUSH");
+                return new AnalysisResults(player.getId(), HandRank.STRAIGHT_FLUSH,
+                        flushAnalysisResults.bestCards());
+            }
         }
 
         logger.info("return HandRank.NOTHING");
