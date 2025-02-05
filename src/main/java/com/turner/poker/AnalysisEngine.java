@@ -477,17 +477,14 @@ public class AnalysisEngine {
         if (winners.size() == 2) {
             // Checks if last card is equal (Thus straight flush is equal)
             if (winners.get(0).getWinningCardAtIndex(4) == winners.get(1).getWinningCardAtIndex(4)) {
-                return winners;
             }
             // Checks if value of rank of last card is greater for winner(0) than winner(1), removes winner(1) from winners
             else if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() > winners.get(1).getWinningCardAtIndex(4).getRank().getValue()) {
                 winners.remove(1);
-                return winners;
             }
             // If if/else above fails, removes winner(0) from winners as it has a lower value of rank of last card
             else {
                 winners.remove(0);
-                return winners;
             }
             }
             return winners;
