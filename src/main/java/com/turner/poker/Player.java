@@ -52,8 +52,6 @@ public class Player {
         return bestCards;
     }
 
-
-
     public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;
         Collections.sort(this.bestCards);

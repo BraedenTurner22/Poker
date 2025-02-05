@@ -13,6 +13,18 @@ public class Winner {
         this.winningCards = winningCards;
     }
 
+    public HandRank getWinnerHandRank() {
+        return this.handRank;
+    }
+
+    public List<Card> getWinningCards() {
+        return this.winningCards;
+    }
+
+    public Card getWinningCardAtIndex(int index) {
+        return this.winningCards.get(index);
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();

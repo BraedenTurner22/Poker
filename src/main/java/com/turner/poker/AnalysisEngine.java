@@ -471,8 +471,17 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        //Determine winner(s) if multiple people have straight flush
+        //Checks last (highest) card, if equal, then multiple winners are established
+        //Removes winner objects from winners List if they have a lower last card
+        if (winners.size() > 1) {
+            Rank highestRank = null;
+            for (Winner winner : winners) {
+                if (winner.getWinningCardAtIndex(4) == ) {
+
+                }
+            }
+        }
 
         return winners;
     }
