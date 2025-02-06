@@ -480,9 +480,10 @@ public class AnalysisEngine {
                     .getWinningCardAtIndex(4).getRank().getValue()) {
                 winners.remove(1);
             }
-            // If above fails, removes winner(0) from winners as it has a lower value of
+            // If above fails, removes winner(0) from winners if it has a lower value of
             // rank of last card
-            else {
+            else if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() < winners.get(1)
+                    .getWinningCardAtIndex(4).getRank().getValue()) {
                 winners.remove(0);
             }
         }
