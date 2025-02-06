@@ -95,25 +95,18 @@ public class AnalysisEngine {
         logger.debug("cards: " + player.getCards());
 
         List<Card> bestCards = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < 4; i++) {
             logger.debug("rank: " + player.getCards().get(i).getRank());
-
-            if (i == player.getCards().size() - 3)
-                break;
 
             if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
                     && player.getCards().get(i).getRank() == player.getCards().get(i + 2).getRank()
                     && player.getCards().get(i).getRank() == player.getCards().get(i + 3)
                             .getRank()) {
-                bestCards.add(player.getCards().get(i));
-                cards.remove(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 1));
-                cards.remove(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 2));
-                cards.remove(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 3));
-                cards.remove(player.getCards().get(i));
-                player.setBestCards(bestCards);
+                // Adds 4 cards that are FOAK and removes them
+                for (int j = 0; j < 4; j++) {
+                    bestCards.add(player.getCards().get(i));
+                    cards.remove(player.getCards().get(i));
+                }
 
                 // Adds highest card that isn't part of FOAK
                 bestCards.add(cards.get(0));
@@ -480,24 +473,21 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        // Determines winner if 2 people have straight flush
-        // Removes winner objects from winners List if they have a lower last card
+        // If the board is the straight flush, then returns everyone with a straight flush
+
+        // Determines winner if 2 people have straight flush based on higher last card
         if (winners.size() == 2) {
-            // Checks if value of rank of highest card is greater for winner(0) than winner(1),
-            // removes
-            // winner(1) from winners
-            if (winners.get(0).getWinningCardAtIndex(0).getRank().getValue() > winners.get(1)
-                    .getWinningCardAtIndex(0).getRank().getValue()) {
-                winners.remove(1);
-            }
-            // If above fails, removes winner(0) from winners if it has a lower value of
-            // rank of last card
-            else if (winners.get(0).getWinningCardAtIndex(0).getRank().getValue() < winners.get(1)
-                    .getWinningCardAtIndex(0).getRank().getValue()) {
-                winners.remove(0);
-            }
+            Winner w1 = winners.get(0);
+            Winner w2 = winners.get(1);
+
+            int highCard1 = w1.getWinningCardAtIndex(0).getRank().getValue();
+            int highCard2 = w2.getWinningCardAtIndex(0).getRank().getValue();
+
+            winners.remove(highCard1 > highCard2 ? 1 : highCard1 < highCard2 ? 0 : -1);
         }
+
         return winners;
+
     }
 
     // ==========================================================================================
@@ -509,8 +499,30 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        // Find winner between two winners
+        if (winners.size() == 2) {
+            Winner w1 = winners.get(0);
+            Winner w2 = winners.get(1);
+
+            int quad1 = w1.getWinningCardAtIndex(0).getRank().getValue();
+            int quad2 = w2.getWinningCardAtIndex(0).getRank().getValue();
+            int kicker1 = w1.getWinningCardAtIndex(4).getRank().getValue();
+            int kicker2 = w2.getWinningCardAtIndex(4).getRank().getValue();
+
+            if (quad1 > quad2 || (quad1 == quad2 && kicker1 > kicker2)) {
+                winners.remove(1);
+            } else {
+                winners.remove(0);
+            }
+        }
+
+        // Find the winner among >2 players (highest kicker)
+        else if (winners.size() > 2) {
+            int highestKicker = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestKicker);
+        }
 
         return winners;
     }
