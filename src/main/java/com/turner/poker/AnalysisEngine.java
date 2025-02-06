@@ -471,24 +471,23 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        //Determines winner if 2 people have straight flush
-        //Checks last (highest) card, if equal, then multiple winners are established
-        //Removes winner objects from winners List if they have a lower last card
+        // Determines winner if 2 people have straight flush
+        // Removes winner objects from winners List if they have a lower last card
         if (winners.size() == 2) {
-            // Checks if last card is equal (Thus straight flush is equal)
-            if (winners.get(0).getWinningCardAtIndex(4) == winners.get(1).getWinningCardAtIndex(4)) {
-            }
-            // Checks if value of rank of last card is greater for winner(0) than winner(1), removes winner(1) from winners
-            else if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() > winners.get(1).getWinningCardAtIndex(4).getRank().getValue()) {
+            // Checks if value of rank of last card is greater for winner(0) than winner(1), removes
+            // winner(1) from winners
+            if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() > winners.get(1)
+                    .getWinningCardAtIndex(4).getRank().getValue()) {
                 winners.remove(1);
             }
-            // If if/else above fails, removes winner(0) from winners as it has a lower value of rank of last card
+            // If above fails, removes winner(0) from winners as it has a lower value of
+            // rank of last card
             else {
                 winners.remove(0);
             }
-            }
-            return winners;
         }
+        return winners;
+    }
 
     // ==========================================================================================
     private static List<Winner> getFourOfAKindWinners(List<Player> players) {
