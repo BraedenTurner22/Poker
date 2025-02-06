@@ -521,10 +521,13 @@ public class AnalysisEngine {
             Winner w1 = winners.get(0);
             Winner w2 = winners.get(1);
 
+            int w1Size = w1.getWinningCards().size();
+            int w2Size = w2.getWinningCards().size();
+
             int quad1 = w1.getWinningCardAtIndex(0).getRank().getValue();
             int quad2 = w2.getWinningCardAtIndex(0).getRank().getValue();
-            int kicker1 = w1.getWinningCardAtIndex(4).getRank().getValue();
-            int kicker2 = w2.getWinningCardAtIndex(4).getRank().getValue();
+            int kicker1 = w1.getWinningCardAtIndex(w1Size - 1).getRank().getValue();
+            int kicker2 = w2.getWinningCardAtIndex(w2Size - 1).getRank().getValue();
 
             if (quad1 > quad2 || (quad1 == quad2 && kicker1 > kicker2)) {
                 winners.remove(1);
@@ -561,10 +564,12 @@ public class AnalysisEngine {
 
             winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestTOAK);
 
-            int highestPair = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestPair = winners.stream().mapToInt(w -> w
+                    .getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank().getValue())
+                    .max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestPair);
+            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank()
+                    .getValue() < highestPair);
         }
 
         return winners;
