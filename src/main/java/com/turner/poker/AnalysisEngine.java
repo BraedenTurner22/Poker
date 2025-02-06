@@ -89,6 +89,7 @@ public class AnalysisEngine {
     // ==========================================================================================
     private static AnalysisResults checkForFourOfAKind(Player player) {
         int size = player.getCards().size();
+        List<Card> cards = player.getCards();
         logger.debug("id: " + player.getId());
         logger.debug("size: " + size);
         logger.debug("cards: " + player.getCards());
@@ -105,10 +106,18 @@ public class AnalysisEngine {
                     && player.getCards().get(i).getRank() == player.getCards().get(i + 3)
                             .getRank()) {
                 bestCards.add(player.getCards().get(i));
+                cards.remove(player.getCards().get(i));
                 bestCards.add(player.getCards().get(i + 1));
+                cards.remove(player.getCards().get(i));
                 bestCards.add(player.getCards().get(i + 2));
+                cards.remove(player.getCards().get(i));
                 bestCards.add(player.getCards().get(i + 3));
+                cards.remove(player.getCards().get(i));
                 player.setBestCards(bestCards);
+
+                // Adds highest card that isn't part of FOAK
+                bestCards.add(cards.get(0));
+
                 logger.info("return HandRank.FOUR_OF_A_KIND");
                 return new AnalysisResults(player.getId(), HandRank.FOUR_OF_A_KIND, bestCards);
             }
@@ -474,16 +483,17 @@ public class AnalysisEngine {
         // Determines winner if 2 people have straight flush
         // Removes winner objects from winners List if they have a lower last card
         if (winners.size() == 2) {
-            // Checks if value of rank of last card is greater for winner(0) than winner(1), removes
+            // Checks if value of rank of highest card is greater for winner(0) than winner(1),
+            // removes
             // winner(1) from winners
-            if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() > winners.get(1)
-                    .getWinningCardAtIndex(4).getRank().getValue()) {
+            if (winners.get(0).getWinningCardAtIndex(0).getRank().getValue() > winners.get(1)
+                    .getWinningCardAtIndex(0).getRank().getValue()) {
                 winners.remove(1);
             }
             // If above fails, removes winner(0) from winners if it has a lower value of
             // rank of last card
-            else if (winners.get(0).getWinningCardAtIndex(4).getRank().getValue() < winners.get(1)
-                    .getWinningCardAtIndex(4).getRank().getValue()) {
+            else if (winners.get(0).getWinningCardAtIndex(0).getRank().getValue() < winners.get(1)
+                    .getWinningCardAtIndex(0).getRank().getValue()) {
                 winners.remove(0);
             }
         }

@@ -17,8 +17,8 @@
     {
       "id": "2",
       "cards": [
-        { "rank": "JACK", "suit": "HEARTS" },
-        { "rank": "QUEEN", "suit": "HEARTS" }
+        { "rank": "TWO", "suit": "SPADES" },
+        { "rank": "JACK", "suit": "HEARTS" }
       ]
     },
     {
