@@ -64,6 +64,9 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
+    // TODO:
+    // Need to fix so that a hand that is a straight, and a flush, but not a staight flush, doesn't
+    // register as striaght flush
     private static AnalysisResults checkForStraightFlush(Player player) {
         logger.debug("id: " + player.getId());
         logger.debug("size: " + player.getCards().size());
@@ -584,8 +587,17 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        if (winners.size() > 1) {
+            for (int i = 0; i < 5; i++) {
+                final int index = i;
+                int highestFlushCard = winners.stream()
+                        .mapToInt(w -> w.getWinningCardAtIndex(index).getRank().getValue()).max()
+                        .orElse(0);
+
+                winners.removeIf(w -> w.getWinningCardAtIndex(index).getRank()
+                        .getValue() < highestFlushCard);
+            }
+        }
 
         return winners;
     }
