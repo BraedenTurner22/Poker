@@ -64,25 +64,41 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    // TODO:
-    // Need to fix so that a hand that is a straight, and a flush, but not a staight flush, doesn't
-    // register as striaght flush
     private static AnalysisResults checkForStraightFlush(Player player) {
         logger.debug("id: " + player.getId());
         logger.debug("size: " + player.getCards().size());
         logger.debug("cards: " + player.getCards());
 
-        AnalysisResults flushAnalysisResults = checkForFlush(player);
 
-        if (flushAnalysisResults.handRank() == HandRank.FLUSH) {
-            AnalysisResults straightAnalysisResults = checkForStraight(player);
-            if (straightAnalysisResults.handRank() == HandRank.STRAIGHT) {
+        Map<Suit, List<Card>> suitToCardMap = createSuitToCardMap(player);
+        for (Suit suit : suitToCardMap.keySet()) {
+            List<Card> cards = suitToCardMap.get(suit);
+            if (cards.size() < 5)
+                continue;
 
-                player.setBestCards(flushAnalysisResults.bestCards());
+            if ((containsKing(cards) && containsQueen(cards) && containsJack(cards)
+                    && containsTen(cards) && containsNine(cards))
+                    || (containsQueen(cards) && containsJack(cards) && containsTen(cards)
+                            && containsNine(cards) && containsEight(cards))
+                    || (containsJack(cards) && containsTen(cards) && containsNine(cards)
+                            && containsEight(cards) && containsSeven(cards))
+                    || (containsTen(cards) && containsNine(cards) && containsEight(cards)
+                            && containsSeven(cards) && containsSix(cards))
+                    || (containsNine(cards) && containsEight(cards) && containsSeven(cards)
+                            && containsSix(cards) && containsFive(cards))
+                    || (containsEight(cards) && containsSeven(cards) && containsSix(cards)
+                            && containsFive(cards) && containsFour(cards))
+                    || (containsSeven(cards) && containsSix(cards) && containsFive(cards)
+                            && containsFour(cards) && containsThree(cards))
+                    || (containsSix(cards) && containsFive(cards) && containsFour(cards)
+                            && containsThree(cards) && containsTwo(cards))
+                    || (containsFive(cards) && containsFour(cards) && containsThree(cards)
+                            && containsTwo(cards)) && containsAce(cards)) {
+
                 player.setHandRank(HandRank.STRAIGHT_FLUSH);
                 logger.info("return HandRank.STRAIGHT_FLUSH");
                 return new AnalysisResults(player.getId(), HandRank.STRAIGHT_FLUSH,
-                        flushAnalysisResults.bestCards());
+                        player.getBestCards());
             }
         }
 
@@ -799,6 +815,78 @@ public class AnalysisEngine {
     private static boolean containsTen(List<Card> cards) {
         for (Card card : cards) {
             if (card.getRank() == Rank.TEN)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsNine(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.NINE)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsEight(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.EIGHT)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsSeven(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.SEVEN)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsSix(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.SIX)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsFive(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.FIVE)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsFour(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.FOUR)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsThree(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.THREE)
+                return true;
+        }
+        return false;
+    }
+
+    // ==========================================================================================
+    private static boolean containsTwo(List<Card> cards) {
+        for (Card card : cards) {
+            if (card.getRank() == Rank.TWO)
                 return true;
         }
         return false;
