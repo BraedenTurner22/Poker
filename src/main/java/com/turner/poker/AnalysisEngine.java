@@ -128,7 +128,7 @@ public class AnalysisEngine {
                 // Adds 4 cards that are FOAK and removes them
                 for (int j = 0; j < 4; j++) {
                     bestCards.add(playerCards.get(i));
-                    playerCards.remove(playerCards.get(i));
+                    playerCards.remove(i);
                 }
 
                 // Adds highest card that isn't part of FOAK
@@ -146,11 +146,11 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     private static AnalysisResults checkForFullHouse(Player player) {
-        List<Card> cards = player.getCards();
+        List<Card> playerCards = player.getCards();
         Map<Rank, Integer> rankCount = new HashMap<>();
 
         // Count occurrences of each rank
-        for (Card card : cards) {
+        for (Card card : playerCards) {
             rankCount.put(card.getRank(), rankCount.getOrDefault(card.getRank(), 0) + 1);
         }
 
@@ -178,14 +178,14 @@ public class AnalysisEngine {
             List<Card> bestCards = new ArrayList<>();
 
             // Add Three of a Kind cards
-            for (Card card : cards) {
+            for (Card card : playerCards) {
                 if (card.getRank() == threeOfAKindRank) {
                     bestCards.add(card);
                 }
             }
 
             // Add Pair cards
-            for (Card card : cards) {
+            for (Card card : playerCards) {
                 if (card.getRank() == pairRank) {
                     bestCards.add(card);
                 }
@@ -288,6 +288,7 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     private static AnalysisResults checkForThreeOfAKind(Player player) {
+        List<Card> playerCards = player.getCards();
         int size = player.getCards().size();
         logger.debug("id: " + player.getId());
         logger.debug("size: " + size);
@@ -300,12 +301,17 @@ public class AnalysisEngine {
             if (i == size - 2)
                 break;
 
-            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()
-                    && player.getCards().get(i).getRank() == player.getCards().get(i + 2)
-                            .getRank()) {
-                bestCards.add(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 1));
-                bestCards.add(player.getCards().get(i + 2));
+            if (playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()
+                    && playerCards.get(i).getRank() == playerCards.get(i + 2).getRank()) {
+                for (int j = 0; j < 3; j++) {
+                    bestCards.add(playerCards.get(i));
+                    playerCards.remove(i);
+                }
+
+                // Adds highest cards that aren't TOAK
+                bestCards.add(playerCards.get(0));
+                bestCards.add(playerCards.get(1));
+
                 player.setBestCards(bestCards);
                 player.setHandRank(HandRank.THREE_OF_A_KIND);
                 logger.info("return HandRank.THREE_OF_A_KIND");
@@ -318,6 +324,7 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     private static AnalysisResults checkForTwoPair(Player player) {
+        List<Card> playerCards = player.getCards();
         int size = player.getCards().size();
         logger.debug("id: " + player.getId());
         logger.debug("size: " + size);
@@ -325,19 +332,22 @@ public class AnalysisEngine {
 
         int pairCount = 0;
         List<Card> bestCards = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size - 1; i++) {
 
-            if (i == size - 1)
-                break;
-
-            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
+            if (i < playerCards.size() - 1 && // Check if we're still within bounds
+                    playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
                 pairCount++;
-                bestCards.add(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 1));
+                bestCards.add(playerCards.get(i));
+                bestCards.add(playerCards.get(i + 1));
+                // Remove these cards from consideration for the next pair
+                playerCards.remove(i);
+                playerCards.remove(i); // Note: don't increment i here since we removed elements
+                i--; // Adjust index since we removed elements
             }
         }
 
-        if (pairCount == 2) {
+        if (pairCount == 2 && !playerCards.isEmpty()) {
+            bestCards.add(playerCards.get(0));
             player.setBestCards(bestCards);
             player.setHandRank(HandRank.TWO_PAIR);
             logger.info("return HandRank.TWO_PAIR");
@@ -348,23 +358,33 @@ public class AnalysisEngine {
         return new AnalysisResults(player.getId(), HandRank.NOTHING, null);
     }
 
+
     // ==========================================================================================
+    // TODO: Figure out why is player.getCards only printing out 5 cards, not 7.
     private static AnalysisResults checkForOnePair(Player player) {
         int size = player.getCards().size();
+        List<Card> playerCards = player.getCards();
         logger.debug("id: " + player.getId());
         logger.debug("size: " + player.getCards().size());
         logger.debug("cards: " + player.getCards());
 
         List<Card> bestCards = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size - 1; i++) {
             logger.debug("cards[" + i + "].rank: " + player.getCards().get(i).getRank());
 
-            if (i == player.getCards().size() - 1)
-                break;
-
             if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
-                bestCards.add(player.getCards().get(i));
-                bestCards.add(player.getCards().get(i + 1));
+                bestCards.add(playerCards.get(i));
+                bestCards.add(playerCards.get(i + 1));
+                // Remove these cards from consideration for the next pair
+                playerCards.remove(i);
+                playerCards.remove(i);
+
+                // Add three best kickers
+                for (int j = 0; j < 3; j++) {
+                    bestCards.add(playerCards.get(0));
+                    playerCards.remove(0);
+                }
+
                 player.setBestCards(bestCards);
                 player.setHandRank(HandRank.ONE_PAIR);
                 logger.info("return HandRank.ONE_PAIR");
@@ -627,8 +647,13 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        if (winners.size() > 1) {
+            int highestFlushCard = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(
+                    w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestFlushCard);
+        }
 
         return winners;
     }
@@ -642,8 +667,26 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        if (winners.size() > 1) {
+            int highestTOAK = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestTOAK);
+
+            int highestKicker = winners.stream().mapToInt(w -> w
+                    .getWinningCardAtIndex(w.getWinningCards().size() - 2).getRank().getValue())
+                    .max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 2).getRank()
+                    .getValue() < highestKicker);
+
+            int secondHighestKicker = winners.stream().mapToInt(w -> w
+                    .getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank().getValue())
+                    .max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank()
+                    .getValue() < secondHighestKicker);
+        }
 
         return winners;
     }
@@ -657,8 +700,23 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        if (winners.size() > 1) {
+            int highestPair = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestPair);
+
+            int secondHighestPair = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(2).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(
+                    w -> w.getWinningCardAtIndex(2).getRank().getValue() < secondHighestPair);
+
+            int highestKicker = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(4).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(4).getRank().getValue() < highestKicker);
+        }
 
         return winners;
     }
@@ -672,8 +730,29 @@ public class AnalysisEngine {
                         new Winner(player.getId(), player.getHandRank(), player.getBestCards()));
         }
 
-        if (winners.size() <= 1)
-            return winners;
+        if (winners.size() > 1) {
+            int highestPair = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestPair);
+
+            int highestKicker = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(2).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(w -> w.getWinningCardAtIndex(2).getRank().getValue() < highestKicker);
+
+            int secondHighestKicker = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(3).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(
+                    w -> w.getWinningCardAtIndex(3).getRank().getValue() < secondHighestKicker);
+
+            int thirdHighestKicker = winners.stream()
+                    .mapToInt(w -> w.getWinningCardAtIndex(4).getRank().getValue()).max().orElse(0);
+
+            winners.removeIf(
+                    w -> w.getWinningCardAtIndex(4).getRank().getValue() < thirdHighestKicker);
+        }
 
         return winners;
     }
