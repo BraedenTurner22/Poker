@@ -334,15 +334,15 @@ public class AnalysisEngine {
         List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size - 1; i++) {
 
-            if (i < playerCards.size() - 1 && // Check if we're still within bounds
-                    playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
+            if (i < playerCards.size() - 1
+                    && playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
                 pairCount++;
                 bestCards.add(playerCards.get(i));
                 bestCards.add(playerCards.get(i + 1));
                 // Remove these cards from consideration for the next pair
                 playerCards.remove(i);
-                playerCards.remove(i); // Note: don't increment i here since we removed elements
-                i--; // Adjust index since we removed elements
+                playerCards.remove(i);
+                i--;
             }
         }
 
@@ -370,9 +370,9 @@ public class AnalysisEngine {
 
         List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size - 1; i++) {
-            logger.debug("cards[" + i + "].rank: " + player.getCards().get(i).getRank());
+            logger.debug("cards[" + i + "].rank: " + playerCards.get(i).getRank());
 
-            if (player.getCards().get(i).getRank() == player.getCards().get(i + 1).getRank()) {
+            if (playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
                 bestCards.add(playerCards.get(i));
                 bestCards.add(playerCards.get(i + 1));
                 // Remove these cards from consideration for the next pair
