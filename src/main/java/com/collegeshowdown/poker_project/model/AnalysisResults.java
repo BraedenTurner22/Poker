@@ -1,4 +1,4 @@
-package com.turner.poker;
+package com.collegeshowdown.poker_project.model;
 
 import java.util.List;
 

@@ -1,8 +1,9 @@
-package com.turner.poker;
+package com.collegeshowdown.poker_project;
 
 import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.collegeshowdown.poker_project.model.Game;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ForcedCardsTestDriver {

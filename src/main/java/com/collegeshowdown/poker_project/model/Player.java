@@ -1,14 +1,25 @@
-package com.turner.poker;
+package com.collegeshowdown.poker_project.model;
 
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import java.io.Serializable;
 
-public class Player {
+@Entity
+public class Player implements Serializable {
     private final static Logger logger = LoggerFactory.getLogger(Player.class);
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
+    private String name;
+    private String email;
+    private String university;
+    private String imageURL;
     private List<Card> cards;
     private List<Card> bestCards;
     private HandRank handRank;
@@ -19,6 +30,38 @@ public class Player {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getUniversity() {
+        return university;
+    }
+
+    public void setUniversity(String university) {
+        this.university = university;
+    }
+
+    public String getImageURL() {
+        return imageURL;
+    }
+
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
     }
 
     public List<Card> getCards() {
