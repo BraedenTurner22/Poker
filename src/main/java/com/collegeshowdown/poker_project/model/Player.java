@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +16,7 @@ public class Player implements Serializable {
     private final static Logger logger = LoggerFactory.getLogger(Player.class);
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false, updatable = false, unique = true)
     private String id;
     private String name;
     private String email;
@@ -23,6 +25,20 @@ public class Player implements Serializable {
     private List<Card> cards;
     private List<Card> bestCards;
     private HandRank handRank;
+
+    public Player() {}
+
+    public Player(String id, String name, String email, String university, String imageURL,
+            List<Card> cards, List<Card> bestCards, HandRank handRank) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.university = university;
+        this.imageURL = imageURL;
+        this.cards = cards;
+        this.bestCards = bestCards;
+        this.handRank = handRank;
+    }
 
     public String getId() {
         return id;
@@ -99,10 +115,6 @@ public class Player implements Serializable {
         this.bestCards = bestCards;
     }
 
-    public void sortCardsHighToLow() {
-        Collections.sort(this.bestCards);
-        Collections.reverse(this.bestCards);
-    }
 
     public HandRank getHandRank() {
         return handRank;
@@ -112,13 +124,25 @@ public class Player implements Serializable {
         this.handRank = handRank;
     }
 
+    public void sortCardsHighToLow() {
+        Collections.sort(this.bestCards);
+        Collections.reverse(this.bestCards);
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
-        stringBuilder.append("Player...");
-        stringBuilder.append("\n...id: " + id);
-        stringBuilder.append("\n...cards: " + cards);
+        stringBuilder.append("Employee{");
+        stringBuilder.append("\nid = " + id);
+        stringBuilder.append("\nname = " + name);
+        stringBuilder.append("\nemail = " + email);
+        stringBuilder.append("\nuniversity = " + university);
+        stringBuilder.append("\nimageURL = " + imageURL);
+        stringBuilder.append("\ncards = " + cards);
+        stringBuilder.append("\nbestCards = " + bestCards);
+        stringBuilder.append("\nhandRank = " + handRank);
+        stringBuilder.append("\n}");
         return stringBuilder.toString();
     }
 }
