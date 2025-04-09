@@ -1,71 +1,55 @@
 import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { PhaserGame } from '../game/phaser-game.component';
-import { MainMenu } from '../game/scenes/MainMenu';
+import { PokerGameComponent } from '../components/game/poker-game/poker-game.component';
+import { MainMenuComponent } from '../components/main-menu/main-menu.component';
 import { CommonModule } from '@angular/common';
-import { EventBus } from '../game/EventBus';
+import { EventBus } from '../components/game/EventBus';
 
 @Component({
     selector: 'app-root',
     standalone: true,
-    imports: [CommonModule, RouterOutlet, PhaserGame],
-    templateUrl: './app.component.html'
+    imports: [
+        CommonModule,
+        RouterOutlet,
+        PokerGameComponent,
+        MainMenuComponent,
+    ],
+    templateUrl: './app.component.html',
 })
-export class AppComponent implements AfterViewInit
-{
-
+export class AppComponent implements AfterViewInit {
     public spritePosition = { x: 0, y: 0 };
     public canMoveSprite = false;
 
     // This is a reference from the PhaserGame component
-    @ViewChild(PhaserGame) phaserRef!: PhaserGame;
+    @ViewChild(PokerGameComponent) phaserRef!: PokerGameComponent;
 
-    ngAfterViewInit()
-    {
+    ngAfterViewInit() {
         EventBus.on('current-scene-ready', (scene: Phaser.Scene) => {
             this.canMoveSprite = scene.scene.key !== 'MainMenu';
         });
     }
 
     // These methods are called from the template
-    public changeScene()
-    {
-
-        if (this.phaserRef.scene)
-        {
-
+    public changeScene() {
+        if (this.phaserRef.scene) {
             const scene = this.phaserRef.scene as MainMenu;
             scene.changeScene();
-
         }
-
     }
 
-    public moveSprite()
-    {
-
-        if (this.phaserRef.scene)
-        {
-
+    public moveSprite() {
+        if (this.phaserRef.scene) {
             const scene = this.phaserRef.scene as MainMenu;
 
             // Get the update logo position
             scene.moveLogo(({ x, y }) => {
-
                 this.spritePosition = { x, y };
-
             });
-
         }
-
     }
 
-    public addSprite()
-    {
-
-        if (this.phaserRef.scene)
-        {
-
+    public addSprite() {
+        if (this.phaserRef.scene) {
             const scene = this.phaserRef.scene;
             // Add more stars
             const x = Phaser.Math.Between(64, scene.scale.width - 64);
@@ -82,11 +66,8 @@ export class AppComponent implements AfterViewInit
                 duration: 500 + Math.random() * 1000,
                 alpha: 0,
                 yoyo: true,
-                repeat: -1
+                repeat: -1,
             });
-
         }
-
     }
-
 }
