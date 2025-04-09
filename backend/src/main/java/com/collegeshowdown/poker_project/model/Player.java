@@ -14,9 +14,9 @@ import java.io.Serializable;
 @Entity
 public class Player implements Serializable {
     private final static Logger logger = LoggerFactory.getLogger(Player.class);
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false, unique = true)
-    @Id
     private int id;
     private String name;
     private String email;
@@ -25,11 +25,13 @@ public class Player implements Serializable {
     private List<Card> cards;
     private List<Card> bestCards;
     private HandRank handRank;
+    private boolean isSmallBlind;
+    private boolean isBigBlind;
 
     public Player() {}
 
     public Player(int id, String name, String email, String university, String imageURL,
-            List<Card> cards, List<Card> bestCards, HandRank handRank) {
+            List<Card> cards, List<Card> bestCards, HandRank handRank, boolean isSmallBlind, boolean isBigBlind) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -38,6 +40,8 @@ public class Player implements Serializable {
         this.cards = cards;
         this.bestCards = bestCards;
         this.handRank = handRank;
+        this.isSmallBlind = isSmallBlind;
+        this.isBigBlind = isBigBlind;
     }
 
     public int getId() {
@@ -130,6 +134,21 @@ public class Player implements Serializable {
         this.handRank = handRank;
     }
 
+    public boolean getSmallBlindStatus() {
+        return isSmallBlind;
+    }
+
+    public void setSmallBlindStatus(boolean smallBlindStatus) {
+        this.isSmallBlind = smallBlindStatus;
+    }    
+
+    public boolean getBigBlindStatus() {
+        return isBigBlind; 
+    }
+
+    public void setBigBlindStatus(boolean bigBlindStatus) {
+        this.isBigBlind = bigBlindStatus;
+    }    
     public void sortCardsHighToLow() {
         Collections.sort(this.bestCards);
         Collections.reverse(this.bestCards);
