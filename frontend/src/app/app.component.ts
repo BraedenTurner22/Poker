@@ -32,7 +32,7 @@ export class AppComponent implements AfterViewInit {
     // These methods are called from the template
     public changeScene() {
         if (this.phaserRef.scene) {
-            const scene = this.phaserRef.scene as MainMenu;
+            const scene = this.phaserRef.scene as MainMenuComponent;
             scene.changeScene();
         }
     }
