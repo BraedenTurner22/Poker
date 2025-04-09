@@ -6,3 +6,5 @@ wrapper
 ### Target/Logs ###
 target
 logs
+
+.DS_Store
