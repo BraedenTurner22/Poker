@@ -14,10 +14,10 @@ import java.io.Serializable;
 @Entity
 public class Player implements Serializable {
     private final static Logger logger = LoggerFactory.getLogger(Player.class);
-    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false, unique = true)
-    private String id;
+    @Id
+    private int id;
     private String name;
     private String email;
     private String university;
@@ -28,7 +28,7 @@ public class Player implements Serializable {
 
     public Player() {}
 
-    public Player(String id, String name, String email, String university, String imageURL,
+    public Player(int id, String name, String email, String university, String imageURL,
             List<Card> cards, List<Card> bestCards, HandRank handRank) {
         this.id = id;
         this.name = name;
@@ -40,7 +40,7 @@ public class Player implements Serializable {
         this.handRank = handRank;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 

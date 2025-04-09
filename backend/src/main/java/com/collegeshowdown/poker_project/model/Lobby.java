@@ -1,29 +1,43 @@
 package com.collegeshowdown.poker_project.model;
 
+import java.util.Collections;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import java.io.Serializable;
+
 import java.util.List;
 
-public class Game {
-    // private Deck deck;
+public class Lobby {
+    @Id
+    private int id;
+    private Deck deck;
     private List<Card> board;
     private List<Player> players;
     // private AnalysisEngine analysisEngine;
-    private static Game instance;
+    private static Lobby instance;
 
-    public Game() {
+    public Lobby() {
         instance = this;
     }
 
-    public static Game getInstance() {
+    public static Lobby getInstance() {
         return instance;
     }
 
-    // public Deck getDeck() {
-    // return deck;
-    // }
+    public Deck getDeck() {
+    return deck;
+    }
 
-    // public void setDeck(Deck deck) {
-    // this.deck = deck;
-    // }
+    public void setDeck(Deck deck) {
+    this.deck = deck;
+    }
+
 
     public List<Card> getBoard() {
         return board;
