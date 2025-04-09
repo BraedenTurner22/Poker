@@ -1,0 +1,32 @@
+{
+  "board": [
+    { "rank": "TWO", "suit": "DIAMONDS" },
+    { "rank": "THREE", "suit": "DIAMONDS" },
+    { "rank": "FOUR", "suit": "DIAMONDS" },
+    { "rank": "FIVE", "suit": "DIAMONDS" },
+    { "rank": "SIX", "suit": "DIAMONDS" }
+  ],
+  "players": [
+    {
+      "id": "1",
+      "cards": [
+        { "rank": "TWO", "suit": "SPADES" },
+        { "rank": "THREE", "suit": "DIAMONDS" }
+      ]
+    },
+    {
+      "id": "2",
+      "cards": [
+        { "rank": "JACK", "suit": "HEARTS" },
+        { "rank": "QUEEN", "suit": "HEARTS" }
+      ]
+    },
+    {
+      "id": "3",
+      "cards": [
+        { "rank": "JACK", "suit": "SPADES" },
+        { "rank": "QUEEN", "suit": "SPADES" }
+      ]
+    }
+  ]
+}
