@@ -44,7 +44,7 @@ public class Player implements Serializable {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -85,26 +85,32 @@ public class Player implements Serializable {
     }
 
     public void setCards(List<Card> cards) {
-        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
-        this.cards = cards;
-
-        // if (cards.size() == 7) {
-        this.cards.addAll(Game.getInstance().getBoard());
-        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
-
-        Collections.sort(cards, (card1, card2) -> Integer.compare(card1.getRank().getValue(),
-                card2.getRank().getValue()));
-        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
-        Collections.reverse(cards);
-        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
-        AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
-        logger.info("analysisResults: " + analysisResults);
-        setHandRank(analysisResults.handRank());
-        setBestCards(analysisResults.bestCards());
-        // }
-
-        logger.info(">>>>>>>>>>>>>>>>>>> setCards: " + cards);
-
+        logger.info("Setting cards for player {}: {}", this.name, cards);
+        this.cards = new ArrayList<>(cards);  // Create a defensive copy
+        
+        // Only add board cards if we don't already have 7 cards
+        if (cards.size() < 7 && Game.getInstance() != null && Game.getInstance().getBoard() != null) {
+            List<Card> boardCards = Game.getInstance().getBoard();
+            for (Card boardCard : boardCards) {
+                if (!this.cards.contains(boardCard)) {
+                    this.cards.add(boardCard);
+                }
+            }
+        }
+        
+        // Sort cards by rank (highest to lowest)
+        Collections.sort(this.cards, (card1, card2) -> 
+                Integer.compare(card2.getRank().getValue(), card1.getRank().getValue()));
+        
+        // Analyze the hand
+        if (this.cards.size() >= 5) {
+            AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
+            logger.info("Analysis results for player {}: {}", this.name, analysisResults);
+            setHandRank(analysisResults.handRank());
+            setBestCards(analysisResults.bestCards());
+        } else {
+            logger.warn("Not enough cards to analyze hand for player {}", this.name);
+        }
     }
 
     public List<Card> getBestCards() {
@@ -133,7 +139,7 @@ public class Player implements Serializable {
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("\n");
-        stringBuilder.append("Employee{");
+        stringBuilder.append("Player{");
         stringBuilder.append("\nid = " + id);
         stringBuilder.append("\nname = " + name);
         stringBuilder.append("\nemail = " + email);
