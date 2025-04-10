@@ -30,18 +30,12 @@ public class Player implements Serializable {
 
     public Player() {}
 
-    public Player(int id, String name, String email, String university, String imageURL,
-            List<Card> cards, List<Card> bestCards, HandRank handRank, boolean isSmallBlind, boolean isBigBlind) {
+    public Player(int id, String name, String email, String university, String imageURL) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.university = university;
         this.imageURL = imageURL;
-        this.cards = cards;
-        this.bestCards = bestCards;
-        this.handRank = handRank;
-        this.isSmallBlind = isSmallBlind;
-        this.isBigBlind = isBigBlind;
     }
 
     public int getId() {
