@@ -8,6 +8,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.collegeshowdown.poker_project.runtime.Card;
+
 public class AnalysisEngine {
     private final static Logger logger = LoggerFactory.getLogger(AnalysisEngine.class);
 

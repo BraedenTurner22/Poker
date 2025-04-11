@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.collegeshowdown.poker_project.model.Player;
 import com.collegeshowdown.poker_project.model.Winner;
+import com.collegeshowdown.poker_project.runtime.ConnectedPlayer;
 import com.collegeshowdown.poker_project.runtime.Lobby;
 
 import java.util.ArrayList;

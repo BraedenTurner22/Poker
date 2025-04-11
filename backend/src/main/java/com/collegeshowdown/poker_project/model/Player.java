@@ -4,12 +4,17 @@ import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.collegeshowdown.poker_project.runtime.Card;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.beans.Transient;
+import jakarta.persistence.Transient;
+
+import java.util.ArrayList;
 import java.io.Serializable;
 
 @Entity

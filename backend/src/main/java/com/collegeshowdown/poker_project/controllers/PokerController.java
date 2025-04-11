@@ -13,8 +13,8 @@ import java.util.Optional;
 import com.collegeshowdown.poker_project.model.Game;
 import com.collegeshowdown.poker_project.model.Player;
 import com.collegeshowdown.poker_project.model.Winner;
-import com.collegeshowdown.poker_project.service.GameService;
-import com.collegeshowdown.poker_project.repository.PlayerRepository;
+import com.collegeshowdown.poker_project.services.GameService;
+import com.collegeshowdown.poker_project.repositories.PlayerRepository;
 
 @RestController
 @RequestMapping("/api/poker")

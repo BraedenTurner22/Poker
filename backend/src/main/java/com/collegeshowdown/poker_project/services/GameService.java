@@ -9,7 +9,6 @@ import com.collegeshowdown.poker_project.model.Game;
 import com.collegeshowdown.poker_project.model.Player;
 import com.collegeshowdown.poker_project.repositories.GameRepository;
 import com.collegeshowdown.poker_project.repositories.PlayerRepository;
-import com.collegeshowdown.poker_project.runtime.Lobby;
 
 import jakarta.annotation.PostConstruct;
 
@@ -18,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Collection;
 
 @Service
 public class GameService {

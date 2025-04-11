@@ -2,6 +2,8 @@ package com.collegeshowdown.poker_project.model;
 
 import java.util.List;
 
+import com.collegeshowdown.poker_project.runtime.Card;
+
 public class Winner {
     private int id;
     private HandRank handRank;
