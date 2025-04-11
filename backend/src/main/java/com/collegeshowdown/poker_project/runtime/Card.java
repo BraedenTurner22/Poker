@@ -1,4 +1,7 @@
-package com.collegeshowdown.poker_project.model;
+package com.collegeshowdown.poker_project.runtime;
+
+import com.collegeshowdown.poker_project.model.Rank;
+import com.collegeshowdown.poker_project.model.Suit;
 
 public class Card implements Comparable<Card> {
     private Rank rank;
