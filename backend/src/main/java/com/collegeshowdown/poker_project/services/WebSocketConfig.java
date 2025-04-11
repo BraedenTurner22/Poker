@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.config;
+package com.collegeshowdown.poker_project.services;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

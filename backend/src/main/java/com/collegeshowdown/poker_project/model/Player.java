@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 @Entity
 public class Player implements Serializable {
@@ -28,7 +29,8 @@ public class Player implements Serializable {
     private boolean isSmallBlind;
     private boolean isBigBlind;
 
-    public Player() {}
+    public Player() {
+    }
 
     public Player(int id, String name, String email, String university, String imageURL) {
         this.id = id;
@@ -84,8 +86,8 @@ public class Player implements Serializable {
 
     public void setCards(List<Card> cards) {
         logger.info("Setting cards for player {}: {}", this.name, cards);
-        this.cards = new ArrayList<>(cards);  // Create a defensive copy
-        
+        this.cards = new ArrayList<>(cards); // Create a defensive copy
+
         // Only add board cards if we don't already have 7 cards
         if (cards.size() < 7 && Game.getInstance() != null && Game.getInstance().getBoard() != null) {
             List<Card> boardCards = Game.getInstance().getBoard();
@@ -95,11 +97,11 @@ public class Player implements Serializable {
                 }
             }
         }
-        
+
         // Sort cards by rank (highest to lowest)
-        Collections.sort(this.cards, (card1, card2) -> 
-                Integer.compare(card2.getRank().getValue(), card1.getRank().getValue()));
-        
+        Collections.sort(this.cards,
+                (card1, card2) -> Integer.compare(card2.getRank().getValue(), card1.getRank().getValue()));
+
         // Analyze the hand
         if (this.cards.size() >= 5) {
             AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
@@ -119,7 +121,6 @@ public class Player implements Serializable {
         this.bestCards = bestCards;
     }
 
-
     public HandRank getHandRank() {
         return handRank;
     }
@@ -134,15 +135,16 @@ public class Player implements Serializable {
 
     public void setSmallBlindStatus(boolean smallBlindStatus) {
         this.isSmallBlind = smallBlindStatus;
-    }    
+    }
 
     public boolean getBigBlindStatus() {
-        return isBigBlind; 
+        return isBigBlind;
     }
 
     public void setBigBlindStatus(boolean bigBlindStatus) {
         this.isBigBlind = bigBlindStatus;
-    }    
+    }
+
     public void sortCardsHighToLow() {
         Collections.sort(this.bestCards);
         Collections.reverse(this.bestCards);

@@ -41,9 +41,11 @@ public class Lobby implements Serializable {
     private Deque<Player> queuedPlayers;
     private Player activePlayers[] = new Player[TABLE_SIZE]; // the table
 
-    public Lobby() {}
+    public Lobby() {
+    }
 
-    public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode, String lobbyInfo) {
+    public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
+            String lobbyInfo) {
         this.lobbyType = lobbyType;
         this.associatedSchool = associatedSchool;
         this.customLobbyOptions = customLobbyOptions;
@@ -56,7 +58,8 @@ public class Lobby implements Serializable {
     }
 
     public boolean fillLobby(int num_to_insert) {
-        // fill table with <num> players. fails if no players could be inserted OR if table is full (check logs for more).
+        // fill table with <num> players. fails if no players could be inserted OR if
+        // table is full (check logs for more).
         // TODO: insert custom return value with more info??
 
         int tableCount = tableCount();
@@ -75,12 +78,13 @@ public class Lobby implements Serializable {
             Player p;
             try {
                 p = queuedPlayers.pop();
-            } catch(NoSuchElementException e) {
+            } catch (NoSuchElementException e) {
                 logger.warn("No queued players to pop for lobby" + id + "!");
                 return insertionCount > 0 ? true : false;
             }
 
-            // we know there is at least one empty slot; find as many as possible and put all the players in.
+            // we know there is at least one empty slot; find as many as possible and put
+            // all the players in.
 
             for (int i = 0; i < TABLE_SIZE; i++) {
                 if (activePlayers[i] == null) {
@@ -99,7 +103,8 @@ public class Lobby implements Serializable {
         // number of players in the table
         int count = 0;
         for (Player p : activePlayers) {
-            if (p != null) count++;
+            if (p != null)
+                count++;
         }
 
         return count;

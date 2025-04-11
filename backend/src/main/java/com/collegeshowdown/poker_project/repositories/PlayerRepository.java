@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.repository;
+package com.collegeshowdown.poker_project.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,13 +12,13 @@ import java.util.Optional;
 public interface PlayerRepository extends JpaRepository<Player, Integer> {
     // Find a player by ID
     Optional<Player> findById(int id);
-    
+
     // Find players by name
     Optional<Player> findByName(String name);
-    
+
     // Find players by university
     List<Player> findByUniversity(String university);
-    
+
     // Find players by email
     Optional<Player> findByEmail(String email);
 }
