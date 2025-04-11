@@ -14,10 +14,8 @@ target/
 .springBeans
 .sts4-cache
 
-### Node/MVN ###
-node_modules
-.mvn/wrapper
-wrapper
+### MVN (Technically not needed, Maven is installed) ###
+.mvn
 
 ### Target/Logs ###
 target

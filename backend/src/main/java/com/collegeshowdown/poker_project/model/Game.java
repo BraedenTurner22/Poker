@@ -250,6 +250,10 @@ public class Game implements Serializable {
     public void setPlayers(List<Player> players) {
         this.players = players;
     }
+
+    public void addPlayer(Player player) {
+        if 
+    }
     
     public List<Winner> getWinners() {
         return winners;
