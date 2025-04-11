@@ -5,6 +5,7 @@
 - Ensure all pieces come together
 - IDs - String or int? (prob int but String might be the move; it depends)
 - Expand this list
+- **SPLIT UP RUNTIME AND MODEL!!**
 
 # FRONTEND
 
