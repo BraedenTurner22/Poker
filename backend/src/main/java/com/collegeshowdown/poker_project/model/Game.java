@@ -23,14 +23,10 @@ import java.io.Serializable;
 /**
  * Represents an active poker game with players, a deck, and a board.
  */
-@Entity
 public class Game implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(Game.class);
     private static Game instance;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "game_id", nullable = false, updatable = false, unique = true)
     private int id;
 
     private String name;
@@ -38,19 +34,14 @@ public class Game implements Serializable {
     private int bigBlind;
     private int currentPot;
 
-    @Transient // Don't persist deck to database
     private Deck deck;
 
-    @Transient // We'll handle board separately
     private List<Card> board;
 
-    @OneToMany(cascade = CascadeType.ALL)
     private List<Player> players;
 
-    @Transient // Don't persist winners to database
     private List<Winner> winners;
 
-    @Transient // Don't persist currentPlayer to database
     private int currentPlayerIndex;
 
     /**
@@ -258,12 +249,11 @@ public class Game implements Serializable {
     public void addPlayer(Player player) {
         if (this.players.size() > 8) {
             logger.info("Cannot add player, lobby is full");
+        } else  {
+            this.players.add(player);
         }
-        else ()
-    }
 
-    public List<Winner> getWinners() {
-        return winners;
+        return;
     }
 
     public void setWinners(List<Winner> winners) {
