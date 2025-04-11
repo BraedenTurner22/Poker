@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.collegeshowdown.poker_project.model.Game;
-import com.collegeshowdown.poker_project.model.Lobby;
 import com.collegeshowdown.poker_project.model.Player;
 import com.collegeshowdown.poker_project.repositories.GameRepository;
 import com.collegeshowdown.poker_project.repositories.PlayerRepository;
+import com.collegeshowdown.poker_project.runtime.Lobby;
 
 import jakarta.annotation.PostConstruct;
 
