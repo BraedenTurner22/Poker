@@ -29,7 +29,7 @@ public class LobbyController {
     public ResponseEntity<Map<String, Object>> getLobbyStatus() {
         Map<String, Object> response = new HashMap<>();
         response.put("board", lobby.getBoard());
-        response.put("players", lobby.getPlayers());
+        response.put("queue", lobby.getQueue());
         return ResponseEntity.ok(response);
     }
 
@@ -40,16 +40,11 @@ public class LobbyController {
      * @return A confirmation message.
      */
     @PostMapping("/join")
-    public ResponseEntity<Map<String, String>> joinLobby(@RequestBody Player player) {
-        List<Player> players = lobby.getPlayers();
-        if (players == null) {
-            players = new ArrayList<>();
-            lobby.setPlayers(players);
-        }
-        players.add(player);
+    public ResponseEntity<Map<String, String>> joinLobby(@RequestBody ConnectedPlayer player) {
+        lobby.addPlayerToQueue(player);
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Player " + player.getName() + " joined the lobby.");
+        response.put("message", "Player " + player.player.getName() + " joined the lobby.");
         return ResponseEntity.ok(response);
     }
 
