@@ -67,7 +67,6 @@ public class Game implements Serializable {
 
     /**
      * Get the singleton instance of the Game.
-     * 
      * @return The game instance
      */
     public static Game getInstance() {
@@ -187,7 +186,7 @@ public class Game implements Serializable {
 
     /**
      * Process a bet from a player.
-     * 
+     *
      * @param playerId The ID of the player making the bet
      * @param amount   The bet amount
      * @return A message describing the result of the bet
@@ -309,7 +308,6 @@ public class Game implements Serializable {
 
     /**
      * Move to the next player.
-     * 
      * @return The next player
      */
     public Player nextPlayer() {

@@ -22,10 +22,10 @@ import com.collegeshowdown.poker_project.repository.PlayerRepository;
 public class PokerController {
     @Autowired
     private GameService gameService;
-    
+
     @Autowired
     private PlayerRepository playerRepository;
-    
+
     /**
      * Get all active games
      * @return List of games
@@ -34,7 +34,7 @@ public class PokerController {
     public ResponseEntity<List<Game>> getAllGames() {
         return ResponseEntity.ok(gameService.getAllGames());
     }
-    
+
     /**
      * Create a new game
      * @param payload The game details
@@ -46,7 +46,7 @@ public class PokerController {
         Game game = gameService.createGame(gameName);
         return ResponseEntity.status(HttpStatus.CREATED).body(game);
     }
-    
+
     /**
      * Get a specific game by ID
      * @param gameId The game ID
@@ -60,7 +60,7 @@ public class PokerController {
         }
         return ResponseEntity.ok(game);
     }
-    
+
     /**
      * Add a player to a game
      * @param gameId The game ID
@@ -75,7 +75,7 @@ public class PokerController {
         }
         return ResponseEntity.ok(game);
     }
-    
+
     /**
      * Start a game
      * @param gameId The game ID
@@ -89,7 +89,7 @@ public class PokerController {
         }
         return ResponseEntity.ok(game);
     }
-    
+
     /**
      * Place a bet
      * @param gameId The game ID
@@ -98,19 +98,19 @@ public class PokerController {
      */
     @PostMapping("/games/{gameId}/bet")
     public ResponseEntity<Map<String, String>> placeBet(
-            @PathVariable String gameId, 
+            @PathVariable String gameId,
             @RequestBody Map<String, Object> payload) {
-        
+
         String username = (String) payload.get("username");
         Double betAmount = Double.parseDouble(payload.get("betAmount").toString());
-        
+
         String result = gameService.processBet(gameId, username, betAmount);
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", result);
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Fold
      * @param gameId The game ID
@@ -119,18 +119,18 @@ public class PokerController {
      */
     @PostMapping("/games/{gameId}/fold")
     public ResponseEntity<Map<String, String>> fold(
-            @PathVariable String gameId, 
+            @PathVariable String gameId,
             @RequestBody Map<String, Object> payload) {
-        
+
         String username = (String) payload.get("username");
-        
+
         String result = gameService.processFold(gameId, username);
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", result);
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Check
      * @param gameId The game ID
@@ -139,18 +139,18 @@ public class PokerController {
      */
     @PostMapping("/games/{gameId}/check")
     public ResponseEntity<Map<String, String>> check(
-            @PathVariable String gameId, 
+            @PathVariable String gameId,
             @RequestBody Map<String, Object> payload) {
-        
+
         String username = (String) payload.get("username");
-        
+
         String result = gameService.processCheck(gameId, username);
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", result);
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Call
      * @param gameId The game ID
@@ -159,18 +159,18 @@ public class PokerController {
      */
     @PostMapping("/games/{gameId}/call")
     public ResponseEntity<Map<String, String>> call(
-            @PathVariable String gameId, 
+            @PathVariable String gameId,
             @RequestBody Map<String, Object> payload) {
-        
+
         String username = (String) payload.get("username");
-        
+
         String result = gameService.processCall(gameId, username);
-        
+
         Map<String, String> response = new HashMap<>();
         response.put("message", result);
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * Get the winners of a game
      * @param gameId The game ID
@@ -184,7 +184,7 @@ public class PokerController {
         }
         return ResponseEntity.ok(game.getWinners());
     }
-    
+
     /**
      * Get all players
      * @return List of players
@@ -193,7 +193,7 @@ public class PokerController {
     public ResponseEntity<List<Player>> getAllPlayers() {
         return ResponseEntity.ok(playerRepository.findAll());
     }
-    
+
     /**
      * Get a player by ID
      * @param playerId The player ID
@@ -205,7 +205,7 @@ public class PokerController {
         return player.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
-    
+
     /**
      * Create or update a player
      * @param player The player details
