@@ -32,6 +32,16 @@ public class Lobby {
     private Deque<ConnectedPlayer> queuedPlayers;
     private ConnectedPlayer activePlayers[] = new ConnectedPlayer[TABLE_SIZE]; // the table
 
+    public Lobby() {}
+
+    public ConnectedPlayer[] getBoard() {
+        return activePlayers;
+    }
+
+    public ArrayList<ConnectedPlayer> getQueue() {
+        return new ArrayList<>(queuedPlayers);
+    }
+
     public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
             String lobbyInfo) {
         this.lobbyType = lobbyType;
@@ -97,4 +107,8 @@ public class Lobby {
 
         return count;
     }
+
+    public boolean play() { return true; } // TODO: implement lol
+
+    public ArrayList<Winner> getWinners() { return new ArrayList<>(); }
 }
