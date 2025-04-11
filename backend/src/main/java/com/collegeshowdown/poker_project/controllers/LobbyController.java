@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.controller;
+package com.collegeshowdown.poker_project.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
