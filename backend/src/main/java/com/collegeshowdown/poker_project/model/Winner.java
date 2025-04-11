@@ -3,11 +3,11 @@ package com.collegeshowdown.poker_project.model;
 import java.util.List;
 
 public class Winner {
-    private String id;
+    private int id;
     private HandRank handRank;
     private List<Card> winningCards;
 
-    public Winner(String id, HandRank handRank, List<Card> winningCards) {
+    public Winner(int id, HandRank handRank, List<Card> winningCards) {
         this.id = id;
         this.handRank = handRank;
         this.winningCards = winningCards;

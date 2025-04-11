@@ -459,7 +459,7 @@ public class AnalysisEngine {
 
     // ==========================================================================================
     private static Map<HandRank, List<String>> getHandRankToPlayerIdMap(List<Player> players) {
-        Map<HandRank, List<String>> handRankToPlayerIdMap = new LinkedHashMap<>();
+        Map<HandRank, List<Integer>> handRankToPlayerIdMap = new LinkedHashMap<>();
 
         for (HandRank handRank : HandRank.values())
             handRankToPlayerIdMap.put(handRank, new ArrayList<>());
