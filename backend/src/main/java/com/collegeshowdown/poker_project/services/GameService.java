@@ -40,6 +40,10 @@ public class GameService {
         activeGames.put("default", defaultGame);
     }
 
+    public List<Game> getAllGames() {
+        return new ArrayList<Game>(activeGames.values());
+    }
+
     /**
      * Get a game by ID
      * @param gameId The game ID
