@@ -2,18 +2,10 @@ package com.collegeshowdown.poker_project.runtime;
 
 import java.util.NoSuchElementException;
 import java.util.UUID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.collegeshowdown.poker_project.model.Player;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import java.util.Deque;
-import java.util.UUID;
 
 // NON PERSISTENT !!!!!!
 public class Lobby {
@@ -32,11 +24,10 @@ public class Lobby {
     private LobbyType lobbyType;
     private String associatedSchool; // make this a custom type later; we discuss.
     private Object customLobbyOptions; // define later what these may be.
-
     private String customLobbyCode;
     private String lobbyInfo;
-    private Deque<Player> queuedPlayers;
-    private Player activePlayers[] = new Player[TABLE_SIZE]; // the table
+    private Deque<ConnectedPlayer> queuedPlayers;
+    private ConnectedPlayer activePlayers[] = new ConnectedPlayer[TABLE_SIZE]; // the table
 
     public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
             String lobbyInfo) {
@@ -47,7 +38,7 @@ public class Lobby {
         this.lobbyInfo = lobbyInfo;
     }
 
-    public void addPlayerToQueue(Player player) {
+    public void addPlayerToQueue(ConnectedPlayer player) {
         queuedPlayers.push(player);
     }
 
@@ -69,7 +60,7 @@ public class Lobby {
         int insertionCount = 0;
 
         while (tableCount < TABLE_SIZE && insertionCount < num_to_insert) {
-            Player p;
+            ConnectedPlayer p;
             try {
                 p = queuedPlayers.pop();
             } catch (NoSuchElementException e) {
@@ -96,7 +87,7 @@ public class Lobby {
     private int tableCount() {
         // number of players in the table
         int count = 0;
-        for (Player p : activePlayers) {
+        for (ConnectedPlayer p : activePlayers) {
             if (p != null)
                 count++;
         }
