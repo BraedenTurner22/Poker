@@ -1,22 +1,22 @@
-package com.collegeshowdown.poker_project.model;
+package com.collegeshowdown.poker_project.runtime;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.collegeshowdown.poker_project.model.Player;
+
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Deque;
+import java.util.UUID;
 
-@Entity
-public class Lobby implements Serializable {
+// NON PERSISTENT !!!!!!
+public class Lobby {
     public static final int TABLE_SIZE = 8;
 
     enum LobbyType {
@@ -27,10 +27,7 @@ public class Lobby implements Serializable {
 
     private final static Logger logger = LoggerFactory.getLogger(Player.class);
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false, unique = true)
-    private int id;
+    private String id = UUID.randomUUID().toString();
 
     private LobbyType lobbyType;
     private String associatedSchool; // make this a custom type later; we discuss.
@@ -40,9 +37,6 @@ public class Lobby implements Serializable {
     private String lobbyInfo;
     private Deque<Player> queuedPlayers;
     private Player activePlayers[] = new Player[TABLE_SIZE]; // the table
-
-    public Lobby() {
-    }
 
     public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
             String lobbyInfo) {
