@@ -460,7 +460,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static Map<HandRank, List<String>> getHandRankToPlayerIdMap(List<Player> players) {
+    private static Map<HandRank, List<Integer>> getHandRankToPlayerIdMap(List<Player> players) {
         Map<HandRank, List<Integer>> handRankToPlayerIdMap = new LinkedHashMap<>();
 
         for (HandRank handRank : HandRank.values())
@@ -807,7 +807,7 @@ public class AnalysisEngine {
     // ==========================================================================================
     public static List<Winner> getWinners(List<Player> players) {
 
-        Map<HandRank, List<String>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
+        Map<HandRank, List<Integer>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(players);
         logger.info("\nhandRankToPlayerIdMap: " + handRankToPlayerIdMap);
 
         List<Winner> winners = new ArrayList<>();
