@@ -3,7 +3,7 @@ package com.collegeshowdown.poker_project;
 import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.collegeshowdown.poker_project.model.Game;
+import com.collegeshowdown.poker_project.runtime.Lobby;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ForcedCardsTestDriver {
@@ -20,11 +20,11 @@ public class ForcedCardsTestDriver {
 
         try {
             String file = "src/test/resources/" + args[0];
-            Game game = objectMapper.readValue(new File(file), Game.class);
+            Lobby lobby = objectMapper.readValue(new File(file), Lobby.class);
 
-            logger.info(game.toString());
-            game.play();
-            logger.info("winners:" + game.getWinners().toString());
+            logger.info(lobby.toString());
+            lobby.play();
+            logger.info("winners:" + lobby.getWinners().toString());
 
         } catch (Exception exception) {
             exception.printStackTrace();

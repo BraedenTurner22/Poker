@@ -465,7 +465,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static Map<HandRank, List<Integer>> getHandRankToPlayerIdMap(List<ConnectedPlayer> connectedPlayers) {
+    private static Map<HandRank, List<Integer>> getHandRankToPlayerIdMap(ConnectedPlayer[] connectedPlayers) {
         Map<HandRank, List<Integer>> handRankToPlayerIdMap = new LinkedHashMap<>();
 
         for (HandRank handRank : HandRank.values())
@@ -513,7 +513,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getRoyalFlushWinner(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getRoyalFlushWinner(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.ROYAL_FLUSH) {
@@ -527,12 +527,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getStraightFlushWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getStraightFlushWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.STRAIGHT_FLUSH)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         // If the board is the straight flush, then returns everyone with a straight
@@ -556,12 +557,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getFourOfAKindWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getFourOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FOUR_OF_A_KIND)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         // Find winner between two winners
@@ -596,12 +598,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getFullHouseWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getFullHouseWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FULL_HOUSE)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         // TODO: Figure out if this is right
@@ -623,12 +626,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getFlushWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getFlushWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FLUSH)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         if (winners.size() > 1) {
@@ -647,12 +651,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getStraightWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getStraightWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.STRAIGHT)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         if (winners.size() > 1) {
@@ -667,12 +672,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getThreeOfAKindWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getThreeOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.THREE_OF_A_KIND)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         if (winners.size() > 1) {
@@ -700,12 +706,13 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getTwoPairWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getTwoPairWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.TWO_PAIR)
                 winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(), connectedPlayer.getBestCards()));
+                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
+                                connectedPlayer.getBestCards()));
         }
 
         if (winners.size() > 1) {
@@ -730,7 +737,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getOnePairWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getOnePairWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.ONE_PAIR)
@@ -767,7 +774,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getHighCardWinners(List<ConnectedPlayer> connectedPlayers) {
+    private static List<Winner> getHighCardWinners(ConnectedPlayer[] connectedPlayers) {
         List<Winner> winners = new ArrayList<>();
         Rank rank = Rank.TWO;
 
@@ -813,7 +820,7 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    public static List<Winner> getWinners(List<ConnectedPlayer> connectedPlayers) {
+    public static List<Winner> getWinners(ConnectedPlayer[] connectedPlayers) {
 
         Map<HandRank, List<Integer>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(connectedPlayers);
         logger.info("\nhandRankToPlayerIdMap: " + handRankToPlayerIdMap);

@@ -19,27 +19,27 @@ import com.collegeshowdown.poker_project.repositories.PlayerRepository;
 @RequestMapping("/api/poker")
 @CrossOrigin(origins = "*") // Enable CORS for development
 public class PokerController {
-    @Autowired
-    private GameService gameService;
 
     @Autowired
     private PlayerRepository playerRepository;
 
     /**
      * Get all active games
+     * 
      * @return List of games
      */
-    @GetMapping("/games")
-    public ResponseEntity<List<Game>> getAllGames() {
+    @GetMapping("/lobbies")
+    public ResponseEntity<List<Lobby>> getAllGames() {
         return ResponseEntity.ok(gameService.getAllGames());
     }
 
     /**
      * Create a new game
+     * 
      * @param payload The game details
      * @return The created game
      */
-    @PostMapping("/games")
+    @PostMapping("/lobby")
     public ResponseEntity<Lobby> createLobby(@RequestBody Map<String, String> payload) {
         String name = payload.get("name");
         Lobby lobby = new Lobby();
@@ -48,20 +48,22 @@ public class PokerController {
 
     /**
      * Get a specific game by ID
+     * 
      * @param gameId The game ID
      * @return The game
      */
-    @GetMapping("/games/{gameId}")
-    public ResponseEntity<Game> getGame(@PathVariable String gameId) {
-        Game game = gameService.getGame(gameId);
-        if (game == null) {
+    @GetMapping("/lobby/{lobbyId}")
+    public ResponseEntity<Lobby> getGame(@PathVariable String gameId) {
+        Lobby lobby = gameService.getGame(gameId);
+        if (lobby == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(game);
+        return ResponseEntity.ok(lobby);
     }
 
     /**
      * Add a player to a game
+     * 
      * @param gameId The game ID
      * @param player The player to add
      * @return The updated game
@@ -77,6 +79,7 @@ public class PokerController {
 
     /**
      * Start a game
+     * 
      * @param gameId The game ID
      * @return The updated game
      */
@@ -91,7 +94,8 @@ public class PokerController {
 
     /**
      * Place a bet
-     * @param gameId The game ID
+     * 
+     * @param gameId  The game ID
      * @param payload The bet details
      * @return Result message
      */
@@ -112,7 +116,8 @@ public class PokerController {
 
     /**
      * Fold
-     * @param gameId The game ID
+     * 
+     * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
      */
@@ -132,7 +137,8 @@ public class PokerController {
 
     /**
      * Check
-     * @param gameId The game ID
+     * 
+     * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
      */
@@ -152,7 +158,8 @@ public class PokerController {
 
     /**
      * Call
-     * @param gameId The game ID
+     * 
+     * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
      */
@@ -172,6 +179,7 @@ public class PokerController {
 
     /**
      * Get the winners of a game
+     * 
      * @param gameId The game ID
      * @return The winners
      */
@@ -186,6 +194,7 @@ public class PokerController {
 
     /**
      * Get all players
+     * 
      * @return List of players
      */
     @GetMapping("/players")
@@ -195,6 +204,7 @@ public class PokerController {
 
     /**
      * Get a player by ID
+     * 
      * @param playerId The player ID
      * @return The player
      */
@@ -207,6 +217,7 @@ public class PokerController {
 
     /**
      * Create or update a player
+     * 
      * @param player The player details
      * @return The created/updated player
      */

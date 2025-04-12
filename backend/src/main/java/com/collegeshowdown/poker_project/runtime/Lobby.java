@@ -1,24 +1,22 @@
 package com.collegeshowdown.poker_project.runtime;
+
 import com.collegeshowdown.poker_project.runtime.card.Card;
 import com.collegeshowdown.poker_project.runtime.card.Deck;
 import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.collegeshowdown.poker_project.model.*;
-import com.collegeshowdown.poker_project.model.*;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.stream.Collectors;
 import java.util.Collections;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -76,8 +74,8 @@ public class Lobby {
         return instance;
     }
 
-    public ConnectedPlayer[] getBoard() {
-        return activePlayers;
+    public List<Card> getBoard() {
+        return this.board;
     }
 
     public ArrayList<ConnectedPlayer> getQueue() {
@@ -115,9 +113,9 @@ public class Lobby {
         int insertionCount = 0;
 
         while (tableCount < TABLE_SIZE && insertionCount < num_to_insert) {
-            ConnectedPlayer p;
+            ConnectedPlayer connectedPlayer;
             try {
-                p = queuedPlayers.pop();
+                connectedPlayer = queuedPlayers.pop();
             } catch (NoSuchElementException e) {
                 logger.warn("No queued players to pop for lobby" + id + "!");
                 return insertionCount > 0 ? true : false;
@@ -128,7 +126,7 @@ public class Lobby {
 
             for (int i = 0; i < TABLE_SIZE; i++) {
                 if (activePlayers[i] == null) {
-                    activePlayers[i] = p;
+                    activePlayers[i] = connectedPlayer;
                     insertionCount++;
                     tableCount++;
                 }
@@ -142,8 +140,8 @@ public class Lobby {
     private int tableCount() {
         // number of players in the table
         int count = 0;
-        for (ConnectedPlayer p : activePlayers) {
-            if (p != null)
+        for (ConnectedPlayer connectedPlayer : activePlayers) {
+            if (connectedPlayer != null)
                 count++;
         }
 
@@ -154,15 +152,13 @@ public class Lobby {
         return new ArrayList<>();
     }
 
-
-
     /**
      * Start playing the poker game.
      */
     public void play() {
         logger.info("Starting a new game with {} players", activePlayers.length);
 
-        if (activePlayers.length < 2) {
+        if (tableCount() < 2) {
             logger.warn("Cannot start game with fewer than 2 players");
             return;
         }
@@ -197,10 +193,10 @@ public class Lobby {
         this.currentPot = 0;
 
         // Reset player cards
-        for (ConnectedPlayer player : activePlayers) {
-            player.setCards(new ArrayList<>());
-            player.setBestCards(new ArrayList<>());
-            player.setHandRank(null);
+        for (ConnectedPlayer connectedPlayer : activePlayers) {
+            connectedPlayer.setCards(new ArrayList<>());
+            connectedPlayer.setBestCards(new ArrayList<>());
+            connectedPlayer.setHandRank(null);
         }
     }
 
@@ -208,12 +204,12 @@ public class Lobby {
      * Deal 2 hole cards to each player.
      */
     private void dealHoleCards() {
-        logger.info("Dealing hole cards to {} players", players.size());
-        for (PlayerRecord player : players) {
+        logger.info("Dealing hole cards to {} players", activePlayers.length);
+        for (ConnectedPlayer connectedPlayer : activePlayers) {
             List<Card> holeCards = new ArrayList<>();
             holeCards.add(deck.dealCard());
             holeCards.add(deck.dealCard());
-            player.setCards(holeCards);
+            connectedPlayer.setCards(holeCards);
         }
     }
 
@@ -260,7 +256,7 @@ public class Lobby {
      */
     private void determineWinners() {
         logger.info("Determining winners");
-        winners = AnalysisEngine.getWinners(players);
+        winners = AnalysisEngine.getWinners(activePlayers);
         logger.info("Winners: {}", winners);
     }
 
@@ -271,10 +267,11 @@ public class Lobby {
      * @param amount   The bet amount
      * @return A message describing the result of the bet
      */
+
     public String processBet(int playerId, double amount) {
         // Find the player
-        PlayerRecord player = players.stream()
-                .filter(p -> p.getId() == playerId)
+        ConnectedPlayer player = Arrays.stream(activePlayers)
+                .filter(p -> p.playerRecord.getId() == playerId)
                 .findFirst()
                 .orElse(null);
 
@@ -286,16 +283,16 @@ public class Lobby {
         currentPot += amount;
 
         return String.format("Player %s bet $%.2f. Current pot: $%d",
-                player.getName(), amount, currentPot);
+                player.playerRecord.getName(), amount, currentPot);
     }
 
     // Getters and setters
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -319,20 +316,25 @@ public class Lobby {
         this.board = board;
     }
 
-    public List<PlayerRecord> getPlayers() {
-        return players;
+    public ConnectedPlayer[] getPlayers() {
+        return activePlayers;
     }
 
-    public void setPlayers(List<PlayerRecord> players) {
-        this.players = players;
+    public void setPlayers(ConnectedPlayer[] activePlayers) {
+        this.activePlayers = activePlayers;
     }
 
     // Add players
-    public void addPlayer(PlayerRecord player) {
-        if (this.players.size() > 8) {
+    public void addPlayer() {
+        if (tableCount() > 8) {
             logger.info("Cannot add player, lobby is full");
         } else {
-            this.players.add(player);
+            for (int i = 0; i < this.activePlayers.length; i++) {
+                if (activePlayers[i] == null) {
+                    activePlayers[i] = queuedPlayers.pop();
+                    break;
+                }
+            }
         }
 
         return;
@@ -374,11 +376,11 @@ public class Lobby {
         this.currentPlayerIndex = currentPlayerIndex;
     }
 
-    public PlayerRecord getCurrentPlayer() {
-        if (players.isEmpty()) {
+    public ConnectedPlayer getCurrentPlayer() {
+        if (tableCount() == 0) {
             return null;
         }
-        return players.get(currentPlayerIndex % players.size());
+        return activePlayers[currentPlayerIndex % activePlayers.length];
     }
 
     /**
@@ -386,11 +388,12 @@ public class Lobby {
      *
      * @return The next player
      */
-    public PlayerRecord nextPlayer() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+    public ConnectedPlayer nextPlayer() {
+        currentPlayerIndex = (currentPlayerIndex + 1) % activePlayers.length;
         return getCurrentPlayer();
     }
 
+    // Idk how to fix this LOL
     @Override
     public String toString() {
         return "Game{" +
@@ -400,7 +403,11 @@ public class Lobby {
                 ", bigBlind=" + bigBlind +
                 ", currentPot=" + currentPot +
                 ", board=" + board +
-                ", players=" + players.stream().map(PlayerRecord::getName).collect(Collectors.toList()) +
+                ", players=" + Arrays.stream(activePlayers)
+                        .filter(Objects::nonNull)
+                        .map(ConnectedPlayer::getId)
+                        .collect(Collectors.toList())
+                +
                 ", winners=" + winners +
                 '}';
     }
