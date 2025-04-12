@@ -1,13 +1,14 @@
 package com.collegeshowdown.poker_project.runtime;
 
-import com.collegeshowdown.poker_project.model.Rank;
-import com.collegeshowdown.poker_project.model.Suit;
+import com.collegeshowdown.poker_project.runtime.card.Rank;
+import com.collegeshowdown.poker_project.runtime.card.Suit;
 
 public class Card implements Comparable<Card> {
     private Rank rank;
     private Suit suit;
 
-    public Card() {}
+    public Card() {
+    }
 
     public Card(Rank rank, Suit suit) {
         this.rank = rank;

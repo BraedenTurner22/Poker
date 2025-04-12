@@ -25,18 +25,28 @@ public class Player implements Serializable {
     @Column(nullable = false, updatable = false, unique = true)
     private int id;
 
-    @Transient
     private String name;
     private String email;
     private String university;
     private String imageURL;
+
+    @Transient
     private List<Card> cards;
+
+    @Transient
     private List<Card> bestCards;
+
+    @Transient
     private HandRank handRank;
+
+    @Transient
     private boolean isSmallBlind;
+
+    @Transient
     private boolean isBigBlind;
 
-    public Player() {}
+    public Player() {
+    }
 
     public Player(int id, String name, String email, String university, String imageURL) {
         this.id = id;
@@ -90,34 +100,36 @@ public class Player implements Serializable {
         return cards;
     }
 
-    public void setCards(List<Card> cards) {
-        logger.info("Setting cards for player {}: {}", this.name, cards);
-        this.cards = new ArrayList<>(cards);  // Create a defensive copy
+    // public void setCards(List<Card> cards) {
+    // logger.info("Setting cards for player {}: {}", this.name, cards);
+    // this.cards = new ArrayList<>(cards); // Create a defensive copy
 
-        // Only add board cards if we don't already have 7 cards
-        if (cards.size() < 7 && Game.getInstance() != null && Game.getInstance().getBoard() != null) {
-            List<Card> boardCards = Game.getInstance().getBoard();
-            for (Card boardCard : boardCards) {
-                if (!this.cards.contains(boardCard)) {
-                    this.cards.add(boardCard);
-                }
-            }
-        }
+    // // Only add board cards if we don't already have 7 cards
+    // if (cards.size() < 7 && Game.getInstance() != null &&
+    // Game.getInstance().getBoard() != null) {
+    // List<Card> boardCards = Game.getInstance().getBoard();
+    // for (Card boardCard : boardCards) {
+    // if (!this.cards.contains(boardCard)) {
+    // this.cards.add(boardCard);
+    // }
+    // }
+    // }
 
-        // Sort cards by rank (highest to lowest)
-        Collections.sort(this.cards, (card1, card2) ->
-                Integer.compare(card2.getRank().getValue(), card1.getRank().getValue()));
+    // // Sort cards by rank (highest to lowest)
+    // Collections.sort(this.cards, (card1, card2) ->
+    // Integer.compare(card2.getRank().getValue(), card1.getRank().getValue()));
 
-        // Analyze the hand
-        if (this.cards.size() >= 5) {
-            AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
-            logger.info("Analysis results for player {}: {}", this.name, analysisResults);
-            setHandRank(analysisResults.handRank());
-            setBestCards(analysisResults.bestCards());
-        } else {
-            logger.warn("Not enough cards to analyze hand for player {}", this.name);
-        }
-    }
+    // // Analyze the hand
+    // if (this.cards.size() >= 5) {
+    // AnalysisResults analysisResults = AnalysisEngine.analyzeHand(this);
+    // logger.info("Analysis results for player {}: {}", this.name,
+    // analysisResults);
+    // setHandRank(analysisResults.handRank());
+    // setBestCards(analysisResults.bestCards());
+    // } else {
+    // logger.warn("Not enough cards to analyze hand for player {}", this.name);
+    // }
+    // }
 
     public List<Card> getBestCards() {
         return bestCards;
@@ -126,7 +138,6 @@ public class Player implements Serializable {
     public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;
     }
-
 
     public HandRank getHandRank() {
         return handRank;
@@ -151,6 +162,7 @@ public class Player implements Serializable {
     public void setBigBlindStatus(boolean bigBlindStatus) {
         this.isBigBlind = bigBlindStatus;
     }
+
     public void sortCardsHighToLow() {
         Collections.sort(this.bestCards);
         Collections.reverse(this.bestCards);
