@@ -10,10 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.collegeshowdown.poker_project.model.Game;
-import com.collegeshowdown.poker_project.model.Player;
+import com.collegeshowdown.poker_project.runtime.Lobby;
+import com.collegeshowdown.poker_project.model.PlayerRecord;
 import com.collegeshowdown.poker_project.model.Winner;
-import com.collegeshowdown.poker_project.services.GameService;
 import com.collegeshowdown.poker_project.repositories.PlayerRepository;
 
 @RestController
@@ -41,10 +40,10 @@ public class PokerController {
      * @return The created game
      */
     @PostMapping("/games")
-    public ResponseEntity<Game> createGame(@RequestBody Map<String, String> payload) {
-        String gameName = payload.get("name");
-        Game game = gameService.createGame(gameName);
-        return ResponseEntity.status(HttpStatus.CREATED).body(game);
+    public ResponseEntity<Lobby> createLobby(@RequestBody Map<String, String> payload) {
+        String name = payload.get("name");
+        Lobby lobby = new Lobby();
+        return ResponseEntity.status(HttpStatus.CREATED).body(lobby);
     }
 
     /**
@@ -68,7 +67,7 @@ public class PokerController {
      * @return The updated game
      */
     @PostMapping("/games/{gameId}/players")
-    public ResponseEntity<Game> addPlayer(@PathVariable String gameId, @RequestBody Player player) {
+    public ResponseEntity<Game> addPlayer(@PathVariable String gameId, @RequestBody PlayerRecord player) {
         Game game = gameService.addPlayer(gameId, player);
         if (game == null) {
             return ResponseEntity.notFound().build();
@@ -190,7 +189,7 @@ public class PokerController {
      * @return List of players
      */
     @GetMapping("/players")
-    public ResponseEntity<List<Player>> getAllPlayers() {
+    public ResponseEntity<List<PlayerRecord>> getAllPlayers() {
         return ResponseEntity.ok(playerRepository.findAll());
     }
 
@@ -200,8 +199,8 @@ public class PokerController {
      * @return The player
      */
     @GetMapping("/players/{playerId}")
-    public ResponseEntity<Player> getPlayer(@PathVariable int playerId) {
-        Optional<Player> player = playerRepository.findById(playerId);
+    public ResponseEntity<PlayerRecord> getPlayer(@PathVariable int playerId) {
+        Optional<PlayerRecord> player = playerRepository.findById(playerId);
         return player.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -212,8 +211,8 @@ public class PokerController {
      * @return The created/updated player
      */
     @PostMapping("/players")
-    public ResponseEntity<Player> createPlayer(@RequestBody Player player) {
-        Player savedPlayer = playerRepository.save(player);
+    public ResponseEntity<PlayerRecord> createPlayer(@RequestBody PlayerRecord player) {
+        PlayerRecord savedPlayer = playerRepository.save(player);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPlayer);
     }
 }

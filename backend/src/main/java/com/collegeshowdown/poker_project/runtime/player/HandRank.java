@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.model;
+package com.collegeshowdown.poker_project.runtime.player;
 
 public enum HandRank {
     NOTHING(0), HIGH_CARD(1), ONE_PAIR(2), TWO_PAIR(3), THREE_OF_A_KIND(4), STRAIGHT(5), FLUSH(

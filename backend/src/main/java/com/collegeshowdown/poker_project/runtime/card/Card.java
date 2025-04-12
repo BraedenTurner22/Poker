@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.runtime;
+package com.collegeshowdown.poker_project.runtime.card;
 
 import com.collegeshowdown.poker_project.runtime.card.Rank;
 import com.collegeshowdown.poker_project.runtime.card.Suit;

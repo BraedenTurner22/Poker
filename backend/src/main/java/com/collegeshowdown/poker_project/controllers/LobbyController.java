@@ -3,10 +3,10 @@ package com.collegeshowdown.poker_project.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.collegeshowdown.poker_project.model.Player;
+import com.collegeshowdown.poker_project.model.PlayerRecord;
 import com.collegeshowdown.poker_project.model.Winner;
-import com.collegeshowdown.poker_project.runtime.ConnectedPlayer;
 import com.collegeshowdown.poker_project.runtime.Lobby;
+import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
