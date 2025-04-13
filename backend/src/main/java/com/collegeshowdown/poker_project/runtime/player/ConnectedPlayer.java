@@ -11,6 +11,7 @@ public class ConnectedPlayer {
 
     private List<Card> cards;
     private List<Card> bestCards;
+    private int chipsActivelyUsed;
 
     private HandRank handRank;
 
@@ -31,11 +32,11 @@ public class ConnectedPlayer {
     }
 
     public List<Card> getCards() {
-        return cards;
+        return this.cards;
     }
 
     public List<Card> getBestCards() {
-        return bestCards;
+        return this.bestCards;
     }
 
     public void setHandRank(HandRank handRank) {
@@ -43,6 +44,18 @@ public class ConnectedPlayer {
     }
 
     public HandRank getHandRank() {
-        return handRank;
+        return this.handRank;
+    }
+
+    public int getActiveChips() {
+        return this.chipsActivelyUsed;
+    }
+
+    public void betActiveChips(int bettingAmount) {
+        chipsActivelyUsed = chipsActivelyUsed - bettingAmount;
+    }
+
+    public void winPot(int pot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed + pot;
     }
 }

@@ -58,6 +58,7 @@ public class Lobby {
     private List<Card> board;
     private List<Winner> winners;
     private int currentPlayerIndex;
+    private ConnectedPlayer lastPlayerToBet;
 
     public Lobby() {
     }
@@ -268,7 +269,7 @@ public class Lobby {
      * @return A message describing the result of the bet
      */
 
-    public String processBet(int playerId, double amount) {
+    public String processBet(int playerId, int amount) {
         // Find the player
         ConnectedPlayer player = Arrays.stream(activePlayers)
                 .filter(p -> p.playerRecord.getId() == playerId)
@@ -281,6 +282,8 @@ public class Lobby {
 
         // Add the bet to the pot
         currentPot += amount;
+        player.betActiveChips(amount);
+        lastPlayerToBet = player;
 
         return String.format("Player %s bet $%.2f. Current pot: $%d",
                 player.playerRecord.getName(), amount, currentPot);
@@ -403,9 +406,9 @@ public class Lobby {
                 ", bigBlind=" + bigBlind +
                 ", currentPot=" + currentPot +
                 ", board=" + board +
-                ", players=" + Arrays.stream(activePlayers)
+                ", players=" + Arrays.stream(activePlayers.p)
                         .filter(Objects::nonNull)
-                        .map(ConnectedPlayer::getId)
+                        .map(PlayerRecord::getId)
                         .collect(Collectors.toList())
                 +
                 ", winners=" + winners +
