@@ -1,12 +1,192 @@
 openapi: "3.1.1"
 info:
-  title: API Title
+  title: College Showdown
   version: "1.0"
 servers:
-  - url: https://api.server.test/v1
+  - url: https://collegeshowdown.com
+tags:
+  - name: Authentication
+    description: API endpoints for user authentication.
+  - name: Game
+    description: API endpoints for game-related actions.
+  - name: User
+    description: API endpoints for user-related actions.
 paths:
-  /test:
-    get:
+  /register:
+    post:
+      tags:
+        - Authentication
+      parameters:
+        - name: email
+          in: query
+          required: true
+          description: The email address to register.
+          schema:
+            type: string
+        - name: password
+          in: query
+          required: true
+          description: The password for the account.
+          schema:
+            type: string
+        - name: displayName
+          in: query
+          required: true
+          description: The display name for the account.
+          schema:
+            type: string
+        - name: username
+          in: query
+          required: true
+          description: The username for the account.
+          schema:
+            type: string
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The token for the registered user. Can be used to get a websocket connection when playing.
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message indicating what went wrong.
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      parameters:
+        - name: email
+          in: query
+          required: false
+          description: The email address to register. Either this or username is needed.
+          schema:
+            type: string
+        - name: username
+          in: query
+          required: false
+          description: The username for the account. Either this or email is needed.
+          schema:
+            type: string
+        - name: password
+          in: query
+          required: true
+          description: The password for the account.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The token for the registered user. Can be used to get a websocket connection when playing.
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message indicating what went wrong.
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: The token for the registered user that was obtained during login or registration.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Logout successful message.
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message indicating what went wrong.
+
+  /play:
+    post:
+      tags:
+        - Game
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: The token for the registered user that was obtained during login or registration.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lobbyType:
+                  type: string
+                  description: The type of lobby to join.
+                  enum:
+                    - school
+                    - global
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Websocket URL.
+                    example: wss://collegeshowdown.com/ws
+                  token:
+                    type: string
+                    description: The token to get the 
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message indicating what went wrong.
