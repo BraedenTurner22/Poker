@@ -56,8 +56,8 @@ public class Lobby {
     private int currentPot;
     private List<Card> board;
     private List<ConnectedPlayer> winners;
-    private int smallBlindIndex = 0;
-    private int bigBlindIndex = 1;
+    private int smallBlindIndex;
+    private int bigBlindIndex;
     private int currentPlayerIndex;
     private ConnectedPlayer lastPlayerToBet;
 
@@ -347,7 +347,7 @@ public class Lobby {
         return;
     }
 
-    public void setWinners(List<Winner> winners) {
+    public void setWinners(List<ConnectedPlayer> winners) {
         this.winners = winners;
     }
 
@@ -410,7 +410,7 @@ public class Lobby {
                 ", bigBlind=" + bigBlind +
                 ", currentPot=" + currentPot +
                 ", board=" + board +
-                ", players=" + Arrays.stream(activePlayers.p)
+                ", players=" + Arrays.stream(activePlayers)
                         .filter(Objects::nonNull)
                         .map(PlayerRecord::getId)
                         .collect(Collectors.toList())
