@@ -1,9 +1,11 @@
 package com.collegeshowdown.poker_project.runtime.card;
 
 import java.util.*;
+import java.security.SecureRandom;
 
 public class Deck {
     Stack<Card> cards;
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     public Deck() {
         this.cards = new Stack<Card>();
@@ -18,7 +20,7 @@ public class Deck {
     }
 
     public void shuffle() {
-        Collections.shuffle(cards);
+        Collections.shuffle(cards, secureRandom);
     }
 
     public Card dealCard() {
