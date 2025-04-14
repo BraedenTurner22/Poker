@@ -513,13 +513,11 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getRoyalFlushWinner(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getRoyalFlushWinner(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.ROYAL_FLUSH) {
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
                 return winners;
             }
         }
@@ -527,13 +525,11 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getStraightFlushWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getStraightFlushWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.STRAIGHT_FLUSH)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         // If the board is the straight flush, then returns everyone with a straight
@@ -541,11 +537,11 @@ public class AnalysisEngine {
 
         // Determines winner if 2 people have straight flush based on higher last card
         if (winners.size() == 2) {
-            Winner w1 = winners.get(0);
-            Winner w2 = winners.get(1);
+            ConnectedPlayer w1 = winners.get(0);
+            ConnectedPlayer w2 = winners.get(1);
 
-            int highCard1 = w1.getWinningCardAtIndex(0).getRank().getValue();
-            int highCard2 = w2.getWinningCardAtIndex(0).getRank().getValue();
+            int highCard1 = w1.getBestCardAtIndex(0).getRank().getValue();
+            int highCard2 = w2.getBestCardAtIndex(0).getRank().getValue();
 
             if (highCard1 > highCard2) {
                 winners.remove(1); // Remove w2
@@ -557,27 +553,25 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getFourOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getFourOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FOUR_OF_A_KIND)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         // Find winner between two winners
         if (winners.size() == 2) {
-            Winner w1 = winners.get(0);
-            Winner w2 = winners.get(1);
+            ConnectedPlayer w1 = winners.get(0);
+            ConnectedPlayer w2 = winners.get(1);
 
-            int w1Size = w1.getWinningCards().size();
-            int w2Size = w2.getWinningCards().size();
+            int w1Size = w1.getBestCards().size();
+            int w2Size = w2.getBestCards().size();
 
-            int quad1 = w1.getWinningCardAtIndex(0).getRank().getValue();
-            int quad2 = w2.getWinningCardAtIndex(0).getRank().getValue();
-            int kicker1 = w1.getWinningCardAtIndex(w1Size - 1).getRank().getValue();
-            int kicker2 = w2.getWinningCardAtIndex(w2Size - 1).getRank().getValue();
+            int quad1 = w1.getBestCardAtIndex(0).getRank().getValue();
+            int quad2 = w2.getBestCardAtIndex(0).getRank().getValue();
+            int kicker1 = w1.getBestCardAtIndex(w1Size - 1).getRank().getValue();
+            int kicker2 = w2.getBestCardAtIndex(w2Size - 1).getRank().getValue();
 
             if (quad1 > quad2 || (quad1 == quad2 && kicker1 > kicker2)) {
                 winners.remove(1);
@@ -589,36 +583,34 @@ public class AnalysisEngine {
         // Find the winner among >2 players (highest kicker)
         else if (winners.size() > 2) {
             int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestKicker);
         }
 
         return winners;
     }
 
     // ==========================================================================================
-    private static List<Winner> getFullHouseWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getFullHouseWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FULL_HOUSE)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         // TODO: Figure out if this is right
         if (winners.size() > 1) {
             int highestTOAK = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestTOAK);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestTOAK);
 
             int highestPair = winners.stream().mapToInt(w -> w
-                    .getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank().getValue())
+                    .getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue())
                     .max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank()
+            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank()
                     .getValue() < highestPair);
         }
 
@@ -626,23 +618,21 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getFlushWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getFlushWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.FLUSH)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             for (int i = 0; i < 5; i++) {
                 final int index = i;
                 int highestFlushCard = winners.stream()
-                        .mapToInt(w -> w.getWinningCardAtIndex(index).getRank().getValue()).max()
+                        .mapToInt(w -> w.getBestCardAtIndex(index).getRank().getValue()).max()
                         .orElse(0);
 
-                winners.removeIf(w -> w.getWinningCardAtIndex(index).getRank()
+                winners.removeIf(w -> w.getBestCardAtIndex(index).getRank()
                         .getValue() < highestFlushCard);
             }
         }
@@ -651,54 +641,50 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getStraightWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getStraightWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.STRAIGHT)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             int highestFlushCard = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestFlushCard);
+                    w -> w.getBestCardAtIndex(0).getRank().getValue() < highestFlushCard);
         }
 
         return winners;
     }
 
     // ==========================================================================================
-    private static List<Winner> getThreeOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getThreeOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.THREE_OF_A_KIND)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             int highestTOAK = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestTOAK);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestTOAK);
 
             int highestKicker = winners.stream().mapToInt(w -> w
-                    .getWinningCardAtIndex(w.getWinningCards().size() - 2).getRank().getValue())
+                    .getBestCardAtIndex(w.getBestCards().size() - 2).getRank().getValue())
                     .max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 2).getRank()
+            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 2).getRank()
                     .getValue() < highestKicker);
 
             int secondHighestKicker = winners.stream().mapToInt(w -> w
-                    .getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank().getValue())
+                    .getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue())
                     .max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(w.getWinningCards().size() - 1).getRank()
+            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank()
                     .getValue() < secondHighestKicker);
         }
 
@@ -706,126 +692,119 @@ public class AnalysisEngine {
     }
 
     // ==========================================================================================
-    private static List<Winner> getTwoPairWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getTwoPairWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.TWO_PAIR)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             int highestPair = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestPair);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestPair);
 
             int secondHighestPair = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(2).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(2).getRank().getValue() < secondHighestPair);
+                    w -> w.getBestCardAtIndex(2).getRank().getValue() < secondHighestPair);
 
             int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(4).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(4).getRank().getValue() < highestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(4).getRank().getValue() < highestKicker);
         }
 
         return winners;
     }
 
     // ==========================================================================================
-    private static List<Winner> getOnePairWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
+    private static List<ConnectedPlayer> getOnePairWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.ONE_PAIR)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             int highestPair = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestPair);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestPair);
 
             int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(2).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(2).getRank().getValue() < highestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(2).getRank().getValue() < highestKicker);
 
             int secondHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(3).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(3).getRank().getValue() < secondHighestKicker);
+                    w -> w.getBestCardAtIndex(3).getRank().getValue() < secondHighestKicker);
 
             int thirdHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(4).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(4).getRank().getValue() < thirdHighestKicker);
+                    w -> w.getBestCardAtIndex(4).getRank().getValue() < thirdHighestKicker);
         }
 
         return winners;
     }
 
     // ==========================================================================================
-    private static List<Winner> getHighCardWinners(ConnectedPlayer[] connectedPlayers) {
-        List<Winner> winners = new ArrayList<>();
-        Rank rank = Rank.TWO;
+    private static List<ConnectedPlayer> getHighCardWinners(ConnectedPlayer[] connectedPlayers) {
+        List<ConnectedPlayer> winners = new ArrayList<>();
 
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             if (connectedPlayer.getHandRank() == HandRank.HIGH_CARD)
-                winners.add(
-                        new Winner(connectedPlayer.playerRecord.getId(), connectedPlayer.getHandRank(),
-                                connectedPlayer.getBestCards()));
+                winners.add(connectedPlayer);
         }
 
         if (winners.size() > 1) {
             int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(0).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
 
-            winners.removeIf(w -> w.getWinningCardAtIndex(0).getRank().getValue() < highestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestKicker);
 
             int secondHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(1).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(1).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(1).getRank().getValue() < secondHighestKicker);
+                    w -> w.getBestCardAtIndex(1).getRank().getValue() < secondHighestKicker);
 
             int thirdHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(2).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(2).getRank().getValue() < thirdHighestKicker);
+                    w -> w.getBestCardAtIndex(2).getRank().getValue() < thirdHighestKicker);
 
             int fourthHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(3).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(3).getRank().getValue() < fourthHighestKicker);
+                    w -> w.getBestCardAtIndex(3).getRank().getValue() < fourthHighestKicker);
 
             int fifthHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getWinningCardAtIndex(4).getRank().getValue()).max().orElse(0);
+                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
 
             winners.removeIf(
-                    w -> w.getWinningCardAtIndex(4).getRank().getValue() < fifthHighestKicker);
+                    w -> w.getBestCardAtIndex(4).getRank().getValue() < fifthHighestKicker);
         }
 
         return winners;
     }
 
     // ==========================================================================================
-    public static List<Winner> getWinners(ConnectedPlayer[] connectedPlayers) {
+    public static List<ConnectedPlayer> getWinners(ConnectedPlayer[] connectedPlayers) {
 
         Map<HandRank, List<Integer>> handRankToPlayerIdMap = getHandRankToPlayerIdMap(connectedPlayers);
         logger.info("\nhandRankToPlayerIdMap: " + handRankToPlayerIdMap);
 
-        List<Winner> winners = new ArrayList<>();
+        List<ConnectedPlayer> winners = new ArrayList<>();
 
         winners = getRoyalFlushWinner(connectedPlayers);
         if (winners.size() > 0)

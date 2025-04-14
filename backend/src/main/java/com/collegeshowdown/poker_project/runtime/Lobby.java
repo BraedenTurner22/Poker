@@ -41,7 +41,6 @@ public class Lobby {
 
     private String id = UUID.randomUUID().toString();
 
-    private static Lobby instance;
     private LobbyType lobbyType;
     private String associatedSchool; // make this a custom type later; we discuss.
     private Object customLobbyOptions; // define later what these may be.
@@ -56,23 +55,13 @@ public class Lobby {
     private int bigBlind = isLowStakes ? 20 : 50;
     private int currentPot;
     private List<Card> board;
-    private List<Winner> winners;
+    private List<ConnectedPlayer> winners;
+    private int smallBlindIndex = 0;
+    private int bigBlindIndex = 1;
     private int currentPlayerIndex;
     private ConnectedPlayer lastPlayerToBet;
 
     public Lobby() {
-    }
-
-    /**
-     * Get the singleton instance of the Game.
-     *
-     * @return The game instance
-     */
-    public static Lobby getInstance() {
-        if (instance == null) {
-            instance = new Lobby();
-        }
-        return instance;
     }
 
     public List<Card> getBoard() {
@@ -90,6 +79,8 @@ public class Lobby {
         this.customLobbyOptions = customLobbyOptions;
         this.customLobbyCode = customLobbyCode;
         this.lobbyInfo = lobbyInfo;
+        this.smallBlindIndex = 0;
+        this.bigBlindIndex = 1;
     }
 
     public void addPlayerToQueue(ConnectedPlayer player) {
@@ -149,8 +140,8 @@ public class Lobby {
         return count;
     }
 
-    public ArrayList<Winner> getWinners() {
-        return new ArrayList<>();
+    public List<ConnectedPlayer> getWinners() {
+        return winners;
     }
 
     /**
@@ -202,15 +193,25 @@ public class Lobby {
     }
 
     /**
+     * Gets blinds out of two players
+     */
+    private void extractBlinds() {
+
+    }
+
+    /**
      * Deal 2 hole cards to each player.
      */
     private void dealHoleCards() {
         logger.info("Dealing hole cards to {} players", activePlayers.length);
-        for (ConnectedPlayer connectedPlayer : activePlayers) {
-            List<Card> holeCards = new ArrayList<>();
-            holeCards.add(deck.dealCard());
-            holeCards.add(deck.dealCard());
-            connectedPlayer.setCards(holeCards);
+        for (int i = 0; i < 2; i++) {
+            for (ConnectedPlayer connectedPlayer : activePlayers) {
+                if (connectedPlayer != null) {
+                    List<Card> holeCards = new ArrayList<>();
+                    holeCards.add(deck.dealCard());
+                    connectedPlayer.addCards(holeCards);
+                }
+            }
         }
     }
 
@@ -258,7 +259,10 @@ public class Lobby {
     private void determineWinners() {
         logger.info("Determining winners");
         winners = AnalysisEngine.getWinners(activePlayers);
-        logger.info("Winners: {}", winners);
+        for (ConnectedPlayer handWinner : winners) {
+            handWinner.winPot(this.currentPot);
+            logger.info("Winners: {}", winners);
+        }
     }
 
     /**
