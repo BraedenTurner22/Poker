@@ -25,7 +25,7 @@ public class PokerController {
 
     /**
      * Get all active games
-     * 
+     *
      * @return List of games
      */
     @GetMapping("/lobbies")
@@ -35,7 +35,7 @@ public class PokerController {
 
     /**
      * Create a new game
-     * 
+     *
      * @param payload The game details
      * @return The created game
      */
@@ -48,7 +48,7 @@ public class PokerController {
 
     /**
      * Get a specific game by ID
-     * 
+     *
      * @param gameId The game ID
      * @return The game
      */
@@ -63,7 +63,7 @@ public class PokerController {
 
     /**
      * Add a player to a game
-     * 
+     *
      * @param gameId The game ID
      * @param player The player to add
      * @return The updated game
@@ -79,7 +79,7 @@ public class PokerController {
 
     /**
      * Start a game
-     * 
+     *
      * @param gameId The game ID
      * @return The updated game
      */
@@ -94,7 +94,7 @@ public class PokerController {
 
     /**
      * Place a bet
-     * 
+     *
      * @param gameId  The game ID
      * @param payload The bet details
      * @return Result message
@@ -116,7 +116,7 @@ public class PokerController {
 
     /**
      * Fold
-     * 
+     *
      * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
@@ -137,7 +137,7 @@ public class PokerController {
 
     /**
      * Check
-     * 
+     *
      * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
@@ -158,7 +158,7 @@ public class PokerController {
 
     /**
      * Call
-     * 
+     *
      * @param gameId  The game ID
      * @param payload The action details
      * @return Result message
@@ -179,7 +179,7 @@ public class PokerController {
 
     /**
      * Get the winners of a game
-     * 
+     *
      * @param gameId The game ID
      * @return The winners
      */
@@ -194,7 +194,7 @@ public class PokerController {
 
     /**
      * Get all players
-     * 
+     *
      * @return List of players
      */
     @GetMapping("/players")
@@ -204,7 +204,7 @@ public class PokerController {
 
     /**
      * Get a player by ID
-     * 
+     *
      * @param playerId The player ID
      * @return The player
      */
@@ -217,7 +217,7 @@ public class PokerController {
 
     /**
      * Create or update a player
-     * 
+     *
      * @param player The player details
      * @return The created/updated player
      */
