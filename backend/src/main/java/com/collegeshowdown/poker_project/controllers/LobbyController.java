@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.collegeshowdown.poker_project.model.PlayerRecord;
 import com.collegeshowdown.poker_project.model.Winner;
-import com.collegeshowdown.poker_project.runtime.Lobby;
+import com.collegeshowdown.poker_project.runtime.lobby.Lobby;
 import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ public class LobbyController {
 
     /**
      * Get the current status of the lobby.
+     * 
      * @return A JSON object containing the board and the list of players.
      */
     @GetMapping("/status")
@@ -36,6 +37,7 @@ public class LobbyController {
     /**
      * Endpoint for a player to join the lobby.
      * The client should send the Player object as JSON in the request body.
+     * 
      * @param player A player entity containing the necessary details.
      * @return A confirmation message.
      */
@@ -51,6 +53,7 @@ public class LobbyController {
     /**
      * Endpoint to start the game.
      * This will call the play() method in your Lobby model.
+     * 
      * @return A confirmation message.
      */
     @PostMapping("/start")
@@ -64,6 +67,7 @@ public class LobbyController {
 
     /**
      * Get the winners from the last game.
+     * 
      * @return A list of Winner objects.
      */
     @GetMapping("/winners")

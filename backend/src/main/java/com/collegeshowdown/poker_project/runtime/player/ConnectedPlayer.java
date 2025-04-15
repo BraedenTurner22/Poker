@@ -2,6 +2,7 @@ package com.collegeshowdown.poker_project.runtime.player;
 
 import com.collegeshowdown.poker_project.model.PlayerRecord;
 import com.collegeshowdown.poker_project.runtime.card.*;
+import com.collegeshowdown.poker_project.runtime.lobby.Pot;
 
 import java.util.*;
 
@@ -12,12 +13,16 @@ public class ConnectedPlayer {
     private List<Card> cards;
     private List<Card> bestCards;
     private int chipsActivelyUsed;
+    private Stack<Pot> activePots;
 
     private HandRank handRank;
 
     public ConnectedPlayer(PlayerRecord playerRecord, Object connection) {
         this.playerRecord = playerRecord;
         this.connection = connection;
+        this.cards = new ArrayList<>();
+        this.bestCards = new ArrayList<>();
+        this.activePots = new Stack<>();
     }
 
     public void addCards(List<Card> cards) {
@@ -62,8 +67,19 @@ public class ConnectedPlayer {
         chipsActivelyUsed = chipsActivelyUsed - bettingAmount;
     }
 
-    public void winPot(int pot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed + pot;
+    public void winPot(Pot pot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed + pot.getAmount();
     }
 
+    public Stack<Pot> getActivePots() {
+        return this.activePots;
+    }
+
+    public void foldCards() {
+        this.cards.clear();
+        this.activePots.clear();
+        ;
+    }
+
+    // Set active pot?
 }

@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.runtime;
+package com.collegeshowdown.poker_project.runtime.lobby;
 
 import com.collegeshowdown.poker_project.runtime.card.Card;
 import com.collegeshowdown.poker_project.runtime.card.Deck;
@@ -42,24 +42,29 @@ public class Lobby {
     private String id = UUID.randomUUID().toString();
 
     private LobbyType lobbyType;
+
     private String associatedSchool; // make this a custom type later; we discuss.
     private Object customLobbyOptions; // define later what these may be.
     private String customLobbyCode;
     private String lobbyInfo;
+    private String name;
+
     private Deque<ConnectedPlayer> queuedPlayers;
     private ConnectedPlayer activePlayers[] = new ConnectedPlayer[TABLE_SIZE]; // the table
-    private Deck deck;
-    private String name;
+    private List<ConnectedPlayer> winners;
+    private int currentPlayerIndex;
+    private ConnectedPlayer lastPlayerToBet;
+
+    private List<Pot> allActivePots;
+    private Pot currentPot = allActivePots.get(allActivePots.size() - 1);
     private boolean isLowStakes;
     private int smallBlind = isLowStakes ? 10 : 20;
     private int bigBlind = isLowStakes ? 20 : 50;
-    private int currentPot;
-    private List<Card> board;
-    private List<ConnectedPlayer> winners;
     private int smallBlindIndex;
     private int bigBlindIndex;
-    private int currentPlayerIndex;
-    private ConnectedPlayer lastPlayerToBet;
+
+    private Deck deck;
+    private List<Card> board;
 
     public Lobby() {
     }
@@ -154,24 +159,25 @@ public class Lobby {
             logger.warn("Cannot start game with fewer than 2 players");
             return;
         }
+        while (tableCount() >= 2) {
+            // Reset lobby state
+            resetLobby();
 
-        // Reset lobby state
-        resetLobby();
+            // Deal 2 cards to each player
+            dealHoleCards();
 
-        // Deal 2 cards to each player
-        dealHoleCards();
+            // Deal the flop (3 cards)
+            dealFlop();
 
-        // Deal the flop (3 cards)
-        dealFlop();
+            // Deal the turn (1 card)
+            dealTurn();
 
-        // Deal the turn (1 card)
-        dealTurn();
+            // Deal the river (1 card)
+            dealRiver();
 
-        // Deal the river (1 card)
-        dealRiver();
-
-        // Determine the winners
-        determineWinners();
+            // Determine the winners
+            determineWinners();
+        }
     }
 
     /**
@@ -182,7 +188,8 @@ public class Lobby {
         this.deck = new Deck();
         this.board.clear();
         this.winners.clear();
-        this.currentPot = 0;
+        this.allActivePots.clear();
+        this.allActivePots.add(new Pot());
 
         // Reset player cards
         for (ConnectedPlayer connectedPlayer : activePlayers) {
@@ -193,10 +200,101 @@ public class Lobby {
     }
 
     /**
-     * Gets blinds out of two players
+     * Gets blinds out of two players.
+     * Blinds start at indexes 0 and 1 when the lobby starts.
+     * Each time a hand is played, the blind indices shift clockwise to the next
+     * available ConnectedPlayer.
+     * If a player does not have enough chips to cover the small or big blind, they
+     * are all in,
+     * and (later) a side pot should be created.
      */
     private void extractBlinds() {
+        if (tableCount() < 2) {
+            logger.warn("Not enough players to post blinds.");
+            // Logic for awaiting new players or removing lobby after extended period of
+            // time
+            return;
+        }
 
+        // Determine the small blind player.
+        int smallBlindSeat = getFirstValidIndex(smallBlindIndex);
+        ConnectedPlayer smallBlindPlayer = activePlayers[smallBlindSeat];
+
+        // Determine the big blind player.
+        int bigBlindSeat = getFirstValidIndex(bigBlindIndex);
+        // Ensure that the big blind seat is not the same as the small blind seat.
+        if (bigBlindSeat == smallBlindSeat) {
+            bigBlindSeat = getNextNonNullIndex(smallBlindSeat);
+        }
+        ConnectedPlayer bigBlindPlayer = activePlayers[bigBlindSeat];
+
+        // Read the blind amounts.
+        int sbRequired = smallBlind;
+        int bbRequired = bigBlind;
+
+        // Determine how much each player can contribute.
+        int smallBlindChips = smallBlindPlayer.getActiveChips();
+        int bigBlindChips = bigBlindPlayer.getActiveChips();
+
+        // A player can only post as many chips as they have.
+        int smallBlindContribution = Math.min(smallBlindChips, sbRequired);
+        int bigBlindContribution = Math.min(bigBlindChips, bbRequired);
+
+        // Deduct the chips from the players.
+        smallBlindPlayer.betActiveChips(smallBlindContribution);
+        bigBlindPlayer.betActiveChips(bigBlindContribution);
+
+        // Add the contributions to the current pot.
+        currentPot.setAmount(smallBlindContribution + bigBlindContribution);
+
+        // Log cases where the player goes all in.
+        if (smallBlindChips <= sbRequired) {
+            logger.info("Small blind player {} is all in posting {} chips",
+                    smallBlindPlayer.playerRecord.getId(), smallBlindContribution);
+            // TODO: Create and manage side pot logic for the small blind.
+        }
+        if (bigBlindChips <= bbRequired) {
+            logger.info("Big blind player {} is all in posting {} chips",
+                    bigBlindPlayer.playerRecord.getId(), bigBlindContribution);
+            // TODO: Create and manage side pot logic for the big blind.
+        }
+
+        logger.info("Blinds posted: Small Blind: {} (player {}) | Big Blind: {} (player {})",
+                smallBlindContribution, smallBlindPlayer.playerRecord.getId(),
+                bigBlindContribution, bigBlindPlayer.playerRecord.getId());
+
+        // Update blind indices for the next hand.
+        smallBlindIndex = getNextNonNullIndex(smallBlindSeat);
+        bigBlindIndex = getNextNonNullIndex(smallBlindIndex);
+    }
+
+    /**
+     * Returns the index of the first non-null player starting from the given index
+     * (inclusive).
+     */
+    private int getFirstValidIndex(int startIndex) {
+        int idx = startIndex % TABLE_SIZE;
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            int candidate = (idx + i) % TABLE_SIZE;
+            if (activePlayers[candidate] != null) {
+                return candidate;
+            }
+        }
+        throw new NoSuchElementException("No valid player found in the lobby.");
+    }
+
+    /**
+     * Returns the index of the next non-null player after the given index.
+     */
+    private int getNextNonNullIndex(int currentIndex) {
+        int idx = (currentIndex + 1) % TABLE_SIZE;
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            int candidate = (idx + i) % TABLE_SIZE;
+            if (activePlayers[candidate] != null) {
+                return candidate;
+            }
+        }
+        throw new NoSuchElementException("No next valid player found in the lobby.");
     }
 
     /**
@@ -285,7 +383,7 @@ public class Lobby {
         }
 
         // Add the bet to the pot
-        currentPot += amount;
+        currentPot.setAmount(amount);
         player.betActiveChips(amount);
         lastPlayerToBet = player;
 
@@ -367,12 +465,8 @@ public class Lobby {
         this.bigBlind = bigBlind;
     }
 
-    public int getCurrentPot() {
-        return currentPot;
-    }
-
-    public void setCurrentPot(int currentPot) {
-        this.currentPot = currentPot;
+    public Pot getCurrentPot() {
+        return this.currentPot;
     }
 
     public int getCurrentPlayerIndex() {
@@ -412,10 +506,11 @@ public class Lobby {
                 ", board=" + board +
                 ", players=" + Arrays.stream(activePlayers)
                         .filter(Objects::nonNull)
-                        .map(PlayerRecord::getId)
+                        .map(player -> player.playerRecord.getId())
                         .collect(Collectors.toList())
                 +
                 ", winners=" + winners +
                 '}';
     }
+
 }
