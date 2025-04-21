@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import java.util.Collections;
 
@@ -163,6 +165,9 @@ public class Lobby {
             // Reset lobby state
             resetLobby();
 
+            // Extract Blinds
+            extractBlinds();
+
             // Deal 2 cards to each player
             dealHoleCards();
 
@@ -209,63 +214,74 @@ public class Lobby {
      * and (later) a side pot should be created.
      */
     private void extractBlinds() {
-        if (tableCount() < 2) {
+        // 1) gather only non‑null seats
+        List<ConnectedPlayer> seated = Arrays.stream(activePlayers)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (seated.size() < 2) {
             logger.warn("Not enough players to post blinds.");
-            // Logic for awaiting new players or removing lobby after extended period of
-            // time
             return;
         }
 
-        // Determine the small blind player.
-        int smallBlindSeat = getFirstValidIndex(smallBlindIndex);
-        ConnectedPlayer smallBlindPlayer = activePlayers[smallBlindSeat];
-
-        // Determine the big blind player.
-        int bigBlindSeat = getFirstValidIndex(bigBlindIndex);
-        // Ensure that the big blind seat is not the same as the small blind seat.
-        if (bigBlindSeat == smallBlindSeat) {
-            bigBlindSeat = getNextNonNullIndex(smallBlindSeat);
+        // 2) find blind seats
+        int sbSeat = getFirstValidIndex(smallBlindIndex);
+        int bbSeat = getFirstValidIndex(bigBlindIndex);
+        if (bbSeat == sbSeat) {
+            bbSeat = getNextNonNullIndex(sbSeat);
         }
-        ConnectedPlayer bigBlindPlayer = activePlayers[bigBlindSeat];
+        ConnectedPlayer sbPlayer = activePlayers[sbSeat];
+        ConnectedPlayer bbPlayer = activePlayers[bbSeat];
 
-        // Read the blind amounts.
-        int sbRequired = smallBlind;
-        int bbRequired = bigBlind;
+        // 3) compute actual contributions (all‑in if < blind)
+        int sbContrib = Math.min(sbPlayer.getActiveChips(), smallBlind);
+        sbPlayer.betActiveChips(sbContrib);
 
-        // Determine how much each player can contribute.
-        int smallBlindChips = smallBlindPlayer.getActiveChips();
-        int bigBlindChips = bigBlindPlayer.getActiveChips();
+        int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
+        bbPlayer.betActiveChips(bbContrib);
 
-        // A player can only post as many chips as they have.
-        int smallBlindContribution = Math.min(smallBlindChips, sbRequired);
-        int bigBlindContribution = Math.min(bigBlindChips, bbRequired);
+        // 4) map each blind to its contribution
+        // (if you later want the *absolute* lowest you can do:)
+        // List<Integer> sortedContribs = ...
+        // int intOfPlayerWithLowestChips = sortedContribs.get(0);
+        Map<ConnectedPlayer, Integer> contribMap = new LinkedHashMap<>();
+        contribMap.put(sbPlayer, sbContrib);
+        contribMap.put(bbPlayer, bbContrib);
 
-        // Deduct the chips from the players.
-        smallBlindPlayer.betActiveChips(smallBlindContribution);
-        bigBlindPlayer.betActiveChips(bigBlindContribution);
+        // 5) build side‑pots based on unique, sorted contribution thresholds
+        List<Integer> sortedContribs = contribMap.values().stream()
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
 
-        // Add the contributions to the current pot.
-        currentPot.setAmount(smallBlindContribution + bigBlindContribution);
+        allActivePots.clear();
+        int prev = 0;
+        for (int threshold : sortedContribs) {
+            Pot pot = new Pot();
+            // only players who contributed ≥ this threshold can win this pot
+            pot.playersInPot = contribMap.entrySet().stream()
+                    .filter(e -> e.getValue() >= threshold)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
 
-        // Log cases where the player goes all in.
-        if (smallBlindChips <= sbRequired) {
-            logger.info("Small blind player {} is all in posting {} chips",
-                    smallBlindPlayer.playerRecord.getId(), smallBlindContribution);
-            // TODO: Create and manage side pot logic for the small blind.
+            // each of those players has put in (threshold – prev) more chips for this pot
+            int increment = threshold - prev;
+            pot.setAmount(increment * pot.playersInPot.size());
+
+            allActivePots.add(pot);
+            prev = threshold;
         }
-        if (bigBlindChips <= bbRequired) {
-            logger.info("Big blind player {} is all in posting {} chips",
-                    bigBlindPlayer.playerRecord.getId(), bigBlindContribution);
-            // TODO: Create and manage side pot logic for the big blind.
-        }
 
-        logger.info("Blinds posted: Small Blind: {} (player {}) | Big Blind: {} (player {})",
-                smallBlindContribution, smallBlindPlayer.playerRecord.getId(),
-                bigBlindContribution, bigBlindPlayer.playerRecord.getId());
+        // 6) set the “current” pot to the last (highest‑threshold) pot
+        currentPot = allActivePots.get(allActivePots.size() - 1);
 
-        // Update blind indices for the next hand.
-        smallBlindIndex = getNextNonNullIndex(smallBlindSeat);
+        // 7) advance blinds for next hand
+        smallBlindIndex = getNextNonNullIndex(sbSeat);
         bigBlindIndex = getNextNonNullIndex(smallBlindIndex);
+
+        logger.info("Blinds posted: SB={} by {}, BB={} by {} → Pots: {}",
+                sbContrib, sbPlayer.playerRecord.getId(),
+                bbContrib, bbPlayer.playerRecord.getId(),
+                allActivePots.size());
     }
 
     /**

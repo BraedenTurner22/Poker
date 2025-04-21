@@ -13,7 +13,6 @@ public class ConnectedPlayer {
     private List<Card> cards;
     private List<Card> bestCards;
     private int chipsActivelyUsed;
-    private Stack<Pot> activePots;
 
     private HandRank handRank;
 
@@ -22,7 +21,6 @@ public class ConnectedPlayer {
         this.connection = connection;
         this.cards = new ArrayList<>();
         this.bestCards = new ArrayList<>();
-        this.activePots = new Stack<>();
     }
 
     public void addCards(List<Card> cards) {
@@ -71,15 +69,4 @@ public class ConnectedPlayer {
         this.chipsActivelyUsed = this.chipsActivelyUsed + pot.getAmount();
     }
 
-    public Stack<Pot> getActivePots() {
-        return this.activePots;
-    }
-
-    public void foldCards() {
-        this.cards.clear();
-        this.activePots.clear();
-        ;
-    }
-
-    // Set active pot?
 }
