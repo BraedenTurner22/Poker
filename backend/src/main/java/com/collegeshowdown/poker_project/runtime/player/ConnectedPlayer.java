@@ -61,12 +61,37 @@ public class ConnectedPlayer {
         return this.chipsActivelyUsed;
     }
 
-    public void betActiveChips(int bettingAmount) {
-        chipsActivelyUsed = chipsActivelyUsed - bettingAmount;
+    public int payBlind(int blindAmount, Pot currentPot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed - blindAmount;
+        currentPot.addToAmountToPot(blindAmount);
+        return blindAmount;
     }
 
-    public void winPot(Pot pot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed + pot.getAmount();
+    public int call(int callAmount, Pot currentPot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed - callAmount;
+        currentPot.addToAmountToPot(callAmount);
+        return callAmount;
+    }
+
+    public int raise(int raiseAmount, Pot currentPot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed - raiseAmount;
+        currentPot.addToAmountToPot(raiseAmount);
+        return raiseAmount;
+    }
+
+    public void foldCards(List<Pot> allActivePots) {
+        setCards(new ArrayList<>());
+        setBestCards(new ArrayList<>());
+        setHandRank(null);
+
+        for (Pot pot : allActivePots) {
+            pot.getPlayersInPot().remove(this);
+        }
+    }
+
+    public void winPot(Pot currentPot) {
+        this.chipsActivelyUsed = this.chipsActivelyUsed + currentPot.getAmountInPot();
+        currentPot.addToAmountToPot(chipsActivelyUsed);
     }
 
 }

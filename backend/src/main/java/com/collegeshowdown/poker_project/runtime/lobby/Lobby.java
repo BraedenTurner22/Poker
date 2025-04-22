@@ -52,31 +52,27 @@ public class Lobby {
     private String name;
 
     private Deque<ConnectedPlayer> queuedPlayers;
-    private ConnectedPlayer activePlayers[] = new ConnectedPlayer[TABLE_SIZE]; // the table
+    private ConnectedPlayer playersAtTable[] = new ConnectedPlayer[TABLE_SIZE]; // the table
     private List<ConnectedPlayer> winners;
+
     private int currentPlayerIndex;
-    private ConnectedPlayer lastPlayerToBet;
+    private int intOfPlayerWithLowestChips;
 
     private List<Pot> allActivePots;
     private Pot currentPot = allActivePots.get(allActivePots.size() - 1);
+
     private boolean isLowStakes;
-    private int smallBlind = isLowStakes ? 10 : 20;
-    private int bigBlind = isLowStakes ? 20 : 50;
+    private final int smallBlind = isLowStakes ? 10 : 20;
+    private final int bigBlind = isLowStakes ? 20 : 50;
+
     private int smallBlindIndex;
     private int bigBlindIndex;
 
     private Deck deck;
     private List<Card> board;
 
+    // Constructors
     public Lobby() {
-    }
-
-    public List<Card> getBoard() {
-        return this.board;
-    }
-
-    public ArrayList<ConnectedPlayer> getQueue() {
-        return new ArrayList<>(queuedPlayers);
     }
 
     public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
@@ -90,10 +86,16 @@ public class Lobby {
         this.bigBlindIndex = 1;
     }
 
+    // Persistent Queue Logic, probably should exist outside of lobby
+    public ArrayList<ConnectedPlayer> getQueue() {
+        return new ArrayList<>(queuedPlayers);
+    }
+
     public void addPlayerToQueue(ConnectedPlayer player) {
         queuedPlayers.push(player);
     }
 
+    // Fill lobby from queue
     public boolean fillLobby(int num_to_insert) {
         // fill table with <num> players. fails if no players could be inserted OR if
         // table is full (check logs for more).
@@ -124,8 +126,8 @@ public class Lobby {
             // all the players in.
 
             for (int i = 0; i < TABLE_SIZE; i++) {
-                if (activePlayers[i] == null) {
-                    activePlayers[i] = connectedPlayer;
+                if (playersAtTable[i] == null) {
+                    playersAtTable[i] = connectedPlayer;
                     insertionCount++;
                     tableCount++;
                 }
@@ -139,7 +141,7 @@ public class Lobby {
     private int tableCount() {
         // number of players in the table
         int count = 0;
-        for (ConnectedPlayer connectedPlayer : activePlayers) {
+        for (ConnectedPlayer connectedPlayer : playersAtTable) {
             if (connectedPlayer != null)
                 count++;
         }
@@ -147,15 +149,11 @@ public class Lobby {
         return count;
     }
 
-    public List<ConnectedPlayer> getWinners() {
-        return winners;
-    }
-
     /**
      * Start playing the poker game.
      */
     public void play() {
-        logger.info("Starting a new game with {} players", activePlayers.length);
+        logger.info("Starting a new game with {} players", playersAtTable.length);
 
         if (tableCount() < 2) {
             logger.warn("Cannot start game with fewer than 2 players");
@@ -190,18 +188,41 @@ public class Lobby {
      */
     private void resetLobby() {
         logger.info("Resetting game state");
+
+        // reset shared state
         this.deck = new Deck();
         this.board.clear();
         this.winners.clear();
         this.allActivePots.clear();
-        this.allActivePots.add(new Pot());
 
-        // Reset player cards
-        for (ConnectedPlayer connectedPlayer : activePlayers) {
-            connectedPlayer.setCards(new ArrayList<>());
-            connectedPlayer.setBestCards(new ArrayList<>());
-            connectedPlayer.setHandRank(null);
+        // build fresh list of in‑hand players
+        List<ConnectedPlayer> newHandAllActivePlayers = getActivePlayers();
+
+        // kick off the first pot at the min‐stack
+        int initialMaxBet = minStackAmong(newHandAllActivePlayers);
+        Pot firstPot = new Pot(initialMaxBet, newHandAllActivePlayers);
+        this.allActivePots.add(firstPot);
+
+        // clear each player's hand data
+        for (ConnectedPlayer player : newHandAllActivePlayers) {
+            player.getCards().clear();
+            player.getBestCards().clear();
+            player.setHandRank(null);
         }
+    }
+
+    // Helper function getting non-null, active live players
+    private List<ConnectedPlayer> getActivePlayers() {
+        return Arrays.stream(playersAtTable).filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    // Helper function finding smalelst active-chips among a list
+    private int minStackAmong(List<ConnectedPlayer> players) {
+        return players.stream()
+                .mapToInt(ConnectedPlayer::getActiveChips)
+                .min()
+                .orElse(0);
     }
 
     /**
@@ -212,13 +233,14 @@ public class Lobby {
      * If a player does not have enough chips to cover the small or big blind, they
      * are all in,
      * and (later) a side pot should be created.
+     *
+     * IN ORDER TO PLAY, PLAYERS MUST HAVE AT LEAST THE SMALL BLIND
      */
     private void extractBlinds() {
         // 1) gather only non‑null seats
-        List<ConnectedPlayer> seated = Arrays.stream(activePlayers)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        if (seated.size() < 2) {
+        int seated = getActivePlayers().size();
+
+        if (seated < 2) {
             logger.warn("Not enough players to post blinds.");
             return;
         }
@@ -227,56 +249,27 @@ public class Lobby {
         int sbSeat = getFirstValidIndex(smallBlindIndex);
         int bbSeat = getFirstValidIndex(bigBlindIndex);
         if (bbSeat == sbSeat) {
-            bbSeat = getNextNonNullIndex(sbSeat);
+            bbSeat = getNextValidIndex(sbSeat);
         }
-        ConnectedPlayer sbPlayer = activePlayers[sbSeat];
-        ConnectedPlayer bbPlayer = activePlayers[bbSeat];
+        ConnectedPlayer sbPlayer = playersAtTable[sbSeat];
+        ConnectedPlayer bbPlayer = playersAtTable[bbSeat];
 
         // 3) compute actual contributions (all‑in if < blind)
+        //
         int sbContrib = Math.min(sbPlayer.getActiveChips(), smallBlind);
         sbPlayer.betActiveChips(sbContrib);
 
         int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
         bbPlayer.betActiveChips(bbContrib);
 
-        // 4) map each blind to its contribution
-        // (if you later want the *absolute* lowest you can do:)
-        // List<Integer> sortedContribs = ...
-        // int intOfPlayerWithLowestChips = sortedContribs.get(0);
-        Map<ConnectedPlayer, Integer> contribMap = new LinkedHashMap<>();
-        contribMap.put(sbPlayer, sbContrib);
-        contribMap.put(bbPlayer, bbContrib);
-
         // 5) build side‑pots based on unique, sorted contribution thresholds
-        List<Integer> sortedContribs = contribMap.values().stream()
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
-
-        allActivePots.clear();
-        int prev = 0;
-        for (int threshold : sortedContribs) {
-            Pot pot = new Pot();
-            // only players who contributed ≥ this threshold can win this pot
-            pot.playersInPot = contribMap.entrySet().stream()
-                    .filter(e -> e.getValue() >= threshold)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
-
-            // each of those players has put in (threshold – prev) more chips for this pot
-            int increment = threshold - prev;
-            pot.setAmount(increment * pot.playersInPot.size());
-
-            allActivePots.add(pot);
-            prev = threshold;
-        }
 
         // 6) set the “current” pot to the last (highest‑threshold) pot
         currentPot = allActivePots.get(allActivePots.size() - 1);
 
         // 7) advance blinds for next hand
-        smallBlindIndex = getNextNonNullIndex(sbSeat);
-        bigBlindIndex = getNextNonNullIndex(smallBlindIndex);
+        smallBlindIndex = getNextValidIndex(sbSeat);
+        bigBlindIndex = getNextValidIndex(smallBlindIndex);
 
         logger.info("Blinds posted: SB={} by {}, BB={} by {} → Pots: {}",
                 sbContrib, sbPlayer.playerRecord.getId(),
@@ -292,7 +285,7 @@ public class Lobby {
         int idx = startIndex % TABLE_SIZE;
         for (int i = 0; i < TABLE_SIZE; i++) {
             int candidate = (idx + i) % TABLE_SIZE;
-            if (activePlayers[candidate] != null) {
+            if ((playersAtTable[candidate] != null) && (playersAtTable[candidate].getActiveChips() > smallBlind)) {
                 return candidate;
             }
         }
@@ -302,11 +295,11 @@ public class Lobby {
     /**
      * Returns the index of the next non-null player after the given index.
      */
-    private int getNextNonNullIndex(int currentIndex) {
+    private int getNextValidIndex(int currentIndex) {
         int idx = (currentIndex + 1) % TABLE_SIZE;
         for (int i = 0; i < TABLE_SIZE; i++) {
             int candidate = (idx + i) % TABLE_SIZE;
-            if (activePlayers[candidate] != null) {
+            if ((playersAtTable[candidate] != null) && (playersAtTable[candidate].getActiveChips() > smallBlind)) {
                 return candidate;
             }
         }
@@ -317,9 +310,9 @@ public class Lobby {
      * Deal 2 hole cards to each player.
      */
     private void dealHoleCards() {
-        logger.info("Dealing hole cards to {} players", activePlayers.length);
+        logger.info("Dealing hole cards to {} players", playersAtTable.length);
         for (int i = 0; i < 2; i++) {
-            for (ConnectedPlayer connectedPlayer : activePlayers) {
+            for (ConnectedPlayer connectedPlayer : playersAtTable) {
                 if (connectedPlayer != null) {
                     List<Card> holeCards = new ArrayList<>();
                     holeCards.add(deck.dealCard());
@@ -372,7 +365,7 @@ public class Lobby {
      */
     private void determineWinners() {
         logger.info("Determining winners");
-        winners = AnalysisEngine.getWinners(activePlayers);
+        winners = AnalysisEngine.getWinners(playersAtTable);
         for (ConnectedPlayer handWinner : winners) {
             handWinner.winPot(this.currentPot);
             logger.info("Winners: {}", winners);
@@ -389,7 +382,7 @@ public class Lobby {
 
     public String processBet(int playerId, int amount) {
         // Find the player
-        ConnectedPlayer player = Arrays.stream(activePlayers)
+        ConnectedPlayer player = Arrays.stream(playersAtTable)
                 .filter(p -> p.playerRecord.getId() == playerId)
                 .findFirst()
                 .orElse(null);
@@ -407,7 +400,7 @@ public class Lobby {
                 player.playerRecord.getName(), amount, currentPot);
     }
 
-    // Getters and setters
+    // Regular Getters and setters
 
     public String getId() {
         return id;
@@ -433,16 +426,24 @@ public class Lobby {
         this.deck = deck;
     }
 
+    public List<Card> getBoard() {
+        return this.board;
+    }
+
     public void setBoard(List<Card> board) {
         this.board = board;
     }
 
-    public ConnectedPlayer[] getPlayers() {
-        return activePlayers;
+    public ConnectedPlayer[] getPlayersAtTable() {
+        return playersAtTable;
     }
 
     public void setPlayers(ConnectedPlayer[] activePlayers) {
-        this.activePlayers = activePlayers;
+        this.playersAtTable = activePlayers;
+    }
+
+    public List<ConnectedPlayer> getWinners() {
+        return winners;
     }
 
     // Add players
@@ -450,9 +451,9 @@ public class Lobby {
         if (tableCount() > 8) {
             logger.info("Cannot add player, lobby is full");
         } else {
-            for (int i = 0; i < this.activePlayers.length; i++) {
-                if (activePlayers[i] == null) {
-                    activePlayers[i] = queuedPlayers.pop();
+            for (int i = 0; i < this.playersAtTable.length; i++) {
+                if (playersAtTable[i] == null) {
+                    playersAtTable[i] = queuedPlayers.pop();
                     break;
                 }
             }
@@ -469,35 +470,19 @@ public class Lobby {
         return smallBlind;
     }
 
-    public void setSmallBlind(int smallBlind) {
-        this.smallBlind = smallBlind;
-    }
-
-    public int getBigBlind() {
-        return bigBlind;
-    }
-
-    public void setBigBlind(int bigBlind) {
-        this.bigBlind = bigBlind;
-    }
-
     public Pot getCurrentPot() {
         return this.currentPot;
-    }
-
-    public int getCurrentPlayerIndex() {
-        return currentPlayerIndex;
-    }
-
-    public void setCurrentPlayerIndex(int currentPlayerIndex) {
-        this.currentPlayerIndex = currentPlayerIndex;
     }
 
     public ConnectedPlayer getCurrentPlayer() {
         if (tableCount() == 0) {
             return null;
         }
-        return activePlayers[currentPlayerIndex % activePlayers.length];
+        return playersAtTable[currentPlayerIndex % playersAtTable.length];
+    }
+
+    public void setCurrentPlayerIndex(int currentPlayerIndex) {
+        this.currentPlayerIndex = currentPlayerIndex;
     }
 
     /**
@@ -506,7 +491,7 @@ public class Lobby {
      * @return The next player
      */
     public ConnectedPlayer nextPlayer() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % activePlayers.length;
+        currentPlayerIndex = (currentPlayerIndex + 1) % playersAtTable.length;
         return getCurrentPlayer();
     }
 
@@ -520,7 +505,7 @@ public class Lobby {
                 ", bigBlind=" + bigBlind +
                 ", currentPot=" + currentPot +
                 ", board=" + board +
-                ", players=" + Arrays.stream(activePlayers)
+                ", players=" + Arrays.stream(playersAtTable)
                         .filter(Objects::nonNull)
                         .map(player -> player.playerRecord.getId())
                         .collect(Collectors.toList())

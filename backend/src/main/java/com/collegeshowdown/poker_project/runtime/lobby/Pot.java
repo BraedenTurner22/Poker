@@ -1,5 +1,5 @@
-import com.collegeshowdown.poker_project.runtime.card.Card;
-import com.collegeshowdown.poker_project.runtime.card.Deck;
+package com.collegeshowdown.poker_project.runtime.lobby;
+
 import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.NoSuchElementException;
@@ -29,20 +29,35 @@ import java.io.Serializable;
 public class Pot {
 
     public List<ConnectedPlayer> playersInPot;
-    public int amount;
+    public int currentAmountInPot;
+    public int maxPossibleBet;
 
     public Pot() {
     }
 
-    public int getAmount() {
-        return amount;
+    public Pot(int maxPossibleBet) {
+        this.maxPossibleBet = maxPossibleBet;
     }
 
-    public void setAmount(int newAmount) {
-        amount = amount + newAmount;
+    public Pot(int maxPossibleBet, List<ConnectedPlayer> playersInPot) {
+        this.maxPossibleBet = maxPossibleBet;
+        this.playersInPot = playersInPot;
+    }
+
+    public int getAmountInPot() {
+        return currentAmountInPot;
+    }
+
+    public void addToAmountToPot(int newAmount) {
+        currentAmountInPot = currentAmountInPot + newAmount;
+    }
+
+    public void emptyPot() {
+        currentAmountInPot = 0;
     }
 
     public List<ConnectedPlayer> getPlayersInPot() {
         return playersInPot;
     }
+
 }
