@@ -94,4 +94,8 @@ public class ConnectedPlayer {
         currentPot.addToAmountToPot(chipsActivelyUsed);
     }
 
+    public boolean isActive() {
+        return !cards.isEmpty() && chipsActivelyUsed > 0;
+    }
+
 }

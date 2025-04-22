@@ -196,7 +196,7 @@ public class Lobby {
         this.allActivePots.clear();
 
         // build fresh list of in‑hand players
-        List<ConnectedPlayer> newHandAllActivePlayers = getActivePlayers();
+        List<ConnectedPlayer> newHandAllActivePlayers = getActivePlayersList();
 
         // kick off the first pot at the min‐stack
         int initialMaxBet = minStackAmong(newHandAllActivePlayers);
@@ -211,10 +211,13 @@ public class Lobby {
         }
     }
 
-    // Helper function getting non-null, active live players
-    private List<ConnectedPlayer> getActivePlayers() {
-        return Arrays.stream(playersAtTable).filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
+    // Helper function determining which ConnectedPlayers are not null, haven't
+    // folded, and have an ActiveChip stack > 0
+    private List<ConnectedPlayer> getActivePlayersList() {
+        return Arrays.stream(playersAtTable)
+                .filter(Objects::nonNull)
+                .filter(ConnectedPlayer::isActive)
+                .collect(Collectors.toList());
     }
 
     // Helper function finding smalelst active-chips among a list
@@ -237,10 +240,11 @@ public class Lobby {
      * IN ORDER TO PLAY, PLAYERS MUST HAVE AT LEAST THE SMALL BLIND
      */
     private void extractBlinds() {
-        // 1) gather only non‑null seats
-        int seated = getActivePlayers().size();
 
-        if (seated < 2) {
+        // 1) gather only non‑null seats
+        int nonNullSeats = getActivePlayersList().size();
+
+        if (nonNullSeats < 2) {
             logger.warn("Not enough players to post blinds.");
             return;
         }
@@ -254,13 +258,17 @@ public class Lobby {
         ConnectedPlayer sbPlayer = playersAtTable[sbSeat];
         ConnectedPlayer bbPlayer = playersAtTable[bbSeat];
 
-        // 3) compute actual contributions (all‑in if < blind)
-        //
-        int sbContrib = Math.min(sbPlayer.getActiveChips(), smallBlind);
-        sbPlayer.betActiveChips(sbContrib);
+        // Contribute small blind (all‑in if < blind)
+        // Creates new pot
+        sbPlayer.payBlind(smallBlind, currentPot);
+        if (sbPlayer.getActiveChips() == 0) {
+            int newMaxBet = minStackAmong(getActivePlayersList());
+            Pot newPot = new Pot(newMaxBet, getActivePlayersList());
+            this.allActivePots.add(newPot);
+        }
 
         int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
-        bbPlayer.betActiveChips(bbContrib);
+        bbPlayer.payBlind(bbContrib, currentPot);
 
         // 5) build side‑pots based on unique, sorted contribution thresholds
 
