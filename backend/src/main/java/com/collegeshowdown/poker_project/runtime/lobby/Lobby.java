@@ -1,5 +1,6 @@
 package com.collegeshowdown.poker_project.runtime.lobby;
 
+import com.collegeshowdown.poker_project.models.*;
 import com.collegeshowdown.poker_project.runtime.card.Card;
 import com.collegeshowdown.poker_project.runtime.card.Deck;
 import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
@@ -9,7 +10,6 @@ import java.util.Objects;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.collegeshowdown.poker_project.model.*;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -32,11 +32,11 @@ import java.io.Serializable;
 
 // NON PERSISTENT !!!!!!
 public class Lobby {
+
     public static final int TABLE_SIZE = 8;
 
     enum LobbyType {
-        UNIVERSITY,
-        GLOBAL,
+        UNIVERSITY, GLOBAL,
     }
 
     private final static Logger logger = LoggerFactory.getLogger(PlayerRecord.class);
@@ -46,34 +46,46 @@ public class Lobby {
     private LobbyType lobbyType;
 
     private String associatedSchool; // make this a custom type later; we discuss.
+
     private Object customLobbyOptions; // define later what these may be.
+
     private String customLobbyCode;
+
     private String lobbyInfo;
+
     private String name;
 
     private Deque<ConnectedPlayer> queuedPlayers;
+
     private ConnectedPlayer playersAtTable[] = new ConnectedPlayer[TABLE_SIZE]; // the table
+
     private List<ConnectedPlayer> winners;
 
     private int currentPlayerIndex;
-    private int intOfPlayerWithLowestChips;
 
-    private List<Pot> allActivePots;
+    private List<Pot> allActivePots = new ArrayList<>();
+
     private Pot currentPot = allActivePots.get(allActivePots.size() - 1);
 
     private boolean isLowStakes;
+
     private final int smallBlind = isLowStakes ? 10 : 20;
+
     private final int bigBlind = isLowStakes ? 20 : 50;
 
-    private int smallBlindIndex;
-    private int bigBlindIndex;
+    private int smallBlindIndex = getFirstValidIndex(0);
 
-    private Deck deck;
-    private List<Card> board;
+    private int bigBlindIndex = getNextValidIndex(1);
+
+    private Deck deck = new Deck();
+
+    private List<Card> board = new ArrayList<>();
 
     // Constructors
     public Lobby() {
     }
+
+
 
     public Lobby(LobbyType lobbyType, String associatedSchool, Object customLobbyOptions, String customLobbyCode,
             String lobbyInfo) {
@@ -86,14 +98,20 @@ public class Lobby {
         this.bigBlindIndex = 1;
     }
 
+
+
     // Persistent Queue Logic, probably should exist outside of lobby
     public ArrayList<ConnectedPlayer> getQueue() {
         return new ArrayList<>(queuedPlayers);
     }
 
+
+
     public void addPlayerToQueue(ConnectedPlayer player) {
         queuedPlayers.push(player);
     }
+
+
 
     // Fill lobby from queue
     public boolean fillLobby(int num_to_insert) {
@@ -138,6 +156,8 @@ public class Lobby {
         return true;
     }
 
+
+
     private int tableCount() {
         // number of players in the table
         int count = 0;
@@ -148,6 +168,8 @@ public class Lobby {
 
         return count;
     }
+
+
 
     /**
      * Start playing the poker game.
@@ -166,22 +188,38 @@ public class Lobby {
             // Extract Blinds
             extractBlinds();
 
+            // Initiate Betting
+
             // Deal 2 cards to each player
             dealHoleCards();
+
+            // Initiate Betting
 
             // Deal the flop (3 cards)
             dealFlop();
 
+            // Initiate Betting
+
             // Deal the turn (1 card)
             dealTurn();
+
+            // Initiate Betting
 
             // Deal the river (1 card)
             dealRiver();
 
+            // Initiate Betting
+
             // Determine the winners
             determineWinners();
+
+            // advance blinds for next hand
+            smallBlindIndex += 1;
+            bigBlindIndex += 1;
         }
     }
+
+
 
     /**
      * Reset the game state for a new round.
@@ -195,59 +233,43 @@ public class Lobby {
         this.winners.clear();
         this.allActivePots.clear();
 
-        // build fresh list of in‑hand players
-        List<ConnectedPlayer> newHandAllActivePlayers = getActivePlayersList();
-
-        // kick off the first pot at the min‐stack
-        int initialMaxBet = minStackAmong(newHandAllActivePlayers);
-        Pot firstPot = new Pot(initialMaxBet, newHandAllActivePlayers);
-        this.allActivePots.add(firstPot);
-
         // clear each player's hand data
-        for (ConnectedPlayer player : newHandAllActivePlayers) {
+        for (ConnectedPlayer player : getActivePlayersList()) {
             player.getCards().clear();
             player.getBestCards().clear();
             player.setHandRank(null);
         }
     }
 
+
+
     // Helper function determining which ConnectedPlayers are not null, haven't
     // folded, and have an ActiveChip stack > 0
     private List<ConnectedPlayer> getActivePlayersList() {
-        return Arrays.stream(playersAtTable)
-                .filter(Objects::nonNull)
-                .filter(ConnectedPlayer::isActive)
+        return Arrays.stream(playersAtTable).filter(Objects::nonNull).filter(ConnectedPlayer::isActive)
                 .collect(Collectors.toList());
     }
 
-    // Helper function finding smalelst active-chips among a list
-    private int minStackAmong(List<ConnectedPlayer> players) {
-        return players.stream()
-                .mapToInt(ConnectedPlayer::getActiveChips)
-                .min()
-                .orElse(0);
-    }
+
 
     /**
-     * Gets blinds out of two players.
-     * Blinds start at indexes 0 and 1 when the lobby starts.
-     * Each time a hand is played, the blind indices shift clockwise to the next
-     * available ConnectedPlayer.
-     * If a player does not have enough chips to cover the small or big blind, they
-     * are all in,
-     * and (later) a side pot should be created.
+     * Gets blinds out of two players. Blinds start at indexes 0 and 1 when the
+     * lobby starts. Each time a hand is played, the blind indices shift clockwise
+     * to the next available ConnectedPlayer. If a player does not have enough chips
+     * to cover the small or big blind, they are all in, and (later) a side pot
+     * should be created.
      *
      * IN ORDER TO PLAY, PLAYERS MUST HAVE AT LEAST THE SMALL BLIND
      */
     private void extractBlinds() {
 
-        // 1) gather only non‑null seats
-        int nonNullSeats = getActivePlayersList().size();
+        // build fresh list of in‑hand players
+        List<ConnectedPlayer> AllActivePlayersAfterReset = getActivePlayersList();
 
-        if (nonNullSeats < 2) {
-            logger.warn("Not enough players to post blinds.");
-            return;
-        }
+        // kick off the first pot at the min‐stack
+        int leastChipCountOfInitialPlayer = minimumChipCountAmong(AllActivePlayersAfterReset);
+        Pot firstPot = new Pot(bigBlind, leastChipCountOfInitialPlayer, AllActivePlayersAfterReset);
+        this.allActivePots.add(firstPot);
 
         // 2) find blind seats
         int sbSeat = getFirstValidIndex(smallBlindIndex);
@@ -261,29 +283,29 @@ public class Lobby {
         // Contribute small blind (all‑in if < blind)
         // Creates new pot
         sbPlayer.payBlind(smallBlind, currentPot);
-        if (sbPlayer.getActiveChips() == 0) {
-            int newMaxBet = minStackAmong(getActivePlayersList());
-            Pot newPot = new Pot(newMaxBet, getActivePlayersList());
-            this.allActivePots.add(newPot);
-        }
 
         int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
-        bbPlayer.payBlind(bbContrib, currentPot);
+        if (bbContrib < bigBlind) {
+            bbPlayer.payBlind(smallBlind, currentPot);
+            int chipsOfPlayerWithMinStack = minimumChipCountAmong(getActivePlayersList());
+            Pot splitBlindPot = new Pot(bigBlind - smallBlind, chipsOfPlayerWithMinStack, getActivePlayersList());
+            this.allActivePots.add(splitBlindPot);
+        } else {
+            bbPlayer.payBlind(bigBlind, currentPot);
+        }
 
-        // 5) build side‑pots based on unique, sorted contribution thresholds
-
-        // 6) set the “current” pot to the last (highest‑threshold) pot
-        currentPot = allActivePots.get(allActivePots.size() - 1);
-
-        // 7) advance blinds for next hand
-        smallBlindIndex = getNextValidIndex(sbSeat);
-        bigBlindIndex = getNextValidIndex(smallBlindIndex);
-
-        logger.info("Blinds posted: SB={} by {}, BB={} by {} → Pots: {}",
-                sbContrib, sbPlayer.playerRecord.getId(),
-                bbContrib, bbPlayer.playerRecord.getId(),
-                allActivePots.size());
+        logger.info("Blinds posted: SB={} by {}, BB={} by {} → Pots: {}", smallBlind, sbPlayer.playerRecord.getId(),
+                bbContrib, bbPlayer.playerRecord.getId(), allActivePots.size());
     }
+
+
+
+    // Helper function finding smalelst active-chips among a list
+    private int minimumChipCountAmong(List<ConnectedPlayer> players) {
+        return players.stream().mapToInt(ConnectedPlayer::getActiveChips).min().orElse(0);
+    }
+
+
 
     /**
      * Returns the index of the first non-null player starting from the given index
@@ -293,12 +315,14 @@ public class Lobby {
         int idx = startIndex % TABLE_SIZE;
         for (int i = 0; i < TABLE_SIZE; i++) {
             int candidate = (idx + i) % TABLE_SIZE;
-            if ((playersAtTable[candidate] != null) && (playersAtTable[candidate].getActiveChips() > smallBlind)) {
+            if ((playersAtTable[candidate] != null) && (playersAtTable[candidate].getActiveChips() >= smallBlind)) {
                 return candidate;
             }
         }
         throw new NoSuchElementException("No valid player found in the lobby.");
     }
+
+
 
     /**
      * Returns the index of the next non-null player after the given index.
@@ -313,6 +337,8 @@ public class Lobby {
         }
         throw new NoSuchElementException("No next valid player found in the lobby.");
     }
+
+
 
     /**
      * Deal 2 hole cards to each player.
@@ -330,6 +356,8 @@ public class Lobby {
         }
     }
 
+
+
     /**
      * Deal the flop (first 3 community cards).
      */
@@ -344,6 +372,8 @@ public class Lobby {
         }
     }
 
+
+
     /**
      * Deal the turn (4th community card).
      */
@@ -355,6 +385,8 @@ public class Lobby {
         // Deal 1 card to the board
         board.add(deck.dealCard());
     }
+
+
 
     /**
      * Deal the river (5th community card).
@@ -368,6 +400,8 @@ public class Lobby {
         board.add(deck.dealCard());
     }
 
+
+
     /**
      * Determine the winners of the current game.
      */
@@ -380,79 +414,75 @@ public class Lobby {
         }
     }
 
-    /**
-     * Process a bet from a player.
-     *
-     * @param playerId The ID of the player making the bet
-     * @param amount   The bet amount
-     * @return A message describing the result of the bet
-     */
-
-    public String processBet(int playerId, int amount) {
-        // Find the player
-        ConnectedPlayer player = Arrays.stream(playersAtTable)
-                .filter(p -> p.playerRecord.getId() == playerId)
-                .findFirst()
-                .orElse(null);
-
-        if (player == null) {
-            return "Player not found";
-        }
-
-        // Add the bet to the pot
-        currentPot.setAmount(amount);
-        player.betActiveChips(amount);
-        lastPlayerToBet = player;
-
-        return String.format("Player %s bet $%.2f. Current pot: $%d",
-                player.playerRecord.getName(), amount, currentPot);
-    }
-
     // Regular Getters and setters
+
+
 
     public String getId() {
         return id;
     }
 
+
+
     public void setId(String id) {
         this.id = id;
     }
+
+
 
     public String getName() {
         return name;
     }
 
+
+
     public void setName(String name) {
         this.name = name;
     }
+
+
 
     public Deck getDeck() {
         return deck;
     }
 
+
+
     public void setDeck(Deck deck) {
         this.deck = deck;
     }
+
+
 
     public List<Card> getBoard() {
         return this.board;
     }
 
+
+
     public void setBoard(List<Card> board) {
         this.board = board;
     }
+
+
 
     public ConnectedPlayer[] getPlayersAtTable() {
         return playersAtTable;
     }
 
+
+
     public void setPlayers(ConnectedPlayer[] activePlayers) {
         this.playersAtTable = activePlayers;
     }
 
+
+
     public List<ConnectedPlayer> getWinners() {
         return winners;
     }
+
+
 
     // Add players
     public void addPlayer() {
@@ -470,17 +500,25 @@ public class Lobby {
         return;
     }
 
+
+
     public void setWinners(List<ConnectedPlayer> winners) {
         this.winners = winners;
     }
+
+
 
     public int getSmallBlind() {
         return smallBlind;
     }
 
+
+
     public Pot getCurrentPot() {
         return this.currentPot;
     }
+
+
 
     public ConnectedPlayer getCurrentPlayer() {
         if (tableCount() == 0) {
@@ -489,9 +527,13 @@ public class Lobby {
         return playersAtTable[currentPlayerIndex % playersAtTable.length];
     }
 
+
+
     public void setCurrentPlayerIndex(int currentPlayerIndex) {
         this.currentPlayerIndex = currentPlayerIndex;
     }
+
+
 
     /**
      * Move to the next player.
@@ -503,23 +545,16 @@ public class Lobby {
         return getCurrentPlayer();
     }
 
+
+
     // Idk how to fix this LOL
     @Override
     public String toString() {
-        return "Game{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", smallBlind=" + smallBlind +
-                ", bigBlind=" + bigBlind +
-                ", currentPot=" + currentPot +
-                ", board=" + board +
-                ", players=" + Arrays.stream(playersAtTable)
-                        .filter(Objects::nonNull)
-                        .map(player -> player.playerRecord.getId())
+        return "Game{" + "id=" + id + ", name='" + name + '\'' + ", smallBlind=" + smallBlind + ", bigBlind=" + bigBlind
+                + ", currentPot=" + currentPot + ", board=" + board + ", players="
+                + Arrays.stream(playersAtTable).filter(Objects::nonNull).map(player -> player.playerRecord.getId())
                         .collect(Collectors.toList())
-                +
-                ", winners=" + winners +
-                '}';
+                + ", winners=" + winners + '}';
     }
 
 }

@@ -3,8 +3,8 @@ package com.collegeshowdown.poker_project.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.collegeshowdown.poker_project.model.PlayerRecord;
-import com.collegeshowdown.poker_project.model.Winner;
+import com.collegeshowdown.poker_project.models.PlayerRecord;
+import com.collegeshowdown.poker_project.models.Winner;
 import com.collegeshowdown.poker_project.runtime.lobby.Lobby;
 import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 

@@ -3,7 +3,7 @@ package com.collegeshowdown.poker_project.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.collegeshowdown.poker_project.model.PlayerRecord;
+import com.collegeshowdown.poker_project.models.PlayerRecord;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,6 +1,6 @@
 package com.collegeshowdown.poker_project.runtime.player;
 
-import com.collegeshowdown.poker_project.model.PlayerRecord;
+import com.collegeshowdown.poker_project.models.PlayerRecord;
 import com.collegeshowdown.poker_project.runtime.card.*;
 import com.collegeshowdown.poker_project.runtime.lobby.Pot;
 
@@ -23,61 +23,90 @@ public class ConnectedPlayer {
         this.bestCards = new ArrayList<>();
     }
 
+
+
     public void addCards(List<Card> cards) {
         for (Card card : cards) {
             this.cards.add(card);
         }
     }
 
+
+
     public void setCards(List<Card> cards) {
         this.cards = cards;
     }
+
+
 
     public List<Card> getCards() {
         return this.cards;
     }
 
+
+
     public List<Card> getBestCards() {
         return this.bestCards;
     }
+
+
 
     public void setBestCards(List<Card> bestCards) {
         this.bestCards = bestCards;
     }
 
+
+
     public Card getBestCardAtIndex(int index) {
         return this.bestCards.get(index);
     }
+
+
 
     public HandRank getHandRank() {
         return this.handRank;
     }
 
+
+
     public void setHandRank(HandRank handRank) {
         this.handRank = handRank;
     }
+
+
 
     public int getActiveChips() {
         return this.chipsActivelyUsed;
     }
 
+
+
     public int payBlind(int blindAmount, Pot currentPot) {
         this.chipsActivelyUsed = this.chipsActivelyUsed - blindAmount;
         currentPot.addToAmountToPot(blindAmount);
+        currentPot.addPlayerContribution(this, blindAmount);
         return blindAmount;
     }
+
+
 
     public int call(int callAmount, Pot currentPot) {
         this.chipsActivelyUsed = this.chipsActivelyUsed - callAmount;
         currentPot.addToAmountToPot(callAmount);
+        currentPot.addPlayerContribution(this, callAmount);
         return callAmount;
     }
+
+
 
     public int raise(int raiseAmount, Pot currentPot) {
         this.chipsActivelyUsed = this.chipsActivelyUsed - raiseAmount;
         currentPot.addToAmountToPot(raiseAmount);
+        currentPot.addPlayerContribution(this, raiseAmount);
         return raiseAmount;
     }
+
+
 
     public void foldCards(List<Pot> allActivePots) {
         setCards(new ArrayList<>());
@@ -89,10 +118,14 @@ public class ConnectedPlayer {
         }
     }
 
+
+
     public void winPot(Pot currentPot) {
         this.chipsActivelyUsed = this.chipsActivelyUsed + currentPot.getAmountInPot();
         currentPot.addToAmountToPot(chipsActivelyUsed);
     }
+
+
 
     public boolean isActive() {
         return !cards.isEmpty() && chipsActivelyUsed > 0;
