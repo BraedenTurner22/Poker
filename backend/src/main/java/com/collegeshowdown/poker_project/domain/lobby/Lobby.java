@@ -1,9 +1,10 @@
-package com.collegeshowdown.poker_project.runtime.lobby;
+package com.collegeshowdown.poker_project.domain.lobby;
 
+import com.collegeshowdown.poker_project.domain.analysis.AnalysisEngine;
+import com.collegeshowdown.poker_project.domain.card.Card;
+import com.collegeshowdown.poker_project.domain.card.Deck;
+import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.models.*;
-import com.collegeshowdown.poker_project.runtime.card.Card;
-import com.collegeshowdown.poker_project.runtime.card.Deck;
-import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -347,7 +348,7 @@ public class Lobby {
         logger.info("Dealing hole cards to {} players", playersAtTable.length);
         for (int i = 0; i < 2; i++) {
             for (ConnectedPlayer connectedPlayer : playersAtTable) {
-                if (connectedPlayer != null) {
+                if (connectedPlayer.isActive()) {
                     List<Card> holeCards = new ArrayList<>();
                     holeCards.add(deck.dealCard());
                     connectedPlayer.addCards(holeCards);

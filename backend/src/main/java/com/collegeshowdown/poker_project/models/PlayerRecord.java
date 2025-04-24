@@ -5,8 +5,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.collegeshowdown.poker_project.runtime.card.Card;
-import com.collegeshowdown.poker_project.runtime.player.HandRank;
+import com.collegeshowdown.poker_project.domain.card.Card;
+import com.collegeshowdown.poker_project.domain.player.HandRank;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,9 +21,7 @@ import java.io.Serializable;
 @Entity
 public class PlayerRecord implements Serializable {
     private final static Logger logger = LoggerFactory.getLogger(PlayerRecord.class);
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false, updatable = false, unique = true)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(nullable = false, updatable = false, unique = true)
     private int id;
 
     private String name;
@@ -35,6 +33,8 @@ public class PlayerRecord implements Serializable {
     public PlayerRecord() {
     }
 
+
+
     public PlayerRecord(int id, String name, String email, String university, String imageURL) {
         this.id = id;
         this.name = name;
@@ -43,45 +43,67 @@ public class PlayerRecord implements Serializable {
         this.imageURL = imageURL;
     }
 
+
+
     public int getId() {
         return id;
     }
+
+
 
     public void setId(int id) {
         this.id = id;
     }
 
+
+
     public String getName() {
         return name;
     }
+
+
 
     public void setName(String name) {
         this.name = name;
     }
 
+
+
     public String getEmail() {
         return email;
     }
+
+
 
     public void setEmail(String email) {
         this.email = email;
     }
 
+
+
     public String getUniversity() {
         return university;
     }
+
+
 
     public void setUniversity(String university) {
         this.university = university;
     }
 
+
+
     public String getImageURL() {
         return imageURL;
     }
 
+
+
     public void setImageURL(String imageURL) {
         this.imageURL = imageURL;
     }
+
+
 
     @Override
     public String toString() {

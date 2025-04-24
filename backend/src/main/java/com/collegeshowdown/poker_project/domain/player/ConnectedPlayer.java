@@ -1,8 +1,9 @@
-package com.collegeshowdown.poker_project.runtime.player;
+package com.collegeshowdown.poker_project.domain.player;
 
+import com.collegeshowdown.poker_project.domain.card.Card;
+import com.collegeshowdown.poker_project.domain.lobby.Pot;
 import com.collegeshowdown.poker_project.models.PlayerRecord;
 import com.collegeshowdown.poker_project.runtime.card.*;
-import com.collegeshowdown.poker_project.runtime.lobby.Pot;
 
 import java.util.*;
 
@@ -15,6 +16,10 @@ public class ConnectedPlayer {
     private int chipsActivelyUsed;
 
     private HandRank handRank;
+
+    public enum PlayerState {
+        ACTIVE, FOLDED, ALL_IN
+    }
 
     public ConnectedPlayer(PlayerRecord playerRecord, Object connection) {
         this.playerRecord = playerRecord;
@@ -94,6 +99,7 @@ public class ConnectedPlayer {
         this.chipsActivelyUsed = this.chipsActivelyUsed - callAmount;
         currentPot.addToAmountToPot(callAmount);
         currentPot.addPlayerContribution(this, callAmount);
+        this.p
         return callAmount;
     }
 

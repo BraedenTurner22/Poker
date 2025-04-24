@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.models;
+package com.collegeshowdown.poker_project.domain.analysis;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,9 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.collegeshowdown.poker_project.runtime.card.*;
-import com.collegeshowdown.poker_project.runtime.player.HandRank;
+import com.collegeshowdown.poker_project.domain.card.Card;
+import com.collegeshowdown.poker_project.domain.card.Rank;
+import com.collegeshowdown.poker_project.domain.card.Suit;
+import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
+import com.collegeshowdown.poker_project.domain.player.HandRank;
+import com.collegeshowdown.poker_project.models.AnalysisResults;
 import com.collegeshowdown.poker_project.runtime.*;
-import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 // MAIN PART: AnalysisEngine.analyzeHand(Player player)
 
@@ -30,8 +34,8 @@ public class AnalysisEngine {
             if (cards.size() < 5)
                 continue;
 
-            if (containsAce(cards) && containsKing(cards) && containsQueen(cards)
-                    && containsJack(cards) && containsTen(cards)) {
+            if (containsAce(cards) && containsKing(cards) && containsQueen(cards) && containsJack(cards)
+                    && containsTen(cards)) {
 
                 connectedPlayer.setBestCards(cards);
                 connectedPlayer.setHandRank(HandRank.ROYAL_FLUSH);
@@ -70,6 +74,8 @@ public class AnalysisEngine {
 
     }
 
+
+
     // ==========================================================================================
     private static AnalysisResults checkForStraightFlush(ConnectedPlayer player) {
         logger.debug("id: " + player.playerRecord.getId());
@@ -82,29 +88,28 @@ public class AnalysisEngine {
             if (cards.size() < 5)
                 continue;
 
-            if ((containsKing(cards) && containsQueen(cards) && containsJack(cards)
-                    && containsTen(cards) && containsNine(cards))
-                    || (containsQueen(cards) && containsJack(cards) && containsTen(cards)
-                            && containsNine(cards) && containsEight(cards))
-                    || (containsJack(cards) && containsTen(cards) && containsNine(cards)
-                            && containsEight(cards) && containsSeven(cards))
-                    || (containsTen(cards) && containsNine(cards) && containsEight(cards)
-                            && containsSeven(cards) && containsSix(cards))
-                    || (containsNine(cards) && containsEight(cards) && containsSeven(cards)
-                            && containsSix(cards) && containsFive(cards))
-                    || (containsEight(cards) && containsSeven(cards) && containsSix(cards)
-                            && containsFive(cards) && containsFour(cards))
-                    || (containsSeven(cards) && containsSix(cards) && containsFive(cards)
-                            && containsFour(cards) && containsThree(cards))
-                    || (containsSix(cards) && containsFive(cards) && containsFour(cards)
-                            && containsThree(cards) && containsTwo(cards))
-                    || (containsFive(cards) && containsFour(cards) && containsThree(cards)
-                            && containsTwo(cards)) && containsAce(cards)) {
+            if ((containsKing(cards) && containsQueen(cards) && containsJack(cards) && containsTen(cards)
+                    && containsNine(cards))
+                    || (containsQueen(cards) && containsJack(cards) && containsTen(cards) && containsNine(cards)
+                            && containsEight(cards))
+                    || (containsJack(cards) && containsTen(cards) && containsNine(cards) && containsEight(cards)
+                            && containsSeven(cards))
+                    || (containsTen(cards) && containsNine(cards) && containsEight(cards) && containsSeven(cards)
+                            && containsSix(cards))
+                    || (containsNine(cards) && containsEight(cards) && containsSeven(cards) && containsSix(cards)
+                            && containsFive(cards))
+                    || (containsEight(cards) && containsSeven(cards) && containsSix(cards) && containsFive(cards)
+                            && containsFour(cards))
+                    || (containsSeven(cards) && containsSix(cards) && containsFive(cards) && containsFour(cards)
+                            && containsThree(cards))
+                    || (containsSix(cards) && containsFive(cards) && containsFour(cards) && containsThree(cards)
+                            && containsTwo(cards))
+                    || (containsFive(cards) && containsFour(cards) && containsThree(cards) && containsTwo(cards))
+                            && containsAce(cards)) {
 
                 player.setHandRank(HandRank.STRAIGHT_FLUSH);
                 logger.info("return HandRank.STRAIGHT_FLUSH");
-                return new AnalysisResults(player.playerRecord.getId(), HandRank.STRAIGHT_FLUSH,
-                        player.getBestCards());
+                return new AnalysisResults(player.playerRecord.getId(), HandRank.STRAIGHT_FLUSH, player.getBestCards());
             }
         }
 
@@ -112,6 +117,8 @@ public class AnalysisEngine {
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
 
     }
+
+
 
     // ==========================================================================================
     private static AnalysisResults checkForFourOfAKind(ConnectedPlayer player) {
@@ -149,6 +156,8 @@ public class AnalysisEngine {
         logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
     }
+
+
 
     // ==========================================================================================
     private static AnalysisResults checkForFullHouse(ConnectedPlayer player) {
@@ -199,14 +208,15 @@ public class AnalysisEngine {
 
             player.setBestCards(bestCards);
             player.setHandRank(HandRank.FULL_HOUSE);
-            logger.info("return HANDRANK.FULL_HOUSE (" + pairRank + " full of " + threeOfAKindRank
-                    + ")");
+            logger.info("return HANDRANK.FULL_HOUSE (" + pairRank + " full of " + threeOfAKindRank + ")");
             return new AnalysisResults(player.playerRecord.getId(), HandRank.FULL_HOUSE, bestCards);
         }
 
         logger.info("return HANDRANK.NOTHING");
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
     }
+
+
 
     // ==========================================================================================
     private static AnalysisResults checkForFlush(ConnectedPlayer player) {
@@ -238,6 +248,8 @@ public class AnalysisEngine {
         logger.info("return HandRank.NOTHING");
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
     }
+
+
 
     // ==========================================================================================
     private static AnalysisResults checkForStraight(ConnectedPlayer player) {
@@ -292,6 +304,8 @@ public class AnalysisEngine {
         }
     }
 
+
+
     // ==========================================================================================
     private static AnalysisResults checkForThreeOfAKind(ConnectedPlayer player) {
         List<Card> playerCards = new ArrayList<>(player.getCards());
@@ -328,6 +342,8 @@ public class AnalysisEngine {
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
     }
 
+
+
     // ==========================================================================================
     private static AnalysisResults checkForTwoPair(ConnectedPlayer player) {
         List<Card> playerCards = new ArrayList<>(player.getCards());
@@ -340,8 +356,7 @@ public class AnalysisEngine {
         List<Card> bestCards = new ArrayList<>();
         for (int i = 0; i < size - 1; i++) {
 
-            if (i < playerCards.size() - 1
-                    && playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
+            if (i < playerCards.size() - 1 && playerCards.get(i).getRank() == playerCards.get(i + 1).getRank()) {
                 pairCount++;
                 bestCards.add(playerCards.get(i));
                 bestCards.add(playerCards.get(i + 1));
@@ -364,6 +379,8 @@ public class AnalysisEngine {
 
         return new AnalysisResults(player.playerRecord.getId(), HandRank.TWO_PAIR, null);
     }
+
+
 
     // ==========================================================================================
     private static AnalysisResults checkForOnePair(ConnectedPlayer player) {
@@ -400,6 +417,8 @@ public class AnalysisEngine {
         return new AnalysisResults(player.playerRecord.getId(), HandRank.NOTHING, null);
     }
 
+
+
     // ==========================================================================================
     private static AnalysisResults checkForHighCard(ConnectedPlayer player) {
         int size = player.getCards().size();
@@ -417,6 +436,8 @@ public class AnalysisEngine {
         logger.info("return HandRank.HIGH_CARD");
         return new AnalysisResults(player.playerRecord.getId(), HandRank.HIGH_CARD, bestCards);
     }
+
+
 
     // ==========================================================================================
     public static AnalysisResults analyzeHand(ConnectedPlayer player) {
@@ -464,6 +485,8 @@ public class AnalysisEngine {
         return analysisResults;
     }
 
+
+
     // ==========================================================================================
     private static Map<HandRank, List<Integer>> getHandRankToPlayerIdMap(ConnectedPlayer[] connectedPlayers) {
         Map<HandRank, List<Integer>> handRankToPlayerIdMap = new LinkedHashMap<>();
@@ -473,44 +496,46 @@ public class AnalysisEngine {
 
         for (ConnectedPlayer connectedPlayer : connectedPlayers) {
             switch (connectedPlayer.getHandRank()) {
-                case HandRank.ROYAL_FLUSH:
-                    handRankToPlayerIdMap.get(HandRank.ROYAL_FLUSH).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.STRAIGHT_FLUSH:
-                    handRankToPlayerIdMap.get(HandRank.STRAIGHT_FLUSH).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.FOUR_OF_A_KIND:
-                    handRankToPlayerIdMap.get(HandRank.FOUR_OF_A_KIND).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.FULL_HOUSE:
-                    handRankToPlayerIdMap.get(HandRank.FULL_HOUSE).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.FLUSH:
-                    handRankToPlayerIdMap.get(HandRank.FLUSH).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.STRAIGHT:
-                    handRankToPlayerIdMap.get(HandRank.STRAIGHT).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.THREE_OF_A_KIND:
-                    handRankToPlayerIdMap.get(HandRank.THREE_OF_A_KIND).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.TWO_PAIR:
-                    handRankToPlayerIdMap.get(HandRank.TWO_PAIR).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.ONE_PAIR:
-                    handRankToPlayerIdMap.get(HandRank.ONE_PAIR).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.HIGH_CARD:
-                    handRankToPlayerIdMap.get(HandRank.HIGH_CARD).add(connectedPlayer.playerRecord.getId());
-                    break;
-                case HandRank.NOTHING:
-                default:
-                    handRankToPlayerIdMap.get(HandRank.NOTHING).add(connectedPlayer.playerRecord.getId());
-                    break;
+            case HandRank.ROYAL_FLUSH:
+                handRankToPlayerIdMap.get(HandRank.ROYAL_FLUSH).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.STRAIGHT_FLUSH:
+                handRankToPlayerIdMap.get(HandRank.STRAIGHT_FLUSH).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.FOUR_OF_A_KIND:
+                handRankToPlayerIdMap.get(HandRank.FOUR_OF_A_KIND).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.FULL_HOUSE:
+                handRankToPlayerIdMap.get(HandRank.FULL_HOUSE).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.FLUSH:
+                handRankToPlayerIdMap.get(HandRank.FLUSH).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.STRAIGHT:
+                handRankToPlayerIdMap.get(HandRank.STRAIGHT).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.THREE_OF_A_KIND:
+                handRankToPlayerIdMap.get(HandRank.THREE_OF_A_KIND).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.TWO_PAIR:
+                handRankToPlayerIdMap.get(HandRank.TWO_PAIR).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.ONE_PAIR:
+                handRankToPlayerIdMap.get(HandRank.ONE_PAIR).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.HIGH_CARD:
+                handRankToPlayerIdMap.get(HandRank.HIGH_CARD).add(connectedPlayer.playerRecord.getId());
+                break;
+            case HandRank.NOTHING:
+            default:
+                handRankToPlayerIdMap.get(HandRank.NOTHING).add(connectedPlayer.playerRecord.getId());
+                break;
             }
         }
         return handRankToPlayerIdMap;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getRoyalFlushWinner(ConnectedPlayer[] connectedPlayers) {
@@ -523,6 +548,8 @@ public class AnalysisEngine {
         }
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getStraightFlushWinners(ConnectedPlayer[] connectedPlayers) {
@@ -551,6 +578,8 @@ public class AnalysisEngine {
         }
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getFourOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
@@ -582,14 +611,16 @@ public class AnalysisEngine {
 
         // Find the winner among >2 players (highest kicker)
         else if (winners.size() > 2) {
-            int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestKicker);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getFullHouseWinners(ConnectedPlayer[] connectedPlayers) {
@@ -601,21 +632,22 @@ public class AnalysisEngine {
 
         // TODO: Figure out if this is right
         if (winners.size() > 1) {
-            int highestTOAK = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestTOAK = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestTOAK);
 
-            int highestPair = winners.stream().mapToInt(w -> w
-                    .getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue())
-                    .max().orElse(0);
+            int highestPair = winners.stream()
+                    .mapToInt(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank()
-                    .getValue() < highestPair);
+            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue() < highestPair);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getFlushWinners(ConnectedPlayer[] connectedPlayers) {
@@ -628,17 +660,17 @@ public class AnalysisEngine {
         if (winners.size() > 1) {
             for (int i = 0; i < 5; i++) {
                 final int index = i;
-                int highestFlushCard = winners.stream()
-                        .mapToInt(w -> w.getBestCardAtIndex(index).getRank().getValue()).max()
-                        .orElse(0);
+                int highestFlushCard = winners.stream().mapToInt(w -> w.getBestCardAtIndex(index).getRank().getValue())
+                        .max().orElse(0);
 
-                winners.removeIf(w -> w.getBestCardAtIndex(index).getRank()
-                        .getValue() < highestFlushCard);
+                winners.removeIf(w -> w.getBestCardAtIndex(index).getRank().getValue() < highestFlushCard);
             }
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getStraightWinners(ConnectedPlayer[] connectedPlayers) {
@@ -649,15 +681,16 @@ public class AnalysisEngine {
         }
 
         if (winners.size() > 1) {
-            int highestFlushCard = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestFlushCard = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(0).getRank().getValue() < highestFlushCard);
+            winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestFlushCard);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getThreeOfAKindWinners(ConnectedPlayer[] connectedPlayers) {
@@ -668,28 +701,30 @@ public class AnalysisEngine {
         }
 
         if (winners.size() > 1) {
-            int highestTOAK = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestTOAK = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestTOAK);
 
-            int highestKicker = winners.stream().mapToInt(w -> w
-                    .getBestCardAtIndex(w.getBestCards().size() - 2).getRank().getValue())
-                    .max().orElse(0);
+            int highestKicker = winners.stream()
+                    .mapToInt(w -> w.getBestCardAtIndex(w.getBestCards().size() - 2).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 2).getRank()
-                    .getValue() < highestKicker);
+            winners.removeIf(
+                    w -> w.getBestCardAtIndex(w.getBestCards().size() - 2).getRank().getValue() < highestKicker);
 
-            int secondHighestKicker = winners.stream().mapToInt(w -> w
-                    .getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue())
-                    .max().orElse(0);
+            int secondHighestKicker = winners.stream()
+                    .mapToInt(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank()
-                    .getValue() < secondHighestKicker);
+            winners.removeIf(
+                    w -> w.getBestCardAtIndex(w.getBestCards().size() - 1).getRank().getValue() < secondHighestKicker);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getTwoPairWinners(ConnectedPlayer[] connectedPlayers) {
@@ -700,25 +735,26 @@ public class AnalysisEngine {
         }
 
         if (winners.size() > 1) {
-            int highestPair = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestPair = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestPair);
 
-            int secondHighestPair = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
+            int secondHighestPair = winners.stream().mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(2).getRank().getValue() < secondHighestPair);
+            winners.removeIf(w -> w.getBestCardAtIndex(2).getRank().getValue() < secondHighestPair);
 
-            int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
+            int highestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(4).getRank().getValue() < highestKicker);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getOnePairWinners(ConnectedPlayer[] connectedPlayers) {
@@ -729,31 +765,31 @@ public class AnalysisEngine {
         }
 
         if (winners.size() > 1) {
-            int highestPair = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestPair = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestPair);
 
-            int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
+            int highestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(2).getRank().getValue() < highestKicker);
 
-            int secondHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max().orElse(0);
+            int secondHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(3).getRank().getValue() < secondHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(3).getRank().getValue() < secondHighestKicker);
 
-            int thirdHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
+            int thirdHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(4).getRank().getValue() < thirdHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(4).getRank().getValue() < thirdHighestKicker);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     private static List<ConnectedPlayer> getHighCardWinners(ConnectedPlayer[] connectedPlayers) {
@@ -765,38 +801,36 @@ public class AnalysisEngine {
         }
 
         if (winners.size() > 1) {
-            int highestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max().orElse(0);
+            int highestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(0).getRank().getValue()).max()
+                    .orElse(0);
 
             winners.removeIf(w -> w.getBestCardAtIndex(0).getRank().getValue() < highestKicker);
 
-            int secondHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(1).getRank().getValue()).max().orElse(0);
+            int secondHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(1).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(1).getRank().getValue() < secondHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(1).getRank().getValue() < secondHighestKicker);
 
-            int thirdHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max().orElse(0);
+            int thirdHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(2).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(2).getRank().getValue() < thirdHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(2).getRank().getValue() < thirdHighestKicker);
 
-            int fourthHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max().orElse(0);
+            int fourthHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(3).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(3).getRank().getValue() < fourthHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(3).getRank().getValue() < fourthHighestKicker);
 
-            int fifthHighestKicker = winners.stream()
-                    .mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max().orElse(0);
+            int fifthHighestKicker = winners.stream().mapToInt(w -> w.getBestCardAtIndex(4).getRank().getValue()).max()
+                    .orElse(0);
 
-            winners.removeIf(
-                    w -> w.getBestCardAtIndex(4).getRank().getValue() < fifthHighestKicker);
+            winners.removeIf(w -> w.getBestCardAtIndex(4).getRank().getValue() < fifthHighestKicker);
         }
 
         return winners;
     }
+
+
 
     // ==========================================================================================
     public static List<ConnectedPlayer> getWinners(ConnectedPlayer[] connectedPlayers) {
@@ -878,6 +912,8 @@ public class AnalysisEngine {
         // return winners;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsAce(List<Card> cards) {
         for (Card card : cards) {
@@ -886,6 +922,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsKing(List<Card> cards) {
@@ -896,6 +934,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsQueen(List<Card> cards) {
         for (Card card : cards) {
@@ -904,6 +944,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsJack(List<Card> cards) {
@@ -914,6 +956,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsTen(List<Card> cards) {
         for (Card card : cards) {
@@ -922,6 +966,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsNine(List<Card> cards) {
@@ -932,6 +978,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsEight(List<Card> cards) {
         for (Card card : cards) {
@@ -940,6 +988,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsSeven(List<Card> cards) {
@@ -950,6 +1000,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsSix(List<Card> cards) {
         for (Card card : cards) {
@@ -958,6 +1010,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsFive(List<Card> cards) {
@@ -968,6 +1022,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsFour(List<Card> cards) {
         for (Card card : cards) {
@@ -976,6 +1032,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static boolean containsThree(List<Card> cards) {
@@ -986,6 +1044,8 @@ public class AnalysisEngine {
         return false;
     }
 
+
+
     // ==========================================================================================
     private static boolean containsTwo(List<Card> cards) {
         for (Card card : cards) {
@@ -994,6 +1054,8 @@ public class AnalysisEngine {
         }
         return false;
     }
+
+
 
     // ==========================================================================================
     private static Map<Suit, List<Card>> createSuitToCardMap(ConnectedPlayer connectedPlayer) {

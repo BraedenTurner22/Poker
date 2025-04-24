@@ -4,7 +4,7 @@ import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.collegeshowdown.poker_project.runtime.lobby.Lobby;
+import com.collegeshowdown.poker_project.domain.lobby.Lobby;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ForcedCardsTestDriver {

@@ -1,7 +1,7 @@
-package com.collegeshowdown.poker_project.runtime.lobby;
+package com.collegeshowdown.poker_project.domain.lobby;
 
+import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.models.*;
-import com.collegeshowdown.poker_project.runtime.player.ConnectedPlayer;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;

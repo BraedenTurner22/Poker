@@ -1,7 +1,7 @@
-package com.collegeshowdown.poker_project.runtime.card;
+package com.collegeshowdown.poker_project.domain.card;
 
-import com.collegeshowdown.poker_project.runtime.card.Rank;
-import com.collegeshowdown.poker_project.runtime.card.Suit;
+import com.collegeshowdown.poker_project.domain.card.Rank;
+import com.collegeshowdown.poker_project.domain.card.Suit;
 
 public class Card implements Comparable<Card> {
     private Rank rank;
@@ -10,31 +10,45 @@ public class Card implements Comparable<Card> {
     public Card() {
     }
 
+
+
     public Card(Rank rank, Suit suit) {
         this.rank = rank;
         this.suit = suit;
     }
 
+
+
     public Rank getRank() {
         return rank;
     }
+
+
 
     public void setRank(Rank rank) {
         this.rank = rank;
     }
 
+
+
     public Suit getSuit() {
         return suit;
     }
+
+
 
     public void setSuit(Suit suit) {
         this.suit = suit;
     }
 
+
+
     @Override
     public String toString() {
         return rank + " of " + suit;
     }
+
+
 
     @Override
     public int compareTo(Card other) {
