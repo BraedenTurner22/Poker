@@ -24,6 +24,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
+import com.collegeshowdown.poker_project.services.*;
+
 @Component @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class Lobby {
 
@@ -38,7 +40,7 @@ public class Lobby {
     private String id = UUID.randomUUID().toString();
 
     @Column
-    private String associatedSchool;
+    private School associatedSchool;
 
     @Transient
     private ConnectedPlayer playersAtTable[] = new ConnectedPlayer[TABLE_SIZE];
@@ -80,8 +82,8 @@ public class Lobby {
 
 
     // Global Lobby
-    public Lobby(LobbyType lobbyType, boolean isLowStakes) {
-        this.lobbyType = lobbyType;
+    public Lobby(boolean isLowStakes) {
+        this.lobbyType = LobbyType.GLOBAL;
         this.isLowStakes = isLowStakes;
         this.smallBlind = isLowStakes ? 10 : 20;
         this.bigBlind = isLowStakes ? 20 : 50;
@@ -90,10 +92,9 @@ public class Lobby {
     }
 
 
-
     // School lobby
-    public Lobby(LobbyType lobbyType, String associatedSchool, boolean isLowStakes) {
-        this.lobbyType = lobbyType;
+    public Lobby(School associatedSchool, boolean isLowStakes) {
+        this.lobbyType = LobbyType.UNIVERSITY;
         this.associatedSchool = associatedSchool;
         this.isLowStakes = isLowStakes;
         this.smallBlind = isLowStakes ? 10 : 20;
@@ -102,7 +103,14 @@ public class Lobby {
         this.bigBlindIndex = 1;
     }
 
-
+    public Lobby(CustomLobbyInfo lobbyInfo, boolean isLowStakes) {
+        this.lobbyType = LobbyType.CUSTOM;
+        this.isLowStakes = isLowStakes;
+        this.smallBlind = isLowStakes ? 10 : 20;
+        this.bigBlind = isLowStakes ? 20 : 50;
+        this.smallBlindIndex = 0;
+        this.bigBlindIndex = 1;
+    }
 
     public int tableCount() {
         // number of players in the table
@@ -144,13 +152,13 @@ public class Lobby {
 
 
 
-    public String getAssociatedSchool() {
+    public School getAssociatedSchool() {
         return associatedSchool;
     }
 
 
 
-    public void setAssociatedSchool(String associatedSchool) {
+    public void setAssociatedSchool(School associatedSchool) {
         this.associatedSchool = associatedSchool;
     }
 

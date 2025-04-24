@@ -12,5 +12,10 @@ public enum LobbyType {
     /**
      * A lobby open to all players.
      */
-    GLOBAL;
+    GLOBAL,
+
+    /**
+     * custom code (implement later)
+     */
+    CUSTOM;
 }
