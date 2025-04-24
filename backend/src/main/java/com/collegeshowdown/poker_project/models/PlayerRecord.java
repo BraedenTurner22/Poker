@@ -1,57 +1,87 @@
 package com.collegeshowdown.poker_project.models;
 
-import java.util.Collections;
-import java.util.List;
+import java.io.Serializable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.collegeshowdown.poker_project.domain.card.Card;
-import com.collegeshowdown.poker_project.domain.player.HandRank;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Transient;
+import jakarta.persistence.Table;
 
-import java.util.ArrayList;
-import java.io.Serializable;
-
-@Entity
+/**
+ * Entity representing a player in the poker game.
+ */
+@Entity @Table(name = "players")
 public class PlayerRecord implements Serializable {
-    private final static Logger logger = LoggerFactory.getLogger(PlayerRecord.class);
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(nullable = false, updatable = false, unique = true)
-    private int id;
+    private static final long serialVersionUID = 1L;
 
+    private static final Logger logger = LoggerFactory.getLogger(PlayerRecord.class);
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
     private String name;
-    private String email;
-    private String university;
-    private String imageURL;
-    private int chips;
 
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column
+    private String university;
+
+    @Column(name = "image_url")
+    private String imageURL;
+
+    @Column(name = "total_chips", nullable = false)
+    private Integer totalChips = 0;
+
+    /**
+     * Default constructor required by JPA
+     */
     public PlayerRecord() {
     }
 
 
 
-    public PlayerRecord(int id, String name, String email, String university, String imageURL) {
+    /**
+     * Constructs a new player with the specified details.
+     */
+    public PlayerRecord(Integer id, String name, String email, String university, String imageURL) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.university = university;
         this.imageURL = imageURL;
+        this.totalChips = 0;
     }
 
 
 
-    public int getId() {
+    /**
+     * Full constructor including totalChips
+     */
+    public PlayerRecord(Integer id, String name, String email, String university, String imageURL, Integer totalChips) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.university = university;
+        this.imageURL = imageURL;
+        this.totalChips = totalChips;
+    }
+
+
+
+    public Integer getId() {
         return id;
     }
 
 
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -105,18 +135,53 @@ public class PlayerRecord implements Serializable {
 
 
 
+    public Integer getTotalChips() {
+        return totalChips;
+    }
+
+
+
+    public void setTotalChips(Integer totalChips) {
+        this.totalChips = totalChips;
+    }
+
+
+
+    /**
+     * Updates the player's total chips by adding the specified amount.
+     * 
+     * @param chipAmount the amount to add (can be negative for subtraction)
+     */
+    public void updateChips(int chipAmount) {
+        this.totalChips += chipAmount;
+    }
+
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        PlayerRecord that = (PlayerRecord) o;
+
+        return id != null ? id.equals(that.id) : that.id == null;
+    }
+
+
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+
+
     @Override
     public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\n");
-        stringBuilder.append("Player{");
-        stringBuilder.append("\nid = " + id);
-        stringBuilder.append("\nname = " + name);
-        stringBuilder.append("\nemail = " + email);
-        stringBuilder.append("\nuniversity = " + university);
-        stringBuilder.append("\nimageURL = " + imageURL);
-        stringBuilder.append("\nchips = " + chips);
-        stringBuilder.append("\n}");
-        return stringBuilder.toString();
+        return "PlayerRecord{" + "id=" + id + ", name='" + name + '\'' + ", email='" + email + '\'' + ", university='"
+                + university + '\'' + ", imageURL='" + imageURL + '\'' + ", totalChips=" + totalChips + '}';
     }
 }

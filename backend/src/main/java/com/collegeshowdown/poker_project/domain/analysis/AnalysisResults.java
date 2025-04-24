@@ -1,4 +1,4 @@
-package com.collegeshowdown.poker_project.models;
+package com.collegeshowdown.poker_project.domain.analysis;
 
 import java.util.List;
 

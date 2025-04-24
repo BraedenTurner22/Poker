@@ -3,37 +3,56 @@ package com.collegeshowdown.poker_project.domain.player;
 import com.collegeshowdown.poker_project.domain.card.Card;
 import com.collegeshowdown.poker_project.domain.lobby.Pot;
 import com.collegeshowdown.poker_project.models.PlayerRecord;
-import com.collegeshowdown.poker_project.runtime.card.*;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
+@Component @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ConnectedPlayer {
+
     public final PlayerRecord playerRecord;
-    public final Object connection; // TODO - figure this out
+    public final Object connection; // TODO: wire in your WebSocket/session object
 
-    private List<Card> cards;
-    private List<Card> bestCards;
+    private List<Card> cards = new ArrayList<>();
+    private List<Card> bestCards = new ArrayList<>();
     private int chipsActivelyUsed;
-
+    private PlayerState playerState = PlayerState.ACTIVE;
     private HandRank handRank;
-
-    public enum PlayerState {
-        ACTIVE, FOLDED, ALL_IN
-    }
 
     public ConnectedPlayer(PlayerRecord playerRecord, Object connection) {
         this.playerRecord = playerRecord;
         this.connection = connection;
-        this.cards = new ArrayList<>();
-        this.bestCards = new ArrayList<>();
+    }
+
+    // ─── State accessors ─────────────────────────────────────────────────────────
+
+
+
+    public PlayerState getPlayerState() {
+        return playerState;
     }
 
 
 
+    public void setPlayerState(PlayerState playerState) {
+        this.playerState = playerState;
+    }
+
+
+
+    public boolean isActive() {
+        return this.playerState == PlayerState.ACTIVE;
+    }
+
+    // ─── Card methods ────────────────────────────────────────────────────────────
+
+
+
     public void addCards(List<Card> cards) {
-        for (Card card : cards) {
-            this.cards.add(card);
-        }
+        this.cards.addAll(cards);
     }
 
 
@@ -45,13 +64,7 @@ public class ConnectedPlayer {
 
 
     public List<Card> getCards() {
-        return this.cards;
-    }
-
-
-
-    public List<Card> getBestCards() {
-        return this.bestCards;
+        return cards;
     }
 
 
@@ -62,14 +75,22 @@ public class ConnectedPlayer {
 
 
 
-    public Card getBestCardAtIndex(int index) {
-        return this.bestCards.get(index);
+    public List<Card> getBestCards() {
+        return bestCards;
     }
 
 
 
+    public Card getBestCardAtIndex(int index) {
+        return bestCards.get(index);
+    }
+
+    // ─── Hand rank ───────────────────────────────────────────────────────────────
+
+
+
     public HandRank getHandRank() {
-        return this.handRank;
+        return handRank;
     }
 
 
@@ -78,46 +99,57 @@ public class ConnectedPlayer {
         this.handRank = handRank;
     }
 
-
-
-    public int getActiveChips() {
-        return this.chipsActivelyUsed;
-    }
+    // ─── Betting actions ─────────────────────────────────────────────────────────
 
 
 
     public int payBlind(int blindAmount, Pot currentPot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed - blindAmount;
-        currentPot.addToAmountToPot(blindAmount);
-        currentPot.addPlayerContribution(this, blindAmount);
+        deductChips(blindAmount, currentPot);
+        checkAllIn();
         return blindAmount;
     }
 
 
 
     public int call(int callAmount, Pot currentPot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed - callAmount;
-        currentPot.addToAmountToPot(callAmount);
-        currentPot.addPlayerContribution(this, callAmount);
-        this.p
+        deductChips(callAmount, currentPot);
+        checkAllIn();
         return callAmount;
     }
 
 
 
     public int raise(int raiseAmount, Pot currentPot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed - raiseAmount;
-        currentPot.addToAmountToPot(raiseAmount);
-        currentPot.addPlayerContribution(this, raiseAmount);
+        deductChips(raiseAmount, currentPot);
+        checkAllIn();
         return raiseAmount;
     }
 
 
 
+    private void deductChips(int amount, Pot pot) {
+        this.chipsActivelyUsed -= amount;
+        pot.addToAmountToPot(amount);
+        pot.addPlayerContribution(this, amount);
+    }
+
+
+
+    private void checkAllIn() {
+        if (chipsActivelyUsed <= 0) {
+            this.playerState = PlayerState.ALL_IN;
+        }
+    }
+
+    // ─── Folding & winning ───────────────────────────────────────────────────────
+
+
+
     public void foldCards(List<Pot> allActivePots) {
-        setCards(new ArrayList<>());
-        setBestCards(new ArrayList<>());
-        setHandRank(null);
+        this.playerState = PlayerState.FOLDED;
+        this.cards.clear();
+        this.bestCards.clear();
+        this.handRank = null;
 
         for (Pot pot : allActivePots) {
             pot.getPlayersInPot().remove(this);
@@ -127,14 +159,16 @@ public class ConnectedPlayer {
 
 
     public void winPot(Pot currentPot) {
-        this.chipsActivelyUsed = this.chipsActivelyUsed + currentPot.getAmountInPot();
-        currentPot.addToAmountToPot(chipsActivelyUsed);
+        int winnings = currentPot.getAmountInPot();
+        this.chipsActivelyUsed += winnings;
+        currentPot.addToAmountToPot(winnings);
     }
 
+    // ─── Chips getter ───────────────────────────────────────────────────────────
 
 
-    public boolean isActive() {
-        return !cards.isEmpty() && chipsActivelyUsed > 0;
+
+    public int getActiveChips() {
+        return chipsActivelyUsed;
     }
-
 }
