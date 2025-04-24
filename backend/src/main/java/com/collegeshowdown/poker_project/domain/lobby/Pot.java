@@ -120,4 +120,8 @@ public class Pot {
     public void setClosed(boolean closed) {
         this.closed = closed;
     }
+
+    public List<ConnectedPlayer> getEligiblePlayers() {
+        return null; // TODO: implement
+    }
 }

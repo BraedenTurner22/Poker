@@ -58,7 +58,7 @@ public class WinnerService {
             return;
         }
 
-        int potSize = pot.getSize();
+        int potSize = pot.getAmountInPot();
         int winnerCount = winners.size();
         int baseAmount = potSize / winnerCount;
         int remainder = potSize % winnerCount;
@@ -74,7 +74,7 @@ public class WinnerService {
                 amount++;
             }
 
-            winner.addChips(amount);
+            winner.playerRecord.updateChips(amount);
             logger.info("Player {} received {} chips", winner.playerRecord.getId(), amount);
         }
     }
