@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.collegeshowdown.poker_project.domain.lobby.Lobby;
+import com.collegeshowdown.poker_project.services.LobbyGameService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ForcedCardsTestDriver {
@@ -21,10 +22,7 @@ public class ForcedCardsTestDriver {
 
         try {
             String file = "src/test/resources/" + args[0];
-            Lobby lobby = objectMapper.readValue(new File(file), Lobby.class);
-
-            logger.info(lobby.toString());
-            lobby.play();
+            LobbyGameService.play(lobby);
             logger.info("winners:" + lobby.getWinners().toString());
 
         } catch (Exception exception) {

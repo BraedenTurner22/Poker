@@ -26,8 +26,7 @@ import jakarta.persistence.GenerationType;
 
 import com.collegeshowdown.poker_project.services.*;
 
-@Component @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class Lobby {
+public class Lobby { // POJO, LobbyService does the heavy liftng
 
     private final static Logger logger = LoggerFactory.getLogger(Lobby.class);
 
