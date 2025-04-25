@@ -51,7 +51,7 @@ public class PotManagerService {
      *
      * IN ORDER TO PLAY, PLAYERS MUST HAVE AT LEAST THE SMALL BLIND
      */
-    public void extractBlinds(Lobby lobby) {
+    public void postBlinds(Lobby lobby) {
         ConnectedPlayer[] playersAtTable = lobby.getPlayersAtTable();
         int smallBlind = lobby.getSmallBlind();
         int bigBlind = lobby.getBigBlind();

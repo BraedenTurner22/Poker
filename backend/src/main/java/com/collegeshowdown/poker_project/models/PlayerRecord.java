@@ -5,6 +5,8 @@ import java.io.Serializable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.collegeshowdown.poker_project.models.College.College;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,14 +32,20 @@ public class PlayerRecord implements Serializable {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column
-    private String university;
+    @Column(name = "university", nullable = false)
+    private College college;
 
-    @Column(name = "image_url")
-    private String imageURL;
+    @Column(name = "university_logo_image_path")
+    private String universityLogoImagePath = college.getCollegeLogoImagePath();
 
     @Column(name = "total_chips", nullable = false)
     private Integer totalChips = 0;
+
+    @Column(name = "total_chip_difference", nullable = false)
+    private Integer totalChipDifference = 0;
+
+    @Column(name = "one_week_chip_difference", nullable = false)
+    private Integer oneWeekChipDifference = 0;
 
     /**
      * Default constructor required by JPA
@@ -50,12 +58,11 @@ public class PlayerRecord implements Serializable {
     /**
      * Constructs a new player with the specified details.
      */
-    public PlayerRecord(Integer id, String name, String email, String university, String imageURL) {
+    public PlayerRecord(Integer id, String name, String email, College college) {
         this.id = id;
         this.name = name;
         this.email = email;
-        this.university = university;
-        this.imageURL = imageURL;
+        this.college = college;
         this.totalChips = 0;
     }
 
@@ -64,12 +71,11 @@ public class PlayerRecord implements Serializable {
     /**
      * Full constructor including totalChips
      */
-    public PlayerRecord(Integer id, String name, String email, String university, String imageURL, Integer totalChips) {
+    public PlayerRecord(Integer id, String name, String email, College college, Integer totalChips) {
         this.id = id;
         this.name = name;
         this.email = email;
-        this.university = university;
-        this.imageURL = imageURL;
+        this.college = college;
         this.totalChips = totalChips;
     }
 
@@ -111,26 +117,14 @@ public class PlayerRecord implements Serializable {
 
 
 
-    public String getUniversity() {
-        return university;
+    public College getCollege() {
+        return this.college;
     }
 
 
 
-    public void setUniversity(String university) {
-        this.university = university;
-    }
-
-
-
-    public String getImageURL() {
-        return imageURL;
-    }
-
-
-
-    public void setImageURL(String imageURL) {
-        this.imageURL = imageURL;
+    public void setCollege(College college) {
+        this.college = college;
     }
 
 
@@ -181,7 +175,8 @@ public class PlayerRecord implements Serializable {
 
     @Override
     public String toString() {
-        return "PlayerRecord{" + "id=" + id + ", name='" + name + '\'' + ", email='" + email + '\'' + ", university='"
-                + university + '\'' + ", imageURL='" + imageURL + '\'' + ", totalChips=" + totalChips + '}';
+        return "PlayerRecord{" + "id=" + id + ", name='" + name + '\'' + ", email='" + email + '\'' + ", college='"
+                + college + '\'' + ", collegeImagePath='" + college.getCollegeLogoImagePath() + '\'' + ", totalChips="
+                + totalChips + '}';
     }
 }

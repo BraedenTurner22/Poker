@@ -2,6 +2,7 @@ package com.collegeshowdown.poker_project.domain.lobby;
 
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.models.*;
+import com.collegeshowdown.poker_project.models.College.College;
 import com.collegeshowdown.poker_project.domain.card.*;
 
 import java.util.UUID;
@@ -39,7 +40,7 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     private String id = UUID.randomUUID().toString();
 
     @Column
-    private School associatedSchool;
+    private College associatedCollege;
 
     @Transient
     private ConnectedPlayer playersAtTable[] = new ConnectedPlayer[TABLE_SIZE];
@@ -62,6 +63,9 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     @Column(nullable = false)
     private final int bigBlind;
 
+    @Column(nullable = false)
+    private final int minimumBuyIn;
+
     @Column
     private int smallBlindIndex;
 
@@ -76,6 +80,7 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
         this.lobbyType = null;
         this.smallBlind = 0;
         this.bigBlind = 0;
+        this.minimumBuyIn = 0;
     }
 
 
@@ -86,30 +91,39 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
         this.isLowStakes = isLowStakes;
         this.smallBlind = isLowStakes ? 10 : 20;
         this.bigBlind = isLowStakes ? 20 : 50;
+        this.minimumBuyIn = isLowStakes ? 100 : 300;
         this.smallBlindIndex = 0;
         this.bigBlindIndex = 1;
     }
+
 
 
     // School lobby
-    public Lobby(School associatedSchool, boolean isLowStakes) {
+    public Lobby(College associatedCollege, boolean isLowStakes) {
         this.lobbyType = LobbyType.UNIVERSITY;
-        this.associatedSchool = associatedSchool;
+        this.associatedCollege = associatedCollege;
         this.isLowStakes = isLowStakes;
         this.smallBlind = isLowStakes ? 10 : 20;
         this.bigBlind = isLowStakes ? 20 : 50;
+        this.minimumBuyIn = isLowStakes ? 100 : 300;
         this.smallBlindIndex = 0;
         this.bigBlindIndex = 1;
     }
 
+
+
+    // Custom lobby
     public Lobby(CustomLobbyInfo lobbyInfo, boolean isLowStakes) {
         this.lobbyType = LobbyType.CUSTOM;
         this.isLowStakes = isLowStakes;
         this.smallBlind = isLowStakes ? 10 : 20;
-        this.bigBlind = isLowStakes ? 20 : 50;
+        this.bigBlind = isLowStakes ? 50 : 100;
+        this.minimumBuyIn = isLowStakes ? 100 : 300;
         this.smallBlindIndex = 0;
         this.bigBlindIndex = 1;
     }
+
+
 
     public int tableCount() {
         // number of players in the table
@@ -123,8 +137,9 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
-    // Helper function determining which ConnectedPlayers are not null, haven't
-    // folded, and have an ActiveChip stack > 0
+    // Helper function determining which ConnectedPlayers are not null, and have
+    // playerState ACTIVE (haven't
+    // folded, and have an ActiveChip stack > 0)
     public List<ConnectedPlayer> getActivePlayersList() {
         return Arrays.stream(playersAtTable).filter(Objects::nonNull).filter(ConnectedPlayer::isActive)
                 .collect(Collectors.toList());
@@ -151,14 +166,14 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
-    public School getAssociatedSchool() {
-        return associatedSchool;
+    public College getAssociatedCollege() {
+        return associatedCollege;
     }
 
 
 
-    public void setAssociatedSchool(School associatedSchool) {
-        this.associatedSchool = associatedSchool;
+    public void setAssociatedCollege(College associatedCollege) {
+        this.associatedCollege = associatedCollege;
     }
 
 
