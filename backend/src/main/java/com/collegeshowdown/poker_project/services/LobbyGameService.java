@@ -46,7 +46,7 @@ public class LobbyGameService {
             resetLobby(lobby);
 
             // Extract Blinds
-            potManagerService.extractBlinds(lobby);
+            potManagerService.postBlinds(lobby);
 
             // Initiate Betting
             // (betting logic would go here)
@@ -108,6 +108,7 @@ public class LobbyGameService {
             player.getBestCards().clear();
             player.setHandRank(null);
         }
+
     }
 
 

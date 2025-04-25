@@ -1,3 +1,5 @@
+package com.collegeshowdown.poker_project.models.College;
+
 import java.util.HashMap;
 import java.util.Map;
 

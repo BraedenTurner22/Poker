@@ -32,7 +32,7 @@ public class PlayerRecord implements Serializable {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "university", nullable = false)
+    @Column(name = "college", nullable = false)
     private College college;
 
     @Column(name = "university_logo_image_path")
