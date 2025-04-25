@@ -12,6 +12,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
@@ -32,7 +33,7 @@ public class PlayerRecord implements Serializable {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "college", nullable = false)
+    @ManyToOne
     private College college;
 
     @Column(name = "university_logo_image_path")
@@ -143,7 +144,7 @@ public class PlayerRecord implements Serializable {
 
     /**
      * Updates the player's total chips by adding the specified amount.
-     * 
+     *
      * @param chipAmount the amount to add (can be negative for subtraction)
      */
     public void updateChips(int chipAmount) {
