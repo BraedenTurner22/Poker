@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.collegeshowdown.poker_project.domain.lobby.*;
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
+import com.collegeshowdown.poker_project.models.College.College;
 
 // TODO:
 // add player queues for each school (every single school has it's own queue of players, who can then join their school's lobby. )
@@ -29,18 +30,21 @@ public class LobbyManagerService {
     public static final int TABLE_SIZE = 8;
     private final static Logger logger = LoggerFactory.getLogger(PotManagerService.class);
 
-    private final Map<School, List<Lobby>> universityLobbies; // Lobbies for a uni. Each school has a list of lobbies to it's name; can be joined as needed.
-    private Map<School, Deque<ConnectedPlayer>> queuedPlayersForSchools;
+    private final Map<College, List<Lobby>> collegeLobbies; // Lobbies for a specific college. Each school has a list of
+                                                            // lobbies to it's name; can be joined as needed.
+    private Map<College, Deque<ConnectedPlayer>> queuedPlayersForCollege;
 
     private final List<Lobby> globalLobbies; // All global lobbies; random joining is OK
     private Deque<ConnectedPlayer> queuedPlayers;
 
     public LobbyManagerService() {
-        this.universityLobbies = new ConcurrentHashMap<>();
+        this.collegeLobbies = new ConcurrentHashMap<>();
         this.globalLobbies = new ArrayList<>();
         this.queuedPlayers = new ArrayDeque<>();
-        this.queuedPlayersForSchools = new ConcurrentHashMap<>();
+        this.queuedPlayersForCollege = new ConcurrentHashMap<>();
     }
+
+
 
     // Persistent Queue Logic, probably should exist outside of lobby
     public ArrayList<ConnectedPlayer> getQueue(LobbyType lobbyType, boolean isLowStakes) {
@@ -48,17 +52,22 @@ public class LobbyManagerService {
     }
 
 
+
     // For global
     public void addPlayerToQueue(ConnectedPlayer player, boolean isLowStakes) {
         queuedPlayers.push(player);
     }
 
+
+
     // for if they r joining from a certin school
-    public void addPlayerToQueueForSchool(School school, ConnectedPlayer player, boolean isLowStakes) {
-        queuedPlayersForSchools.computeIfAbsent(school, _ -> {
+    public void addPlayerToQueueForSchool(College college, ConnectedPlayer player, boolean isLowStakes) {
+        queuedPlayersForCollege.computeIfAbsent(college, _ -> {
             return new ArrayDeque<>();
         }).add(player);
     }
+
+
 
     // Fill lobby from queue. For global players.
     public boolean fillLobby(Lobby lobby, int num_to_insert) {
@@ -70,7 +79,8 @@ public class LobbyManagerService {
 
         if (tableCount == TABLE_SIZE) {
             // we alr have <num> capacity - cannot add any more.
-            logger.warn("Lobby " + lobby.getId() + " is already at max capacity - cannot add " + num_to_insert + " players.");
+            logger.warn("Lobby " + lobby.getId() + " is already at max capacity - cannot add " + num_to_insert
+                    + " players.");
             return false;
         }
 

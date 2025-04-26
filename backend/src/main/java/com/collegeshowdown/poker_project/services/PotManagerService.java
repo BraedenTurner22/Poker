@@ -60,14 +60,15 @@ public class PotManagerService {
         List<ConnectedPlayer> allActivePlayersAfterReset = lobby.getActivePlayersList();
 
         // kick off the first pot at the min-stack
-        int leastChipCountOfInitialPlayer = minimumChipCountAmong(allActivePlayersAfterReset);
-        Pot firstPot = new Pot(bigBlind, leastChipCountOfInitialPlayer, allActivePlayersAfterReset);
+        int leastChipCountOfInitialPlayers = minimumChipCountAmong(allActivePlayersAfterReset);
+        Pot firstPot = new Pot(bigBlind, leastChipCountOfInitialPlayers, allActivePlayersAfterReset);
         List<Pot> allPots = new ArrayList<>();
         allPots.add(firstPot);
         lobby.setAllActivePots(allPots);
         Pot currentPot = firstPot;
 
-        // 2) find blind seats
+        // 2) find blind seats TODO: LOGIC MIGHT BE FLAWED HERE, IF SOMEONE LEAVES SMALL
+        // BLIND MIGHT GET PUSHED PAST BIG BLIND
         int sbSeat = lobbyGameService.getFirstValidIndex(lobby, lobby.getSmallBlindIndex());
         int bbSeat = lobbyGameService.getFirstValidIndex(lobby, lobby.getBigBlindIndex());
         if (bbSeat == sbSeat) {
@@ -78,6 +79,16 @@ public class PotManagerService {
 
         // Contribute small blind (all-in if < blind)
         sbPlayer.payBlind(smallBlind, currentPot);
+        // If small blind is all in
+        if (sbPlayer.getActiveChips() == 0) {
+            List<ConnectedPlayer> allActivePlayersAfterSmallBlindAllIn = lobby.getActivePlayersList();
+            int leastChipCountOfPlayerAfterAllInSmallBlind = minimumChipCountAmong(
+                    allActivePlayersAfterSmallBlindAllIn);
+            firstPot.setMinimumBetRequired(smallBlind);
+            Pot secondPot = new Pot(smallBlind, leastChipCountOfPlayerAfterAllInSmallBlind,
+                    allActivePlayersAfterSmallBlindAllIn);
+            allPots.add(secondPot);
+        }
 
         int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
         if (bbContrib < bigBlind) {
