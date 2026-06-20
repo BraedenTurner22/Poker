@@ -1,6 +1,16 @@
 <!-- Phaser canvas -->
 <div #gameContainer class="game-canvas-host"></div>
 
+<!-- Connecting overlay — shown until the scene is ready and seeded, so a
+     slow/cold-starting backend shows a message instead of a black screen -->
+<div class="rebuy-overlay" *ngIf="!connected">
+    <div class="rebuy-card">
+        <div class="rebuy-icon">♠</div>
+        <h2>Connecting…</h2>
+        <p class="rebuy-bank">{{ connectingMsg }}</p>
+    </div>
+</div>
+
 <!-- Action panel — shown only on your turn -->
 <div class="action-panel" *ngIf="isMyTurn">
     <button class="btn btn-fold"  (click)="fold()">Fold</button>

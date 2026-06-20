@@ -71,8 +71,8 @@
         </p>
     </div>
 
-    <button class="join-btn" (click)="joinTable()" [disabled]="!buyInValid">
-        🎲 &nbsp; Sit Down — ${{ buyInAmount }}
+    <button class="join-btn" (click)="joinTable()" [disabled]="!buyInValid || joining">
+        {{ joining ? 'Joining…' : '🎲   Sit Down — $' + buyInAmount }}
     </button>
 
     <p class="status-msg center-msg">{{ statusMsg }}</p>

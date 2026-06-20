@@ -35,6 +35,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     lobbyId  = '';
     tableBuyIn = 0;
     connected = false;
+    connectingMsg = 'Joining the table…';
+    private connectingTimeoutWarning?: ReturnType<typeof setTimeout>;
 
     /** Short, badge-friendly form of the lobby ID — full UUID is shown on hover. */
     get shortLobbyId(): string {
@@ -84,6 +86,15 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.myUserId = this.auth.getUser()!.id;
 
+        // The canvas only appears once Phaser's scene is ready and the first
+        // game state is seeded — until then show a connecting overlay instead
+        // of a blank black screen, and call out a cold-start backend after a
+        // few seconds so a slow load doesn't look like it's just stuck.
+        this.connectingTimeoutWarning = setTimeout(() => {
+            this.connectingMsg = 'Still connecting — the server may be waking up from idle, this can take up to a minute…';
+            this.cdr.detectChanges();
+        }, 6000);
+
         const playResponse = (history.state as any)?.playResponse as PlayResponse | undefined;
         if (playResponse) {
             this.auth.setActiveLobby(playResponse.lobbyId);
@@ -96,6 +107,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         // straight to /play.
         const activeLobbyId = this.auth.getActiveLobby();
         if (!activeLobbyId) {
+            clearTimeout(this.connectingTimeoutWarning);
             this.router.navigate(['/play']);
             return;
         }
@@ -103,6 +115,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.auth.rejoinLobby(activeLobbyId).subscribe({
             next: r => this.initFromPlayResponse(r),
             error: () => {
+                clearTimeout(this.connectingTimeoutWarning);
                 this.auth.clearActiveLobby();
                 this.router.navigate(['/play']);
             },
@@ -131,6 +144,10 @@ export class PokerGameComponent implements OnInit, OnDestroy {
             EventBus.emit('game-state', this.latestGameState ?? restState);
             const priv = restPrivate ?? this.latestPrivateState;
             if (priv) EventBus.emit('private-state', priv);
+
+            clearTimeout(this.connectingTimeoutWarning);
+            this.connected = true;
+            this.cdr.detectChanges();
         });
 
         const token = this.auth.getToken()!;
@@ -192,6 +209,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.subs.forEach(s => s.unsubscribe());
         this.clearRebuyTimer();
         clearTimeout(this.chatErrorTimer);
+        clearTimeout(this.connectingTimeoutWarning);
         if (this.phaserWindowResizeListener) {
             window.removeEventListener('resize', this.phaserWindowResizeListener);
         }

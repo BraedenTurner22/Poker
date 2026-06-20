@@ -41,6 +41,20 @@ public class LobbyManagerService {
      */
     private final Object registryLock = new Object();
 
+    /**
+     * Per-player locks guarding {@link #joinLobby}. The "am I already seated?"
+     * scan (under registryLock) and the actual seat write (under the chosen
+     * lobby's own lock) are two separate critical sections with a gap between
+     * them — without this, two concurrent joinLobby calls for the same
+     * account (e.g. a slow/cold-starting first request plus a frustrated
+     * retry) can both pass the scan before either has written a seat,
+     * seating the same account twice. Keyed by player ID so unrelated
+     * players' joins are unaffected; never held at the same time as
+     * registryLock or a per-lobby lock from any other code path, so it can't
+     * introduce a new deadlock ordering.
+     */
+    private final Map<Integer, Object> joinLocksByPlayerId = new ConcurrentHashMap<>();
+
     @Autowired
     public LobbyManagerService(LobbyGameService lobbyGameService,
             PlayerRepository playerRepository) {
@@ -56,6 +70,14 @@ public class LobbyManagerService {
      * Returns the assigned [lobby, seatIndex] pair.
      */
     public LobbyAssignment joinLobby(PlayerRecord record,
+            StakesLevel stakes, boolean schoolLobby, int requestedBuyIn) {
+        Object joinLock = joinLocksByPlayerId.computeIfAbsent(record.getId(), _ -> new Object());
+        synchronized (joinLock) {
+            return joinLobbyLocked(record, stakes, schoolLobby, requestedBuyIn);
+        }
+    }
+
+    private LobbyAssignment joinLobbyLocked(PlayerRecord record,
             StakesLevel stakes, boolean schoolLobby, int requestedBuyIn) {
 
         // Retries if a concurrent join wins the race for the lobby's last

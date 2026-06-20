@@ -58,6 +58,8 @@ export class TableSelectComponent implements OnInit, AfterViewInit {
     bankBalance   = 0;
 
     statusMsg = '';
+    joining   = false;
+    private joinTimeoutWarning?: ReturnType<typeof setTimeout>;
 
     constructor(
         private auth: AuthService,
@@ -126,14 +128,31 @@ export class TableSelectComponent implements OnInit, AfterViewInit {
     }
 
     joinTable(): void {
-        if (!this.buyInValid) return;
+        // Guards against a second join firing while the first is still in
+        // flight (e.g. a frustrated re-click during a slow/cold-starting
+        // backend) — without this, two concurrent join requests for the same
+        // account could both land before either had a chance to seat.
+        if (!this.buyInValid || this.joining) return;
+        this.joining = true;
         this.statusMsg = 'Finding a table…';
+
+        // The free-tier backend can take 30-60s to wake up from idle; let the
+        // user know what's happening instead of leaving them staring at a
+        // spinner that looks stuck.
+        this.joinTimeoutWarning = setTimeout(() => {
+            this.statusMsg = 'Still working — the server may be waking up from idle, this can take up to a minute…';
+            this.cdr.detectChanges();
+        }, 6000);
+
         this.auth.joinLobby(this.selectedStake.value, this.buyInAmount).subscribe({
             next: (r: PlayResponse) => {
+                clearTimeout(this.joinTimeoutWarning);
                 this.auth.setActiveLobby(r.lobbyId);
                 this.router.navigate(['/game'], { state: { playResponse: r } });
             },
             error: e => {
+                clearTimeout(this.joinTimeoutWarning);
+                this.joining = false;
                 this.statusMsg = e.error?.error ?? 'Could not join table.';
                 this.cdr.detectChanges();
             },
