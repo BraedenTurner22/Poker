@@ -22,9 +22,9 @@
     "scripts": {
         "ng": "ng",
         "dev": "node log dev & ng serve",
-        "build": "node log.js build & ng build --base-href='./'",
+        "build": "node log.js build & ng build",
         "dev-nolog": "ng serve",
-        "build-nolog": "ng build --base-href='./'"
+        "build-nolog": "ng build"
     },
     "dependencies": {
         "@angular/animations": "^17.2.0",
