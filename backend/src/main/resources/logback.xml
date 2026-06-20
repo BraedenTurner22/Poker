@@ -28,8 +28,7 @@
     </logger>
 
     <!-- Root Logger -->
-    <!-- <root level="error">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <<appender-ref ref="FILE"/>>
-    </root> -->
+    </root>
 </configuration>

@@ -38,8 +38,7 @@ public class College {
         this.collegeLogoImagePath = collegeLogoImagePath;
     }
 
-    // Static inner class to manage the domain-to-college mapping
-    static class DomainCollegeMap {
+    public static class DomainCollegeMap {
         private static final Map<String, String> domainToCollege = new HashMap<>();
 
         static {
@@ -95,6 +94,33 @@ public class College {
             domainToCollege.put("udel.edu", "University of Delaware");
             domainToCollege.put("olemiss.edu", "University of Mississippi");
             domainToCollege.put("umass.edu", "University of Massachusetts Amherst");
+
+            domainToCollege.put("cmu.edu", "Carnegie Mellon University");
+            domainToCollege.put("gatech.edu", "Georgia Institute of Technology");
+            domainToCollege.put("northeastern.edu", "Northeastern University");
+            domainToCollege.put("brown.edu", "Brown University");
+            domainToCollege.put("dartmouth.edu", "Dartmouth College");
+            domainToCollege.put("osu.edu", "Ohio State University");
+            domainToCollege.put("psu.edu", "Pennsylvania State University");
+            domainToCollege.put("nd.edu", "University of Notre Dame");
+            domainToCollege.put("tamu.edu", "Texas A&M University");
+            domainToCollege.put("ucf.edu", "University of Central Florida");
+            domainToCollege.put("rice.edu", "Rice University");
+            domainToCollege.put("vanderbilt.edu", "Vanderbilt University");
+            domainToCollege.put("emory.edu", "Emory University");
+            domainToCollege.put("georgetown.edu", "Georgetown University");
+            domainToCollege.put("purdue.edu", "Purdue University");
+            domainToCollege.put("msu.edu", "Michigan State University");
+            domainToCollege.put("indiana.edu", "Indiana University Bloomington");
+            domainToCollege.put("rutgers.edu", "Rutgers University");
+            domainToCollege.put("vt.edu", "Virginia Tech");
+            domainToCollege.put("fsu.edu", "Florida State University");
+            domainToCollege.put("miami.edu", "University of Miami");
+            domainToCollege.put("bu.edu", "Boston University");
+            domainToCollege.put("bc.edu", "Boston College");
+            domainToCollege.put("uci.edu", "University of California, Irvine");
+            domainToCollege.put("ucsc.edu", "University of California, Santa Cruz");
+            domainToCollege.put("ucr.edu", "University of California, Riverside");
         }
 
         public static String getCollegeName(String domain) {

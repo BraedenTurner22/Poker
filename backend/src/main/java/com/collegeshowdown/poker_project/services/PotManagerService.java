@@ -1,127 +1,128 @@
 package com.collegeshowdown.poker_project.services;
 
-import com.collegeshowdown.poker_project.domain.lobby.*;
+import com.collegeshowdown.poker_project.domain.lobby.Lobby;
+import com.collegeshowdown.poker_project.domain.lobby.Pot;
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
+import com.collegeshowdown.poker_project.domain.player.PlayerState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PotManagerService {
     private final static Logger logger = LoggerFactory.getLogger(PotManagerService.class);
 
-    private final LobbyGameService lobbyGameService;
-
-    @Autowired
-    public PotManagerService(LobbyGameService lobbyGameService) {
-        this.lobbyGameService = lobbyGameService;
-    }
-
-
-
     /**
-     * Creates and manages pots in the game
-     */
-    public Pot createMainPot(Lobby lobby) {
-        List<ConnectedPlayer> activePlayers = lobby.getActivePlayersList();
-        int minBet = lobby.getBigBlind();
-        int leastChipCount = minimumChipCountAmong(activePlayers);
-
-        Pot pot = new Pot(minBet, leastChipCount, activePlayers);
-        List<Pot> allPots = new ArrayList<>();
-        allPots.add(pot);
-        lobby.setAllActivePots(allPots);
-
-        return pot;
-    }
-
-
-
-    /**
-     * Gets blinds out of two players. Blinds start at indexes 0 and 1 when the
-     * lobby starts. Each time a hand is played, the blind indices shift clockwise
-     * to the next available ConnectedPlayer. If a player does not have enough chips
-     * to cover the small or big blind, they are all in, and (later) a side pot
-     * should be created.
+     * Posts small and big blinds. Seat indices are computed by the caller
+     * (LobbyGameService) to avoid a circular bean dependency.
      *
-     * IN ORDER TO PLAY, PLAYERS MUST HAVE AT LEAST THE SMALL BLIND
+     * Both blind amounts are capped at the player's stack, so short-stacked
+     * players go all-in automatically.
      */
-    public void postBlinds(Lobby lobby) {
-        ConnectedPlayer[] playersAtTable = lobby.getPlayersAtTable();
-        int smallBlind = lobby.getSmallBlind();
-        int bigBlind = lobby.getBigBlind();
+    public void postBlinds(Lobby lobby, int sbSeat, int bbSeat) {
+        ConnectedPlayer[] table = lobby.getPlayersAtTable();
+        ConnectedPlayer sbPlayer = table[sbSeat];
+        ConnectedPlayer bbPlayer = table[bbSeat];
 
-        // build fresh list of in-hand players
-        List<ConnectedPlayer> allActivePlayersAfterReset = lobby.getActivePlayersList();
+        // Single working pot — all active players are initially eligible
+        Pot workingPot = new Pot(lobby.getActivePlayersList());
+        List<Pot> pots = new ArrayList<>();
+        pots.add(workingPot);
+        lobby.setAllActivePots(pots);
 
-        // kick off the first pot at the min-stack
-        int leastChipCountOfInitialPlayers = minimumChipCountAmong(allActivePlayersAfterReset);
-        Pot firstPot = new Pot(bigBlind, leastChipCountOfInitialPlayers, allActivePlayersAfterReset);
-        List<Pot> allPots = new ArrayList<>();
-        allPots.add(firstPot);
-        lobby.setAllActivePots(allPots);
-        Pot currentPot = firstPot;
+        // Small blind (capped at stack)
+        int sbAmount = sbPlayer.payBlind(lobby.getSmallBlind(), workingPot);
+        lobby.addHandContribution(sbPlayer, sbAmount);
+        lobby.addRoundContribution(sbPlayer, sbAmount);
 
-        // 2) find blind seats TODO: LOGIC MIGHT BE FLAWED HERE, IF SOMEONE LEAVES SMALL
-        // BLIND MIGHT GET PUSHED PAST BIG BLIND
-        int sbSeat = lobbyGameService.getFirstValidIndex(lobby, lobby.getSmallBlindIndex());
-        int bbSeat = lobbyGameService.getFirstValidIndex(lobby, lobby.getBigBlindIndex());
-        if (bbSeat == sbSeat) {
-            bbSeat = lobbyGameService.getNextValidIndex(lobby, sbSeat);
+        // Big blind (capped at stack)
+        int bbAmount = bbPlayer.payBlind(lobby.getBigBlind(), workingPot);
+        lobby.addHandContribution(bbPlayer, bbAmount);
+        lobby.addRoundContribution(bbPlayer, bbAmount);
+
+        logger.info("Blinds posted — SB seat {} paid {}, BB seat {} paid {}",
+                sbSeat, sbAmount, bbSeat, bbAmount);
+
+        // If either blind went all-in, side pots may already be needed
+        if (sbPlayer.getPlayerState() == PlayerState.ALL_IN
+                || bbPlayer.getPlayerState() == PlayerState.ALL_IN) {
+            recalculatePots(lobby);
         }
-        ConnectedPlayer sbPlayer = playersAtTable[sbSeat];
-        ConnectedPlayer bbPlayer = playersAtTable[bbSeat];
-
-        // Contribute small blind (all-in if < blind)
-        sbPlayer.payBlind(smallBlind, currentPot);
-        // If small blind is all in
-        if (sbPlayer.getActiveChips() == 0) {
-            List<ConnectedPlayer> allActivePlayersAfterSmallBlindAllIn = lobby.getActivePlayersList();
-            int leastChipCountOfPlayerAfterAllInSmallBlind = minimumChipCountAmong(
-                    allActivePlayersAfterSmallBlindAllIn);
-            firstPot.setMinimumBetRequired(smallBlind);
-            Pot secondPot = new Pot(smallBlind, leastChipCountOfPlayerAfterAllInSmallBlind,
-                    allActivePlayersAfterSmallBlindAllIn);
-            allPots.add(secondPot);
-        }
-
-        int bbContrib = Math.min(bbPlayer.getActiveChips(), bigBlind);
-        if (bbContrib < bigBlind) {
-            bbPlayer.payBlind(smallBlind, currentPot);
-            int chipsOfPlayerWithMinStack = minimumChipCountAmong(lobby.getActivePlayersList());
-            Pot splitBlindPot = new Pot(bigBlind - smallBlind, chipsOfPlayerWithMinStack, lobby.getActivePlayersList());
-            lobby.getAllActivePots().add(splitBlindPot);
-        } else {
-            bbPlayer.payBlind(bigBlind, currentPot);
-        }
-
-        logger.info("Blinds posted: SB={} by {}, BB={} by {} → Pots: {}", smallBlind, sbPlayer.playerRecord.getId(),
-                bbContrib, bbPlayer.playerRecord.getId(), lobby.getAllActivePots().size());
     }
-
-
-
-    // Helper function finding smallest active-chips among a list
-    private int minimumChipCountAmong(List<ConnectedPlayer> players) {
-        return players.stream().mapToInt(ConnectedPlayer::getActiveChips).min().orElse(0);
-    }
-
-
 
     /**
-     * Creates a side pot when a player goes all-in
+     * The core side-pot algorithm. Call this at the end of every betting round.
+     *
+     * Algorithm:
+     *   1. Sort all unique contribution amounts ascending.
+     *   2. For each "slice" between consecutive levels, the pot gets
+     *      (slice height) × (number of players who contributed at least that level).
+     *   3. Players eligible to WIN a slice = non-folded contributors at that level.
+     *
+     * Example — A: 100 (all-in), B: 500, C: 300, D: 200 (folded)
+     *   Main pot  (0–100):  100 × 4 = 400  →  eligible: A, B, C
+     *   Side pot1 (100–200): 100 × 3 = 300  →  eligible: B, C  (D folded)
+     *   Side pot2 (200–300): 100 × 2 = 200  →  eligible: B, C
+     *   Side pot3 (300–500): 200 × 1 = 200  →  eligible: B
+     *   Total: 1100 ✓
      */
-    public Pot createSidePot(Lobby lobby, int betSize, List<ConnectedPlayer> eligiblePlayers) {
-        int leastChipCount = minimumChipCountAmong(eligiblePlayers);
-        Pot sidePot = new Pot(betSize, leastChipCount, eligiblePlayers);
-        lobby.getAllActivePots().add(sidePot);
+    public void recalculatePots(Lobby lobby) {
+        Map<ConnectedPlayer, Integer> contributions = lobby.getHandContributions();
+        if (contributions.isEmpty()) return;
 
-        logger.info("Created side pot with bet size {} and {} eligible players", betSize, eligiblePlayers.size());
-        return sidePot;
+        // Sorted unique contribution levels
+        List<Integer> levels = contributions.values().stream()
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        List<Pot> newPots = new ArrayList<>();
+        int prevLevel = 0;
+
+        for (int level : levels) {
+            if (level <= prevLevel) continue;
+
+            int slicePerPlayer = level - prevLevel;
+
+            // Everyone who put in at least this much (includes folded — their chips count)
+            List<ConnectedPlayer> contributors = contributions.entrySet().stream()
+                    .filter(e -> e.getValue() >= level)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
+
+            // Non-folded subset can actually WIN this slice
+            List<ConnectedPlayer> eligible = contributors.stream()
+                    .filter(p -> p.getPlayerState() != PlayerState.FOLDED)
+                    .collect(Collectors.toList());
+
+            // If only folded players contributed at this level (e.g. the big
+            // blind folds pre-flop), their excess must not vanish — it goes
+            // to whoever is still in the hand.
+            if (eligible.isEmpty()) {
+                eligible = contributions.keySet().stream()
+                        .filter(p -> p.getPlayerState() != PlayerState.FOLDED)
+                        .collect(Collectors.toList());
+            }
+
+            int potAmount = slicePerPlayer * contributors.size();
+
+            if (potAmount > 0 && !eligible.isEmpty()) {
+                newPots.add(new Pot(potAmount, eligible));
+            }
+
+            prevLevel = level;
+        }
+
+        lobby.setAllActivePots(newPots);
+        logger.info("Pots recalculated for lobby {}: {} pot(s) totalling {} chips",
+                lobby.getId(),
+                newPots.size(),
+                newPots.stream().mapToInt(Pot::getAmountInPot).sum());
     }
 }

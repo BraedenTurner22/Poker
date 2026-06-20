@@ -1,0 +1,23 @@
+# One slur (or evasion variant) per line, lowercase. Blank lines and lines
+# starting with # are ignored. This list is deliberately limited to slurs —
+# general profanity is allowed in chat, only this list is blocked.
+nigger
+nigga
+chink
+gook
+spic
+wetback
+kike
+beaner
+coon
+jigaboo
+sandnigger
+raghead
+towelhead
+paki
+faggot
+fag
+dyke
+tranny
+retard
+cripple

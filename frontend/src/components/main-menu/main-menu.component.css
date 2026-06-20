@@ -1,0 +1,267 @@
+:host {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.homepage {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 48px;
+    padding: 96px 24px 48px;
+    box-sizing: border-box;
+    background: radial-gradient(ellipse at 50% 35%, #0d2244 0%, #050d18 70%);
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    position: relative;
+}
+
+/* ── Top bar ────────────────────────────────────────────────────────────── */
+.top-bar {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.top-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(100, 160, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #c8d8ef;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.top-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(100, 160, 255, 0.4);
+    color: #e8f0ff;
+}
+.top-btn--logout {
+    border-color: rgba(255, 80, 80, 0.2);
+    color: #d07070;
+}
+.top-btn--logout:hover {
+    background: rgba(255, 80, 80, 0.1);
+    border-color: rgba(255, 80, 80, 0.4);
+    color: #ff9090;
+}
+
+.top-btn--primary {
+    background: linear-gradient(145deg, #1a5c8a, #0d3a5c);
+    border-color: rgba(100, 180, 255, 0.4);
+    color: #fff;
+    font-weight: 700;
+}
+.top-btn--primary:hover { filter: brightness(1.15); }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Larger logo replacing the old title text */
+.logo {
+    width: clamp(220px, 34vw, 420px);
+    height: auto;
+    filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.40));
+}
+
+.subtitle {
+    font-size: clamp(13px, 1.8vw, 17px);
+    color: #7a9ec4;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 0;
+}
+
+/* ── Nav buttons ────────────────────────────────────────────────────────── */
+.nav-buttons {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 200px;
+    padding: 28px 20px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+    font-family: inherit;
+}
+
+.nav-btn:hover {
+    transform: translateY(-6px);
+    filter: brightness(1.12);
+}
+.nav-btn:active { transform: translateY(-2px); }
+
+.play-btn {
+    background: linear-gradient(145deg, #1a5c8a, #0d3a5c);
+    box-shadow: 0 8px 32px rgba(26, 92, 138, 0.55), 0 0 0 1px rgba(100, 180, 255, 0.15);
+}
+
+.lb-btn {
+    background: linear-gradient(145deg, #5c4a1a, #3a2d08);
+    box-shadow: 0 8px 32px rgba(180, 140, 26, 0.45), 0 0 0 1px rgba(255, 215, 0, 0.15);
+}
+
+.btn-icon  { font-size: 36px; line-height: 1; }
+.btn-label { font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: 0.02em; }
+.btn-sub   { font-size: 12px; color: rgba(255, 255, 255, 0.55); letter-spacing: 0.04em; }
+
+/* ── Logged-out intro ──────────────────────────────────────────────────── */
+.intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    width: min(680px, 90vw);
+}
+
+.intro-text {
+    margin: 0;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #b8cce4;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+.feature-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    padding: 18px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(100, 160, 255, 0.15);
+}
+
+.feature-icon  { font-size: 26px; }
+.feature-title { font-size: 14px; font-weight: 700; color: #e8eef7; }
+.feature-sub   { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+
+.cta-btn {
+    padding: 14px 32px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(145deg, #1a5c8a, #0d3a5c);
+    box-shadow: 0 8px 32px rgba(26, 92, 138, 0.55);
+}
+.cta-btn:hover { filter: brightness(1.12); }
+
+/* ── Profile modal ──────────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal {
+    position: relative;
+    background: #0f1e33;
+    border: 1px solid rgba(100, 160, 255, 0.2);
+    border-radius: 20px;
+    padding: 36px 40px 32px;
+    width: clamp(320px, 90vw, 460px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: #6080a0;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 0;
+    transition: color 0.15s;
+}
+.modal-close:hover { color: #c8d8ef; }
+
+.modal-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #e8eef7;
+    margin: 0 0 28px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    row-gap: 16px;
+    column-gap: 16px;
+    align-items: center;
+}
+
+.profile-label {
+    font-size: 13px;
+    color: #7a9ec4;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.profile-value {
+    font-size: 15px;
+    color: #c8d8ef;
+    word-break: break-all;
+}
+
+.profile-chips {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: #ffd700;
+    font-weight: 700;
+}
+
+.profile-diff {
+    font-size: 12px;
+    font-weight: 500;
+}
+.profile-diff.positive { color: #4cdb8a; }
+.profile-diff.negative { color: #e05c5c; }

@@ -44,3 +44,4 @@ target
 *.class
 
 assets
+.env

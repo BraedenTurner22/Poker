@@ -2,9 +2,14 @@ package com.collegeshowdown.poker_project.domain.lobby;
 
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.models.*;
-import com.collegeshowdown.poker_project.models.College.College;
-import com.collegeshowdown.poker_project.domain.card.*;
-
+import com.collegeshowdown.poker_project.domain.card.Card;
+import com.collegeshowdown.poker_project.domain.card.Deck;
+import com.collegeshowdown.poker_project.domain.lobby.StakesLevel;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -15,18 +20,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 
-import com.collegeshowdown.poker_project.services.*;
-
+// Note: @Id/@Column/@Transient below are vestigial — Lobby has no @Entity
+// annotation and is never persisted via JPA (it's pure in-memory game
+// state, owned entirely by LobbyManagerService/LobbyGameService). Left in
+// place rather than stripped from every field; harmless since they're
+// never processed without @Entity, just don't read anything into them.
 public class Lobby { // POJO, LobbyService does the heavy liftng
 
     private final static Logger logger = LoggerFactory.getLogger(Lobby.class);
@@ -40,7 +42,10 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     private String id = UUID.randomUUID().toString();
 
     @Column
-    private College associatedCollege;
+    private String collegeDomain;
+
+    @Transient
+    private Deck deck = new Deck();
 
     @Transient
     private ConnectedPlayer playersAtTable[] = new ConnectedPlayer[TABLE_SIZE];
@@ -66,14 +71,46 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     @Column(nullable = false)
     private final int minimumBuyIn;
 
-    @Column
-    private int smallBlindIndex;
-
-    @Column
-    private int bigBlindIndex;
-
     @Transient
     private List<Card> board = new ArrayList<>();
+
+    @Transient
+    private GamePhase gamePhase = GamePhase.WAITING;
+
+    @Transient
+    private int currentBetAmount;
+
+    @Transient
+    private int lastAggressorIndex;
+
+    /** Size of the most recent raise increment — used to enforce minimum re-raise. */
+    @Transient
+    private int lastRaiseSize;
+
+    @Transient
+    private Set<Integer> playersActedThisRound = new HashSet<>();
+
+    /** Seats whose occupant disconnected while ALL_IN — vacated once the hand concludes. */
+    @Transient
+    private Set<Integer> pendingDepartureSeats = new HashSet<>();
+
+    /** Total chips each player has put in across the entire hand (for side-pot calc). */
+    @Transient
+    private Map<ConnectedPlayer, Integer> handContributions = new HashMap<>();
+
+    /** Chips each player has put in during the current betting round (for call-amount calc). */
+    @Transient
+    private Map<ConnectedPlayer, Integer> roundContributions = new HashMap<>();
+
+    @Transient
+    private int smallBlindSeat = -1;
+
+    @Transient
+    private int bigBlindSeat = -1;
+
+    /** Epoch millis when the current turn timer expires; 0 when no timer is running. */
+    @Transient
+    private long turnDeadlineEpochMs = 0;
 
     // Required for JPA
     protected Lobby() {
@@ -85,42 +122,21 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
-    // Global Lobby
-    public Lobby(boolean isLowStakes) {
-        this.lobbyType = LobbyType.GLOBAL;
-        this.isLowStakes = isLowStakes;
-        this.smallBlind = isLowStakes ? 10 : 20;
-        this.bigBlind = isLowStakes ? 20 : 50;
-        this.minimumBuyIn = isLowStakes ? 100 : 300;
-        this.smallBlindIndex = 0;
-        this.bigBlindIndex = 1;
+    /** Global lobby with explicit stakes (1/2, 2/5, 5/10). */
+    public Lobby(LobbyType type, StakesLevel stakes) {
+        this.lobbyType = type;
+        this.smallBlind = stakes.smallBlind;
+        this.bigBlind = stakes.bigBlind;
+        this.minimumBuyIn = stakes.minimumBuyIn;
+        this.isLowStakes = stakes == StakesLevel.LOW;
     }
 
 
 
-    // School lobby
-    public Lobby(College associatedCollege, boolean isLowStakes) {
-        this.lobbyType = LobbyType.UNIVERSITY;
-        this.associatedCollege = associatedCollege;
-        this.isLowStakes = isLowStakes;
-        this.smallBlind = isLowStakes ? 10 : 20;
-        this.bigBlind = isLowStakes ? 20 : 50;
-        this.minimumBuyIn = isLowStakes ? 100 : 300;
-        this.smallBlindIndex = 0;
-        this.bigBlindIndex = 1;
-    }
-
-
-
-    // Custom lobby
-    public Lobby(CustomLobbyInfo lobbyInfo, boolean isLowStakes) {
-        this.lobbyType = LobbyType.CUSTOM;
-        this.isLowStakes = isLowStakes;
-        this.smallBlind = isLowStakes ? 10 : 20;
-        this.bigBlind = isLowStakes ? 50 : 100;
-        this.minimumBuyIn = isLowStakes ? 100 : 300;
-        this.smallBlindIndex = 0;
-        this.bigBlindIndex = 1;
+    /** School lobby with explicit stakes. collegeDomain stored for reference. */
+    public Lobby(LobbyType type, StakesLevel stakes, String collegeDomain) {
+        this(type, stakes);
+        this.collegeDomain = collegeDomain;
     }
 
 
@@ -147,6 +163,13 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
+    public List<Integer> getActivePlayersListChipStacks() {
+        return Arrays.stream(playersAtTable).filter(Objects::nonNull).filter(ConnectedPlayer::isActive)
+                .map(ConnectedPlayer::getActiveChips).collect(Collectors.toList());
+    }
+
+
+
     // Regular Getters and setters
     public String getId() {
         return id;
@@ -166,14 +189,14 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
-    public College getAssociatedCollege() {
-        return associatedCollege;
+    public String getCollegeDomain() {
+        return collegeDomain;
     }
 
 
 
-    public void setAssociatedCollege(College associatedCollege) {
-        this.associatedCollege = associatedCollege;
+    public void setCollegeDomain(String collegeDomain) {
+        this.collegeDomain = collegeDomain;
     }
 
 
@@ -248,7 +271,7 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
     public ConnectedPlayer getCurrentPlayer() {
-        if (tableCount() == 0) {
+        if (tableCount() == 0 || currentPlayerIndex < 0) {
             return null;
         }
         return playersAtTable[currentPlayerIndex % playersAtTable.length];
@@ -268,27 +291,9 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
 
 
-    public int getSmallBlindIndex() {
-        return smallBlindIndex;
-    }
+    public Deck getDeck() { return deck; }
 
-
-
-    public void setSmallBlindIndex(int smallBlindIndex) {
-        this.smallBlindIndex = smallBlindIndex;
-    }
-
-
-
-    public int getBigBlindIndex() {
-        return bigBlindIndex;
-    }
-
-
-
-    public void setBigBlindIndex(int bigBlindIndex) {
-        this.bigBlindIndex = bigBlindIndex;
-    }
+    public void resetDeck() { this.deck = new Deck(); }
 
 
 
@@ -301,6 +306,113 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     public void setLowStakes(boolean isLowStakes) {
         this.isLowStakes = isLowStakes;
     }
+
+
+
+    public GamePhase getGamePhase() {
+        return gamePhase;
+    }
+
+
+
+    public void setGamePhase(GamePhase gamePhase) {
+        this.gamePhase = gamePhase;
+    }
+
+
+
+    public int getCurrentBetAmount() {
+        return currentBetAmount;
+    }
+
+
+
+    public void setCurrentBetAmount(int currentBetAmount) {
+        this.currentBetAmount = currentBetAmount;
+    }
+
+
+
+    public int getLastAggressorIndex() {
+        return lastAggressorIndex;
+    }
+
+
+
+    public void setLastAggressorIndex(int lastAggressorIndex) {
+        this.lastAggressorIndex = lastAggressorIndex;
+    }
+
+
+
+    public int getLastRaiseSize() { return lastRaiseSize; }
+
+    public void setLastRaiseSize(int size) { this.lastRaiseSize = size; }
+
+
+
+    public Set<Integer> getPlayersActedThisRound() {
+        return playersActedThisRound;
+    }
+
+
+
+    public void resetPlayersActedThisRound() {
+        this.playersActedThisRound = new HashSet<>();
+    }
+
+
+
+    public Set<Integer> getPendingDepartureSeats() {
+        return pendingDepartureSeats;
+    }
+
+
+
+    public Map<ConnectedPlayer, Integer> getHandContributions() {
+        return Collections.unmodifiableMap(handContributions);
+    }
+
+
+
+    public void addHandContribution(ConnectedPlayer player, int amount) {
+        handContributions.merge(player, amount, Integer::sum);
+    }
+
+
+
+    public void resetHandContributions() {
+        handContributions = new HashMap<>();
+    }
+
+
+
+    public int getRoundContribution(ConnectedPlayer player) {
+        return roundContributions.getOrDefault(player, 0);
+    }
+
+
+
+    public void addRoundContribution(ConnectedPlayer player, int amount) {
+        roundContributions.merge(player, amount, Integer::sum);
+    }
+
+
+
+    public void resetRoundContributions() {
+        roundContributions = new HashMap<>();
+    }
+
+
+
+    public int getSmallBlindSeat() { return smallBlindSeat; }
+    public void setSmallBlindSeat(int seat) { this.smallBlindSeat = seat; }
+
+    public int getBigBlindSeat() { return bigBlindSeat; }
+    public void setBigBlindSeat(int seat) { this.bigBlindSeat = seat; }
+
+    public long getTurnDeadlineEpochMs() { return turnDeadlineEpochMs; }
+    public void setTurnDeadlineEpochMs(long ms) { this.turnDeadlineEpochMs = ms; }
 
 
 

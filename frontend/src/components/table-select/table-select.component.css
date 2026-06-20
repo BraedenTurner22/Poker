@@ -1,0 +1,278 @@
+:host {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+    background: radial-gradient(ellipse at 50% 20%, #0d2244 0%, #050d18 70%);
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    color: #dde6f5;
+}
+
+/* ── Back button ─────────────────────────────────────────────────────────── */
+.back-btn {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(10, 20, 40, 0.75);
+    border: 1px solid #2a4a7a;
+    color: #8aacd4;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 100;
+    transition: background 0.2s, color 0.2s;
+    backdrop-filter: blur(8px);
+}
+.back-btn:hover { background: rgba(26, 74, 138, 0.8); color: #fff; }
+
+/* ── Page wrapper ────────────────────────────────────────────────────────── */
+.page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 24px 48px;
+    min-height: 100vh;
+    gap: 36px;
+}
+
+/* ── Auth card ───────────────────────────────────────────────────────────── */
+.auth-card {
+    background: rgba(10, 22, 44, 0.9);
+    border: 1px solid #223a6a;
+    border-radius: 20px;
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6);
+}
+
+.auth-card h2 {
+    font-size: 26px;
+    color: #ffd700;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    margin: 0;
+}
+
+.auth-sub {
+    font-size: 13px;
+    color: #7a9ec4;
+    margin: 0;
+}
+
+.google-btn-slot {
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: 6px;
+}
+
+/* ── Table select header ─────────────────────────────────────────────────── */
+.select-header {
+    text-align: center;
+}
+
+.select-header h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 24px rgba(255, 215, 0, 0.4);
+    margin: 0 0 8px;
+}
+
+.bank-info {
+    font-size: 15px;
+    color: #7a9ec4;
+    margin: 0;
+}
+.bank-info strong { color: #ffd700; }
+
+/* ── Stakes grid ─────────────────────────────────────────────────────────── */
+.stakes-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+}
+
+.stake-card {
+    flex: 1;
+    min-width: 220px;
+    max-width: 280px;
+    background: rgba(10, 22, 44, 0.85);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.stake-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--accent);
+}
+
+.stake-card.selected {
+    border-color: var(--accent);
+    background: rgba(20, 44, 88, 0.92);
+    box-shadow: 0 0 0 3px var(--accent), 0 12px 40px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px);
+}
+
+.stake-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #e8eef7;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+}
+
+.stake-blinds {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 12px var(--accent);
+    margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stake-range {
+    font-size: 13px;
+    color: #8aacd4;
+    margin-bottom: 8px;
+}
+
+.stake-desc {
+    font-size: 13px;
+    color: #5a7a9a;
+    font-style: italic;
+}
+
+.stake-check {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 18px;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* ── Buy-in section ──────────────────────────────────────────────────────── */
+.buyin-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 480px;
+}
+
+.buyin-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #8aacd4;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.buyin-range {
+    font-weight: 400;
+    color: #5a7a9a;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
+}
+
+.buyin-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.buyin-row input[type=range] {
+    flex: 1;
+    accent-color: #ffd700;
+    height: 6px;
+}
+
+.buyin-input-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid #2a4a7a;
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+.buyin-dollar {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffd700;
+    margin-right: 2px;
+}
+
+.buyin-number {
+    width: 72px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffd700;
+    font-family: inherit;
+    text-align: right;
+    -moz-appearance: textfield;
+}
+.buyin-number::-webkit-inner-spin-button,
+.buyin-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.buyin-number:disabled { opacity: 0.4; }
+
+.buyin-warn {
+    font-size: 13px;
+    color: #f87171;
+    margin: 0;
+}
+
+/* ── Join button ─────────────────────────────────────────────────────────── */
+.join-btn {
+    padding: 18px 64px;
+    background: linear-gradient(135deg, #1a8a4a, #0d5a30);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 6px 28px rgba(26, 138, 74, 0.5);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    letter-spacing: 0.02em;
+}
+.join-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 36px rgba(26, 138, 74, 0.65);
+    filter: brightness(1.1);
+}
+.join-btn:active:not(:disabled) { transform: translateY(0); }
+.join-btn:disabled {
+    background: #223344;
+    color: #556677;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ── Status / shared ─────────────────────────────────────────────────────── */
+.status-msg { color: #f87171; font-size: 13px; min-height: 18px; margin: 0; }
+.center-msg { text-align: center; }
