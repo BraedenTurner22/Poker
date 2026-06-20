@@ -1,0 +1,411 @@
+:host {
+    display: block;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Phaser container sits at z-index 0 so overlays can sit above it ─────── */
+.game-canvas-host {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.game-canvas-host canvas {
+    display: block;
+    margin: 0 auto;
+}
+
+/* ── Status message ──────────────────────────────────────────────────────── */
+.status-msg {
+    color: #f87171;
+    font-size: 13px;
+    min-height: 18px;
+}
+
+/* ── Action panel ────────────────────────────────────────────────────────── */
+.action-panel {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: calc(100vw - 16px);
+    max-width: 640px;
+    z-index: 10;
+}
+
+.btn {
+    padding: 11px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+    transition: filter 0.15s, transform 0.1s;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.2); transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:disabled { opacity: 0.38; cursor: not-allowed; filter: none; transform: none; }
+
+.btn-fold  { background: #8b1a1a; color: #fff; }
+.btn-check { background: #1a6b3a; color: #fff; }
+.btn-call  { background: #1a5c8a; color: #fff; }
+.btn-raise { background: #6b3a1a; color: #fff; }
+.btn-allin { background: #7a1a7a; color: #fff; }
+
+.raise-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(13, 27, 42, 0.85);
+    border-radius: 10px;
+    padding: 5px 12px;
+    backdrop-filter: blur(6px);
+}
+.raise-group input[type=range] { width: 110px; accent-color: #ffd700; }
+
+.raise-input-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid #2a4a7a;
+    border-radius: 7px;
+    padding: 3px 8px;
+}
+.raise-dollar {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffd700;
+    margin-right: 2px;
+}
+.raise-number {
+    width: 52px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffd700;
+    font-family: inherit;
+    text-align: right;
+    -moz-appearance: textfield;
+}
+.raise-number::-webkit-inner-spin-button,
+.raise-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Chat panel ──────────────────────────────────────────────────────────── */
+.chat-panel {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    width: min(260px, calc(100vw - 28px));
+    background: rgba(8, 16, 30, 0.85);
+    border: 1px solid #234a7d;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+}
+
+.chat-messages {
+    height: 140px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chat-msg {
+    font-size: 12px;
+    color: #bbb;
+    word-break: break-word;
+}
+.chat-user { color: #7aacf0; font-weight: 600; }
+
+.chat-error {
+    margin: 0;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #f87171;
+    border-top: 1px solid #1a3a6a;
+}
+
+.chat-input-row {
+    display: flex;
+    border-top: 1px solid #1a3a6a;
+}
+
+.chat-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #ddd;
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+}
+
+.chat-input-row button {
+    background: #1a3a6a;
+    border: none;
+    color: #aac;
+    font-size: 12px;
+    padding: 7px 12px;
+    cursor: pointer;
+    border-radius: 0 0 8px 0;
+}
+.chat-input-row button:hover { background: #2a5a9a; }
+
+/* ── Pre-select action buttons ───────────────────────────────────────────── */
+.preact-btn {
+    background: rgba(13, 27, 42, 0.85);
+    color: #9fb4cc;
+    border: 1.5px solid #2a4a7a;
+    backdrop-filter: blur(6px);
+}
+.preact-btn.selected {
+    background: #1a4a8a;
+    color: #fff;
+    border-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+}
+
+/* ── Chat header & minimize ──────────────────────────────────────────────── */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    border-bottom: 1px solid #1a3a6a;
+    color: #8aa6cc;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.chat-toggle {
+    background: transparent;
+    border: none;
+    color: #8aa6cc;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.chat-toggle:hover { color: #fff; }
+
+.chat-pill {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: rgba(8, 16, 30, 0.85);
+    border: 1px solid #234a7d;
+    color: #aac4e8;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+}
+.chat-pill:hover { background: rgba(20, 35, 60, 0.95); }
+
+/* ── Leave button ────────────────────────────────────────────────────────── */
+.leave-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    background: rgba(120, 26, 26, 0.85);
+    border: 1px solid #a33;
+    color: #fdd;
+    font-size: 13px;
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s, transform 0.1s;
+}
+.leave-btn:hover { background: rgba(160, 32, 32, 0.95); transform: translateX(-2px); }
+
+/* ── Lobby ID badge ──────────────────────────────────────────────────────── */
+.lobby-id-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(10, 20, 40, 0.75);
+    border: 1px solid #2a4a7a;
+    color: #8aacd4;
+    font-size: 12px;
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    z-index: 10;
+    letter-spacing: 0.02em;
+}
+
+/* ── Buy-in badge ────────────────────────────────────────────────────────── */
+.buyin-badge {
+    position: absolute;
+    top: 54px;
+    right: 12px;
+    background: rgba(10, 20, 40, 0.75);
+    border: 1px solid #2a4a7a;
+    color: #8aacd4;
+    font-size: 12px;
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    z-index: 10;
+    letter-spacing: 0.02em;
+}
+
+/* ── Rebuy overlay ───────────────────────────────────────────────────────── */
+.rebuy-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(3, 8, 18, 0.80);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+}
+
+.rebuy-card {
+    background: linear-gradient(160deg, #0d1e36, #08111f);
+    border: 1px solid #2a4a7a;
+    border-radius: 20px;
+    padding: 44px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75);
+    font-family: Inter, "Segoe UI", system-ui, Arial, sans-serif;
+}
+
+.rebuy-icon { font-size: 48px; line-height: 1; }
+
+.rebuy-card h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #e8eef7;
+    margin: 0;
+}
+
+.rebuy-bank {
+    font-size: 14px;
+    color: #7a9ec4;
+    margin: 0;
+}
+.rebuy-bank strong { color: #ffd700; }
+
+.rebuy-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #5a7a9a;
+    align-self: flex-start;
+}
+
+.rebuy-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+}
+.rebuy-row input[type=range] { flex: 1; accent-color: #ffd700; }
+.rebuy-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: #ffd700;
+    min-width: 64px;
+    text-align: right;
+}
+
+.rebuy-actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.rebuy-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+}
+.rebuy-btn:hover  { filter: brightness(1.15); transform: translateY(-1px); }
+.rebuy-btn:active { transform: translateY(0); }
+
+.rebuy-btn.confirm { background: #1a7a40; color: #fff; }
+.rebuy-btn.leave   { background: #4a1a1a; color: #f4aaaa; border: 1px solid #8a3333; }
+.rebuy-btn.full    { width: 100%; }
+
+.rebuy-broke { font-size: 14px; color: #f87171; text-align: center; margin: 0; }
+
+.rebuy-countdown {
+    font-size: 12px;
+    color: #5a7a9a;
+    margin: -4px 0 0;
+}
+.rebuy-countdown strong { color: #f87171; }
+
+/* ── Status bar ──────────────────────────────────────────────────────────── */
+.status-bar {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 27, 42, 0.78);
+    color: #aad;
+    font-size: 12px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    z-index: 5;
+}
+
+/* ── Small screens ───────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .btn { padding: 9px 14px; font-size: 13px; }
+    .raise-group { gap: 6px; padding: 4px 8px; }
+    .raise-group input[type=range] { width: 64px; }
+    .leave-btn, .lobby-id-badge, .buyin-badge {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    .buyin-badge { top: 46px; }
+    .chat-messages { height: 110px; }
+
+    /* The action panel can wrap to two or three rows at this width (raise
+       group + All In often don't fit on one line) — give the chat panel
+       and pill enough clearance that they never sit on top of it. */
+    .chat-panel, .chat-pill { bottom: 160px; }
+}
