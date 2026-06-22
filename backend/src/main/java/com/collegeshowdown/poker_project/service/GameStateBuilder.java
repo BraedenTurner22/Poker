@@ -57,6 +57,7 @@ public class GameStateBuilder {
      */
     public PrivateStateDto buildPrivate(ConnectedPlayer player) {
         List<CardDto> holeCards = player.getCards().stream()
+                .limit(2)
                 .map(CardDto::from)
                 .toList();
         return new PrivateStateDto(holeCards);
@@ -74,7 +75,7 @@ public class GameStateBuilder {
             if (p == null) continue;
 
             List<CardDto> exposed = (reveal && p.getPlayerState() != PlayerState.FOLDED)
-                    ? p.getCards().stream().map(CardDto::from).toList()
+                    ? p.getCards().stream().limit(2).map(CardDto::from).toList()
                     : List.of();
 
             result.add(new PlayerStateDto(
@@ -113,8 +114,12 @@ public class GameStateBuilder {
         // Always reveal at showdown / hand complete.
         if (phase == GamePhase.SHOWDOWN || phase == GamePhase.HAND_COMPLETE) return true;
 
-        // During board run-out: reveal once no one can bet anymore.
-        return lobby.getActivePlayersList().size() < 2;
+        // During board run-out: reveal once the staged run-out has actually
+        // begun (currentPlayerIndex == -1, set by beginStagedRunOut once the
+        // betting round is fully closed) — not merely whenever fewer than 2
+        // players are ACTIVE, which goes true the instant someone shoves,
+        // even while the remaining player still has a pending decision.
+        return lobby.getCurrentPlayerIndex() == -1;
     }
 
     /**

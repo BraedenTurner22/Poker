@@ -8,6 +8,9 @@ import com.collegeshowdown.poker_project.domain.lobby.StakesLevel;
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.domain.player.PlayerAction;
 import com.collegeshowdown.poker_project.domain.player.PlayerState;
+import com.collegeshowdown.poker_project.dto.GameStateDto;
+import com.collegeshowdown.poker_project.dto.PlayerStateDto;
+import com.collegeshowdown.poker_project.dto.PrivateStateDto;
 import com.collegeshowdown.poker_project.models.PlayerRecord;
 import com.collegeshowdown.poker_project.service.GameStateBuilder;
 import com.collegeshowdown.poker_project.services.DealerService;
@@ -33,15 +36,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class GameEngineTest {
 
     private LobbyGameService game;
+    private GameStateBuilder stateBuilder;
     private int nextId = 1;
 
     @BeforeEach
     void setUp() {
+        stateBuilder = new GameStateBuilder();
         game = new LobbyGameService(
                 new DealerService(),
                 new PotManagerService(),
                 new WinnerService(),
-                new GameStateBuilder(),
+                stateBuilder,
                 new SimpMessagingTemplate((message, timeout) -> true),
                 null); // LobbyManagerService not needed for unit tests
         game.setRunOutStepMillis(5); // fast all-in run-outs in tests
@@ -322,6 +327,79 @@ class GameEngineTest {
         checkOrCallToShowdown(lobby);
         assertEquals(GamePhase.HAND_COMPLETE, lobby.getGamePhase());
         assertEquals(600, totalChipsInPlay(lobby));
+    }
+
+    // ─── Card visibility (showdown reveal) ──────────────────────────────────────
+
+    @Test
+    void allInOpponentCardsStayHiddenUntilCalled() {
+        Lobby lobby = lowStakesLobby();
+        game.startHand(seatTwo(lobby, 200, 200));
+
+        act(lobby, PlayerAction.CALL);  // SB limps preflop
+        act(lobby, PlayerAction.CHECK); // BB takes the option -> FLOP
+        assertEquals(GamePhase.FLOP, lobby.getGamePhase());
+
+        int shover = lobby.getCurrentPlayerIndex();
+        int caller = (shover == 0) ? 1 : 0;
+        act(lobby, PlayerAction.ALL_IN);
+
+        // The caller still has a pending decision — cards must stay hidden
+        // until they actually call, not the instant the shove lands.
+        GameStateDto stateBeforeCall = stateBuilder.build(lobby);
+        assertTrue(playerDto(stateBeforeCall, shover).holeCards().isEmpty(),
+                "opponent's cards were revealed before the all-in was called");
+
+        act(lobby, PlayerAction.CALL);
+        awaitHandComplete(lobby);
+
+        GameStateDto finalState = stateBuilder.build(lobby);
+        assertEquals(2, playerDto(finalState, shover).holeCards().size());
+        assertEquals(2, playerDto(finalState, caller).holeCards().size());
+    }
+
+    @Test
+    void riverCallWithChipsBehindRevealsExactlyTwoHoleCardsEach() {
+        Lobby lobby = lowStakesLobby();
+        ConnectedPlayer a = seat(lobby, 0, "alice", 200);
+        ConnectedPlayer b = seat(lobby, 1, "bob", 200);
+        game.startHand(lobby);
+
+        act(lobby, PlayerAction.CALL);  // preflop limp
+        act(lobby, PlayerAction.CHECK); // preflop BB option -> FLOP
+        act(lobby, PlayerAction.CHECK);
+        act(lobby, PlayerAction.CHECK); // -> TURN
+        act(lobby, PlayerAction.CHECK);
+        act(lobby, PlayerAction.CHECK); // -> RIVER
+        assertEquals(GamePhase.RIVER, lobby.getGamePhase());
+
+        act(lobby, PlayerAction.RAISE, 20); // a river bet
+        act(lobby, PlayerAction.CALL);      // a normal call, chips left behind
+
+        assertEquals(GamePhase.HAND_COMPLETE, lobby.getGamePhase());
+        assertEquals(PlayerState.ACTIVE, a.getPlayerState());
+        assertEquals(PlayerState.ACTIVE, b.getPlayerState());
+
+        // WinnerService.determineWinners appends the 5 board cards onto each
+        // player's hand for evaluation — the broadcast must still only expose
+        // the 2 actual hole cards, not the merged 7-card evaluation hand.
+        GameStateDto state = stateBuilder.build(lobby);
+        assertEquals(2, playerDto(state, 0).holeCards().size(),
+                "exposed hand leaked board cards merged in by WinnerService");
+        assertEquals(2, playerDto(state, 1).holeCards().size(),
+                "opponent's cards were not shown at river-call showdown");
+
+        PrivateStateDto privateA = stateBuilder.buildPrivate(a);
+        PrivateStateDto privateB = stateBuilder.buildPrivate(b);
+        assertEquals(2, privateA.holeCards().size());
+        assertEquals(2, privateB.holeCards().size());
+    }
+
+    private PlayerStateDto playerDto(GameStateDto state, int seat) {
+        return state.players().stream()
+                .filter(p -> p.seat() == seat)
+                .findFirst()
+                .orElseThrow();
     }
 
     // ─── Departures ──────────────────────────────────────────────────────────────
