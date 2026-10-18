@@ -169,6 +169,30 @@ have no more decisions to make but are still entitled to the pot. See
 
 ---
 
+## WebSocket authorization — `StompAuthInterceptor`
+
+Hole cards travel on `/topic/game/{lobby}/private/{userId}`, so STOMP
+frames are authorized, not just CONNECT:
+- CONNECT without a valid JWT is refused (STOMP ERROR frame). The
+  frontend treats an ERROR frame with an expired/invalid token as
+  "session expired" and sends the player back to sign in.
+- SUBSCRIBE: no broker wildcards (`*`, `?`, `{`), and per-user topics
+  (`private`, `chat-blocked`, `kick`, `error`) only for the user whose id
+  is in the path. **Any new per-user topic must be added to
+  `PER_USER_TOPIC`** or anyone can read it.
+- SEND only to `/app/**` — SimpleBroker would otherwise relay a client
+  SEND to `/topic/**` straight to every subscriber (forged state/chat).
+- `setPreservePublishOrder(true)`: the public state always reaches a
+  client before that hand's private hole cards (the scene relies on this
+  to clear last hand's cards on a new hand). `setPreserveReceiveOrder`
+  is deliberately NOT enabled — its decorator swallows inbound
+  interceptor exceptions, so a bad JWT would hang CONNECT instead of
+  getting an ERROR frame.
+- Disconnect grace tracks every live session per lobby+user
+  (`liveSessionsByLobbyUser`), so closing one of two tabs doesn't evict.
+
+---
+
 ## Poker engine — concurrency model and correctness
 
 This went through a full audit (race conditions, side-pot math, raise
@@ -189,10 +213,11 @@ before — no new lock object needed, `Lobby` is already unique per table.
 
 `LobbyManagerService` additionally has a `registryLock` — guards
 **only** the `lobbies`/`lobbyById` maps (which lobbies exist, pool
-membership). Deliberately separate from any per-lobby lock and **never
-held at the same time as one** — `joinLobby`/`leaveTable` acquire them
-sequentially, never nested, so the two can never deadlock against each
-other.
+membership). **Lock order is always lobby lock → `registryLock`**:
+`leaveTable` is called with the lobby lock held (from `concludeHand`,
+`handleInactivity`, the WS leave path) and takes `registryLock` inside it
+to retire an empty lobby. No code path may take a lobby lock while
+holding `registryLock` — that inversion is what would deadlock.
 
 **Rule: any new method added to either service that reads or mutates
 `Lobby`/`ConnectedPlayer` state must start with `synchronized(lobby) { ... }`.**
@@ -229,21 +254,48 @@ they won) once the hand is actually over.
   `processPlayerActionCore` — previously the server trusted whatever
   `raiseAmount` the client sent, including `0`, which could stall a
   betting round indefinitely (any raise, even a no-op one, reset
-  `playersActedThisRound`). A short raise is still allowed through if
-  the player can't afford a full minimum raise — it naturally becomes
-  an all-in via the existing chip-truncation logic, matching real rules.
-- `req.buyInAmount()` is validated against `req.stakes().minimumBuyIn`
-  in `PlayerRESTController.play()` — previously only the player's *bank
-  total* was checked, not the amount they were actually buying in for.
+  `playersActedThisRound`). A player who can't afford a full minimum
+  raise is put all-in instead. The raise sum is computed as a `long` and
+  capped at the stack (a `RAISE Integer.MAX_VALUE` used to overflow).
+- A short all-in raise doesn't reopen raising: seats that already acted
+  go into `Lobby.raiseClosedSeats` (call/fold only), exposed to the
+  client as `GameStateDto.raiseClosedSeats` so the Raise buttons hide.
+- Heads-up, the big blind acts first postflop (`Lobby.headsUpHand`).
+- Turn timers carry a `turnTimerGeneration` + seat; a timer that fired
+  but lost the race for the lobby lock is a no-op.
+- 0-chip players are set `FOLDED` (sitting out) in `resetLobby`, not
+  left `ALL_IN` — otherwise they count as live in hands they were never
+  dealt into. Hole cards go to every non-`FOLDED` seat, including a
+  blind poster who went all-in posting.
+- Buy-in bounds are validated in `LobbyManagerService.joinLobby` (after
+  the "already seated?" reconnect check, so a seated player with an
+  empty bank can still reconnect). Rebuy is capped at the stake's max
+  buy-in and rejected while the player is live in the current hand.
+- Bank chip moves are single atomic UPDATEs
+  (`PlayerRepository.withdrawFromBank`/`depositToBank`) — never
+  `save()` a `PlayerRecord` held by a seat; it was loaded at join time
+  and is stale. Profit stats are recorded once, at cash-out, as cashed
+  out minus total bought in. The same goes for any write to an existing
+  player row (e.g. the login name refresh uses `updateName`, not
+  `save()` — a detached `save()` merges every field, bank included).
+- `spring.jpa.open-in-view=false`: requests block on lobby locks, and
+  OSIV would hold one of the 5 pooled connections the whole time,
+  starving the lock holder's own cash-out write.
+- Blinds: the big blind moves one funded player clockwise from last
+  hand's big blind; the small blind is the funded player just before it.
+- Inactivity streaks are keyed by user id, not seat.
 
-### Side-pot math (verified correct, not changed)
+### Side-pot math
 
 `PotManagerService.recalculatePots()` — sorts unique contribution
 levels, slices the pot per level, eligible-to-win at each slice =
 non-folded contributors at that level. Handles dead money from folded
 contributors and uncalled-bet excess (returned via a single-player pot
-the over-bettor trivially "wins" back) correctly without special-casing
-either. Don't touch this without running `./mvnw test` before and after
+the over-bettor gets back — flagged `Pot.uncalledBet` so it isn't
+announced as a win). Consecutive slices with the same eligible players
+are merged into one pot so a split pays its odd chip only once; odd
+chips go clockwise from the small blind (`WinnerService.inOddChipOrder`).
+Don't touch this without running `./mvnw test` before and after
 — `GameEngineTest.java` has dedicated multi-way-all-in coverage.
 
 ---
@@ -357,13 +409,21 @@ cd backend && ./mvnw compile
 cd frontend && npx ng build --base-href='./'
 ```
 
-Key test files (41 tests total, all passing as of this writing):
-- `GameEngineTest.java` (20) — full hand simulation: blinds, raises,
+Key test files (124 tests total, all passing as of this writing):
+- `GameEngineTest.java` (43) — full hand simulation: blinds, raises,
   side pots, departures (including the `ALL_IN`-disconnect case), illegal
-  action rejection, chip conservation across consecutive hands
-- `HandEvaluatorTest.java` (20) — hand ranking correctness, every
-  category, kickers, split pots
-- `PokerProjectApplicationTests.java` (1) — Spring context loads
+  action rejection, chip conservation across consecutive hands, heads-up
+  order, short all-ins, stale timers, busted players
+- `HandEvaluatorTest.java` (31) — hand ranking correctness, every
+  category, kickers, split pots, wheel/flush edge cases
+- `PotAndShowdownTest.java` (10) — odd chips, pot merging, uncalled bets
+- `LobbyManagerTest.java` (19) — bank/table chip conservation, rebuy
+  rules, cash-out failure, subdomain colleges, shutdown cash-out
+- `WebSocketLayerTest.java` (19) — STOMP SUBSCRIBE/SEND authorization,
+  multi-tab disconnect grace, chat moderation normalization
+- `JoinLobbyConcurrencyTest.java` (1) — concurrent joins, one seat
+- `PokerProjectApplicationTests.java` (1) — Spring context loads (needs
+  `backend/.env`; connects to the real DB)
 - `ForcedCardsTestDriver.java` — deterministic card sequences, used by
   the above, not a standalone test class itself
 
