@@ -265,6 +265,8 @@ export class PokerGameScene extends Phaser.Scene {
             fontFamily: FONT, fontSize: '42px', fontStyle: 'bold',
             color: '#ffd700', stroke: '#000000', strokeThickness: 7,
             resolution: TEXT_RES,
+            // Split pots name every winner — long names would run off-canvas
+            align: 'center', wordWrap: { width: BASE_W - 160, useAdvancedWrap: true },
         }).setOrigin(0.5).setDepth(10).setVisible(false);
     }
 

@@ -45,6 +45,43 @@ describe('PokerGameComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  describe('action panel', () => {
+    beforeEach(() => {
+      component.myUserId = 7;
+      component.mySeat = 0;
+    });
+
+    it('resets the raise slider when our turn carries over to the next street', () => {
+      const pre = state('PRE_FLOP', 100, 'ACTIVE');
+      pre.currentPlayerSeat = 0;
+      (component as any).onGameState(pre);
+      component.raiseAmount = 60;
+      // Big blind checked its option and acts first on the flop
+      const flop = state('FLOP', 100, 'ACTIVE');
+      flop.currentPlayerSeat = 0;
+      flop.currentBetAmount = 0;
+      flop.players.forEach(p => p.betThisRound = 0);
+      (component as any).onGameState(flop);
+      expect(component.raiseAmount).toBe(2);
+    });
+
+    it('keeps the raise slider on a same-street rebroadcast', () => {
+      const pre = state('PRE_FLOP', 100, 'ACTIVE');
+      pre.currentPlayerSeat = 0;
+      (component as any).onGameState(pre);
+      component.raiseAmount = 60;
+      (component as any).onGameState({ ...pre });
+      expect(component.raiseAmount).toBe(60);
+    });
+
+    it('hides pre-select actions during an all-in run-out', () => {
+      const runOut = state('FLOP', 100, 'ACTIVE');
+      runOut.currentPlayerSeat = -1;
+      (component as any).onGameState(runOut);
+      expect(component.canPreSelect).toBeFalse();
+    });
+  });
+
   describe('rebuy popup', () => {
     let profileSpy: jasmine.Spy;
 

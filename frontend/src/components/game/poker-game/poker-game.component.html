@@ -97,6 +97,7 @@
         <h2>You're Out of Chips</h2>
         <p class="rebuy-bank">Bank balance: <strong>${{ bankBalance }}</strong></p>
         <p class="rebuy-countdown">Seat held for <strong>{{ rebuyCountdown }}s</strong></p>
+        <p class="rebuy-broke" *ngIf="rebuyError">{{ rebuyError }}</p>
 
         <ng-container *ngIf="bankBalance > 0">
             <label class="rebuy-label">Buy back in</label>
