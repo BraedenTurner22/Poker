@@ -12,7 +12,10 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
 import static com.collegeshowdown.poker_project.domain.card.Rank.*;
 import static com.collegeshowdown.poker_project.domain.card.Suit.*;
@@ -402,5 +405,103 @@ class HandEvaluatorTest {
         ConnectedPlayer low2 = player(board[0], board[1], board[2], board[3], board[4],
                 c(THREE, DIAMONDS), c(TWO, HEARTS));
         assertEquals(2, winners(low1, low2).size());
+    }
+
+    // ─── Randomized cross-check against a brute-force reference ─────────────────
+
+    /**
+     * Deals thousands of random boards to several players and checks the
+     * engine's category, best five cards and winner set against an
+     * independent evaluator that scores every 5-card subset of the 7 cards.
+     */
+    @Test
+    void randomHandsMatchBruteForceReference() {
+        Random rng = new Random(20261018L);
+        List<Card> deck = new ArrayList<>();
+        for (Suit s : Suit.values()) for (Rank r : Rank.values()) deck.add(c(r, s));
+
+        for (int trial = 0; trial < 20000; trial++) {
+            Collections.shuffle(deck, rng);
+            int n = 2 + rng.nextInt(7);
+            List<Card> board = deck.subList(0, 5);
+            ConnectedPlayer[] players = new ConnectedPlayer[n];
+            long[] ref = new long[n];
+            long best = -1;
+            for (int i = 0; i < n; i++) {
+                List<Card> seven = new ArrayList<>(board);
+                seven.add(deck.get(5 + 2 * i));
+                seven.add(deck.get(6 + 2 * i));
+                Collections.shuffle(seven, rng);
+                players[i] = player(seven.toArray(new Card[0]));
+                ref[i] = referenceBest(seven);
+                best = Math.max(best, ref[i]);
+
+                HandRank engineRank = rankOf(players[i]);
+                int engineCategory = engineRank == HandRank.ROYAL_FLUSH
+                        ? HandRank.STRAIGHT_FLUSH.getValue() : engineRank.getValue();
+                assertEquals((int) (ref[i] >> 20), engineCategory, "category mismatch for " + seven);
+                // The reported best five must themselves score as the best hand
+                List<Card> bestFive = players[i].getBestCards();
+                assertEquals(5, bestFive.size());
+                assertEquals(5, new HashSet<>(bestFive).size());
+                assertTrue(seven.containsAll(bestFive));
+                assertEquals(ref[i], referenceScore(bestFive), "best cards don't make the hand: " + bestFive);
+            }
+            List<ConnectedPlayer> expected = new ArrayList<>();
+            for (int i = 0; i < n; i++) if (ref[i] == best) expected.add(players[i]);
+            assertEquals(expected, AnalysisEngine.getWinners(players), "winner mismatch on trial " + trial);
+        }
+    }
+
+    /** Best reference score over all 21 five-card subsets. */
+    private static long referenceBest(List<Card> seven) {
+        long best = -1;
+        for (int skipA = 0; skipA < 7; skipA++) {
+            for (int skipB = skipA + 1; skipB < 7; skipB++) {
+                List<Card> five = new ArrayList<>();
+                for (int i = 0; i < 7; i++) if (i != skipA && i != skipB) five.add(seven.get(i));
+                best = Math.max(best, referenceScore(five));
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Independent 5-card scorer: category (HandRank values, royal folded into
+     * straight flush) in the top bits, then five 4-bit tiebreak ranks.
+     */
+    private static long referenceScore(List<Card> five) {
+        int[] count = new int[15];
+        boolean flush = true;
+        for (Card card : five) {
+            count[card.getRank().getValue()]++;
+            if (card.getSuit() != five.get(0).getSuit()) flush = false;
+        }
+        // Ranks ordered by (multiplicity desc, rank desc)
+        List<Integer> ordered = new ArrayList<>();
+        for (int mult = 4; mult >= 1; mult--)
+            for (int r = 14; r >= 2; r--) if (count[r] == mult) ordered.add(r);
+
+        int straightHigh = 0;
+        if (ordered.size() == 5) {
+            if (ordered.get(0) - ordered.get(4) == 4) straightHigh = ordered.get(0);
+            else if (ordered.equals(List.of(14, 5, 4, 3, 2))) straightHigh = 5;
+        }
+        int maxCount = count[ordered.get(0)];
+        int category;
+        List<Integer> tiebreak = ordered;
+        if (straightHigh > 0 && flush) { category = 9; tiebreak = List.of(straightHigh); }
+        else if (maxCount == 4) category = 8;
+        else if (maxCount == 3 && ordered.size() == 2) category = 7;
+        else if (flush) category = 6;
+        else if (straightHigh > 0) { category = 5; tiebreak = List.of(straightHigh); }
+        else if (maxCount == 3) category = 4;
+        else if (maxCount == 2 && ordered.size() == 3) category = 3;
+        else if (maxCount == 2) category = 2;
+        else category = 1;
+
+        long s = category;
+        for (int i = 0; i < 5; i++) s = (s << 4) | (i < tiebreak.size() ? tiebreak.get(i) : 0);
+        return s;
     }
 }
