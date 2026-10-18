@@ -253,6 +253,18 @@ an all-in player, since their stake is in the pot, not their stack.
 distributing winnings, so the seat is correctly vacated (with whatever
 they won) once the hand is actually over.
 
+The same deferral applies to *any* non-folded player once an all-in
+run-out has begun (`currentPlayerIndex == -1`): the player who called
+the all-in with chips behind is still `ACTIVE`, but the betting is over,
+so folding them would hand their called stake to the all-in players.
+
+On a WebSocket-level leave/disconnect, `WebSocketsController` only
+treats a session as live if its STOMP CONNECT was seen
+(`SessionConnectEvent` → `connectedSessions`): a JOIN still queued on
+the inbound executor when the socket closed must not register a dead
+session, or that seat's grace-period eviction would never run. A LEAVE
+naming a lobby the session didn't join is ignored for session tracking.
+
 ### Server-side validation that didn't used to exist
 
 - `RAISE` actions are validated against `lobby.getLastRaiseSize()` in
@@ -262,9 +274,12 @@ they won) once the hand is actually over.
   `playersActedThisRound`). A player who can't afford a full minimum
   raise is put all-in instead. The raise sum is computed as a `long` and
   capped at the stack (a `RAISE Integer.MAX_VALUE` used to overflow).
-- A short all-in raise doesn't reopen raising: seats that already acted
-  go into `Lobby.raiseClosedSeats` (call/fold only), exposed to the
-  client as `GameStateDto.raiseClosedSeats` so the Raise buttons hide.
+- A short all-in raise doesn't reopen raising. `Lobby` records the bet
+  each seat faced when it last acted (`betWhenLastActed`); a seat is
+  raise-closed (call/fold only) while `currentBet - thatBet <
+  lastRaiseSize`, so several short all-ins that *together* make a full
+  raise do reopen it. Exposed to the client as
+  `GameStateDto.raiseClosedSeats` so the Raise buttons hide.
 - Heads-up, the big blind acts first postflop (`Lobby.headsUpHand`).
 - Turn timers carry a `turnTimerGeneration` + seat; a timer that fired
   but lost the race for the lobby lock is a no-op.
@@ -414,18 +429,21 @@ cd backend && ./mvnw compile
 cd frontend && npx ng build --base-href='./'
 ```
 
-Key test files (124 tests total, all passing as of this writing):
-- `GameEngineTest.java` (43) — full hand simulation: blinds, raises,
+Key test files (137 tests total, all passing as of this writing):
+- `GameEngineTest.java` (46) — full hand simulation: blinds, raises,
   side pots, departures (including the `ALL_IN`-disconnect case), illegal
   action rejection, chip conservation across consecutive hands, heads-up
   order, short all-ins, stale timers, busted players
-- `HandEvaluatorTest.java` (31) — hand ranking correctness, every
-  category, kickers, split pots, wheel/flush edge cases
-- `PotAndShowdownTest.java` (10) — odd chips, pot merging, uncalled bets
-- `LobbyManagerTest.java` (19) — bank/table chip conservation, rebuy
+- `HandEvaluatorTest.java` (32) — hand ranking correctness, every
+  category, kickers, split pots, wheel/flush edge cases, plus 20k
+  random deals checked against a brute-force 21-subset reference
+- `PotAndShowdownTest.java` (11) — odd chips, pot merging, uncalled bets,
+  and a randomized ~1,700-hand chip-conservation property test
+- `LobbyManagerTest.java` (22) — bank/table chip conservation, rebuy
   rules, cash-out failure, subdomain colleges, shutdown cash-out
-- `WebSocketLayerTest.java` (19) — STOMP SUBSCRIBE/SEND authorization,
-  multi-tab disconnect grace, chat moderation normalization
+- `WebSocketLayerTest.java` (24) — STOMP SUBSCRIBE/SEND authorization,
+  multi-tab disconnect grace, late JOIN after disconnect, heartbeats,
+  chat moderation normalization
 - `JoinLobbyConcurrencyTest.java` (1) — concurrent joins, one seat
 - `PokerProjectApplicationTests.java` (1) — Spring context loads (needs
   `backend/.env`; connects to the real DB)
