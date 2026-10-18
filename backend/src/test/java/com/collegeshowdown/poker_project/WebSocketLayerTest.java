@@ -480,6 +480,17 @@ class WebSocketLayerTest {
     }
 
     @Test
+    void leaveNamingAnotherLobbyDoesNotStopTheSeatsEviction() throws Exception {
+        join("s1");
+        StompHeaderAccessor acc = StompHeaderAccessor.create(StompCommand.SEND);
+        acc.setSessionId("s1");
+        controller.leaveGame("some-other-lobby", acc, principal(5));
+        disconnect("s1");
+        Thread.sleep(400);
+        assertEquals(List.of(3), vacatedSeats, "seat must still be evicted after disconnect");
+    }
+
+    @Test
     void reconnectCancelsDeferredAllInDeparture() {
         lobby.getPendingDepartureSeats().add(3);
         join("s1");

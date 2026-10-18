@@ -307,10 +307,16 @@ public class WebSocketsController {
         String sessionId = headerAccessor.getSessionId();
         String key = lobbyId + ":" + userId;
 
-        sessionLobbyMap.remove(sessionId);
-        sessionUserMap.remove(sessionId);
-        removeLiveSession(key, sessionId);
-        activeSessionByLobbyUser.remove(key, sessionId);
+        synchronized (sessionLock) {
+            // Only forget the session if it joined this lobby — a LEAVE naming
+            // another lobby must not unmap it, or its disconnect would never
+            // start the grace-period eviction for the seat it actually holds.
+            if (sessionLobbyMap.remove(sessionId, lobbyId)) {
+                sessionUserMap.remove(sessionId);
+            }
+            removeLiveSession(key, sessionId);
+            activeSessionByLobbyUser.remove(key, sessionId);
+        }
 
         removePlayerFromLobby(lobbyId, userId);
     }
