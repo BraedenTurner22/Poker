@@ -34,6 +34,14 @@ export class WebSocketService implements OnDestroy {
             brokerURL: environment.wsUrl,
             connectHeaders: { Authorization: `Bearer ${token}` },
             reconnectDelay: 5000,
+            // Matches the server's STOMP heart-beat (WebSocketConfig.HEARTBEAT =
+            // 10000,0): it pings every 10s and doesn't want pings back. No server
+            // data for ~20s means the socket is dead (sleep, wifi change) — drop
+            // it right away and reconnect, rather than waiting on a close
+            // handshake that a dead connection never completes.
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 0,
+            discardWebsocketOnCommFailure: true,
             onConnect: () => this.onConnected(client, lobbyId, userId),
             onStompError: frame => {
                 console.error('STOMP error', frame);

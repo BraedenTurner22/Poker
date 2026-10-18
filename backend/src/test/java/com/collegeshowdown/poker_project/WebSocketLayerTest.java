@@ -452,4 +452,41 @@ class WebSocketLayerTest {
                 new ActionMessage(null, 0), principal(5)));
         verify(game, never()).processPlayerAction(any(), anyInt(), any(), anyInt());
     }
+
+    @Test
+    void moderationTreatsUnderscoresAsWordSeparators() throws Exception {
+        // \b counts "_" as a word character, so these rendered the slur intact
+        // but passed — while "t_e_r_m" was already caught as spaced-out.
+        ChatModerationService mod = new ChatModerationService();
+        String term = firstBlockedTerm();
+        assertTrue(mod.containsBlockedTerm("_" + term + "_"));
+        assertTrue(mod.containsBlockedTerm("you__" + term));
+        assertTrue(mod.containsBlockedTerm(term + "s_lol"));
+        assertTrue(mod.containsBlockedTerm(String.join("_", term.split(""))));
+        // still whole-word only
+        assertFalse(mod.containsBlockedTerm("my_coonhound"));
+        assertFalse(mod.containsBlockedTerm("pumpkin_spice"));
+    }
+
+    @Test
+    void brokerSendsStompHeartbeatsButDoesNotRequireThem() {
+        // Without a TaskScheduler + heartbeat value the SimpleBroker answered
+        // every CONNECT with heart-beat:0,0, so a client on a dead socket
+        // (sleep, wifi change) never noticed and its actions went nowhere.
+        try (var ctx = new org.springframework.web.context.support.AnnotationConfigWebApplicationContext()) {
+            ctx.setServletContext(new org.springframework.mock.web.MockServletContext());
+            ctx.getEnvironment().getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource(
+                    "test", java.util.Map.of("app.cors.allowed-origins", "http://localhost:4200",
+                            "jwt.secret", SECRET, "jwt.expiration-ms", "60000")));
+            ctx.register(com.collegeshowdown.poker_project.config.WebSocketConfig.class,
+                    StompAuthInterceptor.class, JwtUtil.class);
+            ctx.refresh();
+
+            var broker = ctx.getBean(
+                    org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler.class);
+            assertArrayEquals(new long[] {10_000, 0}, broker.getHeartbeatValue());
+            assertNotNull(broker.getTaskScheduler());
+            assertTrue(broker.isRunning());
+        }
+    }
 }

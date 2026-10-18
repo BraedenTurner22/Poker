@@ -33,8 +33,12 @@ public class ChatModerationService {
                 // \w* suffix turned ordinary words into "slurs": "spicy"/"spices",
                 // "Pakistan", "coonhound", "retardant" ... Other inflections that
                 // should be blocked go in the word list as their own lines.
+                // The boundaries are \b minus the underscore: \b counts "_" as a
+                // word character, so "_term_" slipped through even though
+                // SPACED_OUT below already treats "_" as a separator.
                 blockedPatterns.add(Pattern.compile(
-                        "\\b" + Pattern.quote(term) + "[sz]?\\b", Pattern.CASE_INSENSITIVE));
+                        "(?<![A-Za-z0-9])" + Pattern.quote(term) + "[sz]?(?![A-Za-z0-9])",
+                        Pattern.CASE_INSENSITIVE));
             }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load chat moderation word list", e);
