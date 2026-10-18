@@ -650,14 +650,28 @@ public class LobbyGameService {
                     broadcastState(lobby);
                     if (lobby.tableCount() == 0) {
                         // Retired lobby — drop its per-lobby bookkeeping
-                        timedOutThisHand.remove(lobby.getId());
-                        consecutiveMissedHands.remove(lobby.getId());
-                        turnTimers.remove(lobby.getId());
-                        runOutTasks.remove(lobby.getId());
+                        forgetLobby(lobby);
                     }
                 }
             }
         }), NEXT_HAND_DELAY_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Drops every per-lobby entry this service keeps for a retired (empty)
+     * lobby. LobbyManagerService.leaveTable calls this when it retires one —
+     * the next-hand task only cleans up a lobby that empties during its own
+     * 5-second window, so a lobby whose last player left while it was
+     * WAITING kept its entries forever.
+     */
+    public void forgetLobby(Lobby lobby) {
+        synchronized (lobby) {
+            timedOutThisHand.remove(lobby.getId());
+            consecutiveMissedHands.remove(lobby.getId());
+            ScheduledFuture<?> timer = turnTimers.remove(lobby.getId());
+            if (timer != null) timer.cancel(false);
+            cancelRunOut(lobby);
+        }
     }
 
     /**

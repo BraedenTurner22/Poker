@@ -22,6 +22,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
@@ -60,6 +61,22 @@ public class WebSocketsController {
      * must not evict the seat while another is still connected.
      */
     private final Map<String, Set<String>> liveSessionsByLobbyUser = new ConcurrentHashMap<>();
+    /**
+     * Sessions whose STOMP CONNECT was accepted and that haven't disconnected.
+     * Inbound frames run on an executor, but SessionDisconnectEvent fires on
+     * the transport thread — a JOIN still queued (e.g. waiting on a busy
+     * lobby lock) when its socket closes is processed after the disconnect.
+     * Registering it then would leave a dead session in
+     * liveSessionsByLobbyUser forever, and no later disconnect would ever
+     * start the seat's grace-period eviction again.
+     */
+    private final Set<String> connectedSessions = ConcurrentHashMap.newKeySet();
+    /**
+     * Makes joinGame's "still connected?" check plus its session registration
+     * atomic with handleDisconnect's cleanup. Taken inside a lobby lock
+     * (joinGame) or on its own — never while acquiring a lobby lock.
+     */
+    private final Object sessionLock = new Object();
 
     private static final int DISCONNECT_GRACE_SECONDS = 20;
     private final ScheduledExecutorService disconnectScheduler = Executors.newScheduledThreadPool(2);
@@ -129,21 +146,35 @@ public class WebSocketsController {
             // session for this lobby+user so a pending grace-period eviction (if any)
             // from a previous session knows to back off.
             String key = lobbyId + ":" + userId;
-            String previousLobby = sessionLobbyMap.put(sessionId, lobbyId);
-            if (previousLobby != null && !previousLobby.equals(lobbyId)) {
-                removeLiveSession(previousLobby + ":" + userId, sessionId);
+            synchronized (sessionLock) {
+                if (!connectedSessions.contains(sessionId)) {
+                    // This JOIN outlived its socket (see connectedSessions).
+                    // Treat it as a join immediately followed by a disconnect:
+                    // if no other session holds the seat, start its grace period.
+                    logger.info("Ignoring JOIN from already-disconnected session {} (lobby {}, user {})",
+                            sessionId, lobbyId, userId);
+                    if (!liveSessionsByLobbyUser.containsKey(key)) {
+                        activeSessionByLobbyUser.put(key, sessionId);
+                        scheduleEviction(key, lobbyId, userId, sessionId);
+                    }
+                    return;
+                }
+                String previousLobby = sessionLobbyMap.put(sessionId, lobbyId);
+                if (previousLobby != null && !previousLobby.equals(lobbyId)) {
+                    removeLiveSession(previousLobby + ":" + userId, sessionId);
+                }
+                sessionUserMap.put(sessionId, userId);
+                // The add must happen inside compute(): computeIfAbsent(...).add()
+                // can add to a set that a concurrent disconnect (not under the
+                // lobby lock) has just emptied and dropped from the map, leaving
+                // this live session invisible to the grace-period check.
+                liveSessionsByLobbyUser.compute(key, (k, sessions) -> {
+                    Set<String> s = sessions != null ? sessions : ConcurrentHashMap.newKeySet();
+                    s.add(sessionId);
+                    return s;
+                });
+                activeSessionByLobbyUser.put(key, sessionId);
             }
-            sessionUserMap.put(sessionId, userId);
-            // The add must happen inside compute(): computeIfAbsent(...).add()
-            // can add to a set that a concurrent disconnect (not under the
-            // lobby lock) has just emptied and dropped from the map, leaving
-            // this live session invisible to the grace-period check.
-            liveSessionsByLobbyUser.compute(key, (k, sessions) -> {
-                Set<String> s = sessions != null ? sessions : ConcurrentHashMap.newKeySet();
-                s.add(sessionId);
-                return s;
-            });
-            activeSessionByLobbyUser.put(key, sessionId);
 
             // They came back after their grace period expired while ALL_IN:
             // the seat was only marked for removal at hand end — keep it.
@@ -294,26 +325,41 @@ public class WebSocketsController {
      * lobby+user is connected by then (i.e. they never came back, and no other
      * tab is still open on the seat).
      */
+    /** Published on the transport thread once a CONNECT passes StompAuthInterceptor. */
+    @EventListener
+    public void handleConnect(SessionConnectEvent event) {
+        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
+        if (sessionId != null) connectedSessions.add(sessionId);
+    }
+
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = accessor.getSessionId();
 
-        String lobbyId = sessionLobbyMap.remove(sessionId);
-        Integer userId = sessionUserMap.remove(sessionId);
+        synchronized (sessionLock) {
+            connectedSessions.remove(sessionId);
 
-        if (lobbyId == null || userId == null) return;
+            String lobbyId = sessionLobbyMap.remove(sessionId);
+            Integer userId = sessionUserMap.remove(sessionId);
 
-        String key = lobbyId + ":" + userId;
+            if (lobbyId == null || userId == null) return;
 
-        // Another tab / newer socket for this seat is still connected — the
-        // seat isn't abandoned. That session's own disconnect starts the grace period.
-        if (removeLiveSession(key, sessionId)) return;
+            String key = lobbyId + ":" + userId;
 
-        // This was the last live session: it becomes the latest event for the
-        // seat, so only a join that happens after it can cancel this eviction.
-        activeSessionByLobbyUser.put(key, sessionId);
+            // Another tab / newer socket for this seat is still connected — the
+            // seat isn't abandoned. That session's own disconnect starts the grace period.
+            if (removeLiveSession(key, sessionId)) return;
 
+            // This was the last live session: it becomes the latest event for the
+            // seat, so only a join that happens after it can cancel this eviction.
+            activeSessionByLobbyUser.put(key, sessionId);
+            scheduleEviction(key, lobbyId, userId, sessionId);
+        }
+    }
+
+    /** Evicts the seat after the grace period unless a session has (re)joined it since. */
+    private void scheduleEviction(String key, String lobbyId, int userId, String sessionId) {
         disconnectScheduler.schedule(() -> {
             try {
                 // If a session has since (re)joined this lobby+user, or a later
