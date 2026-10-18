@@ -187,6 +187,48 @@ class LobbyManagerTest {
         assertNull(lobby.getPlayersAtTable()[a2.seat()]);
     }
 
+    @Test
+    void shutdownReturnsPotChipsOfAPlayerWhoAlreadyLeftTheHand() {
+        LobbyAssignment a1 = manager.joinLobby(player(1, 1000), StakesLevel.LOW, false, 200);
+        manager.joinLobby(player(2, 1000), StakesLevel.LOW, false, 200);
+        LobbyAssignment a3 = manager.joinLobby(player(3, 1000), StakesLevel.LOW, false, 200);
+        Lobby lobby = a1.lobby();
+        assertNotEquals(GamePhase.WAITING, lobby.getGamePhase());
+
+        // Player 3 put 30 in the pot, folded and left: cashed out 170.
+        seated(a3).buyIn(170);
+        lobby.addHandContribution(seated(a3), 30);
+        manager.leaveTable(lobby, a3.seat());
+        assertEquals(970, bank(3));
+        assertEquals(-30, profit(3));
+
+        // The hand never finishes — its pot is unwound, not destroyed.
+        manager.cashOutAllOnShutdown();
+        assertEquals(1000, bank(3), "the 30 in the unfinished pot must come back");
+        assertEquals(0, profit(3));
+        assertEquals(1000, bank(1));
+        assertEquals(1000, bank(2));
+    }
+
+    @Test
+    void shutdownDoesNotDoubleRefundAPlayerWhoLeftAndSatBackDown() {
+        LobbyAssignment a1 = manager.joinLobby(player(1, 1000), StakesLevel.LOW, false, 200);
+        manager.joinLobby(player(2, 1000), StakesLevel.LOW, false, 200);
+        LobbyAssignment a3 = manager.joinLobby(player(3, 1000), StakesLevel.LOW, false, 200);
+        Lobby lobby = a1.lobby();
+
+        seated(a3).buyIn(170);
+        lobby.addHandContribution(seated(a3), 30);
+        manager.leaveTable(lobby, a3.seat());
+        LobbyAssignment back = manager.joinLobby(rec(3), StakesLevel.LOW, false, 200);
+        assertSame(lobby, back.lobby());
+        assertEquals(770, bank(3));
+
+        manager.cashOutAllOnShutdown();
+        assertEquals(1000, bank(3));
+        assertEquals(0, profit(3));
+    }
+
     // ─── Rebuy rules ─────────────────────────────────────────────────────────────
 
     @Test
