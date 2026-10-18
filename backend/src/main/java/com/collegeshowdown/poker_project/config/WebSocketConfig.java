@@ -2,10 +2,14 @@ package com.collegeshowdown.poker_project.config;
 
 import com.collegeshowdown.poker_project.security.StompAuthInterceptor;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -14,7 +18,23 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    /**
+     * STOMP heart-beat sent by the server every 10s. The client's watchdog
+     * (stompjs heartbeatIncoming) uses it to notice a dead connection — wifi
+     * change, laptop sleep — and reconnect, instead of sitting on a socket it
+     * still believes is open while its actions go nowhere. It also keeps an
+     * idle table's socket from being dropped by proxy idle timeouts.
+     *
+     * The second value (heart-beats the server requires FROM the client) is
+     * deliberately 0: browsers throttle timers in background tabs (Chrome
+     * aligns them to once a minute), so a tabbed-away player's pings would
+     * arrive late, the broker would close their session, and the disconnect
+     * grace period could evict them from the table.
+     */
+    private static final long[] HEARTBEAT = {10_000, 0};
+
     private final StompAuthInterceptor stompAuthInterceptor;
+    private TaskScheduler messageBrokerTaskScheduler;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -23,9 +43,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         this.stompAuthInterceptor = stompAuthInterceptor;
     }
 
+    /** The broker's own scheduler (defined by @EnableWebSocketMessageBroker) — @Lazy breaks the cycle. */
+    @Autowired
+    public void setMessageBrokerTaskScheduler(
+            @Lazy @Qualifier("messageBrokerTaskScheduler") TaskScheduler taskScheduler) {
+        this.messageBrokerTaskScheduler = taskScheduler;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");
+        config.enableSimpleBroker("/topic")
+                .setHeartbeatValue(HEARTBEAT)
+                .setTaskScheduler(messageBrokerTaskScheduler);
         config.setApplicationDestinationPrefixes("/app");
         // The outbound channel is a thread pool: without this, two messages to
         // the same session (e.g. a new hand's public state and its private

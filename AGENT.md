@@ -188,6 +188,11 @@ frames are authorized, not just CONNECT:
   is deliberately NOT enabled — its decorator swallows inbound
   interceptor exceptions, so a bad JWT would hang CONNECT instead of
   getting an ERROR frame.
+- STOMP heart-beat is `10000,0` (`WebSocketConfig.HEARTBEAT`): the server
+  pings every 10s so the client (`heartbeatIncoming: 10000`,
+  `discardWebsocketOnCommFailure: true`) drops a dead socket and reconnects.
+  The server deliberately does NOT require client pings — background-tab
+  timer throttling would delay them and get tabbed-away players evicted.
 - Disconnect grace tracks every live session per lobby+user
   (`liveSessionsByLobbyUser`), so closing one of two tabs doesn't evict.
 
