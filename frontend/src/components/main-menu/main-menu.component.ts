@@ -23,7 +23,12 @@ export class MainMenuComponent implements OnInit {
         if (this.isLoggedIn) {
             this.auth.getProfile().subscribe({
                 next: p => { this.profile = p; },
-                error: () => {},
+                // A rejected/stale token used to be swallowed here, leaving
+                // the header stuck on "…" with a dead profile button and
+                // every Play attempt failing — drop the session instead.
+                error: e => {
+                    if (AuthService.isAuthError(e) || e?.status === 404) this.logout();
+                },
             });
         }
     }

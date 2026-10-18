@@ -26,6 +26,11 @@
         <p class="bank-info">Bank: <strong>${{ bankBalance }}</strong></p>
     </div>
 
+    <div class="return-banner" *ngIf="hasActiveLobby">
+        <span>You're still seated at a table.</span>
+        <button class="return-btn" (click)="returnToTable()">Return to your table</button>
+    </div>
+
     <!-- Stakes tiles -->
     <div class="stakes-grid">
         <div class="stake-card"

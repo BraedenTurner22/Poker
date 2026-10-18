@@ -13,9 +13,9 @@
 
 <!-- Action panel — shown only on your turn -->
 <div class="action-panel" *ngIf="isMyTurn">
-    <button class="btn btn-fold"  (click)="fold()">Fold</button>
-    <button class="btn btn-check" (click)="check()" *ngIf="canCheck">Check</button>
-    <button class="btn btn-call"  (click)="call()"  *ngIf="!canCheck">
+    <button class="btn btn-fold"  (click)="fold()" [disabled]="actionInFlight">Fold</button>
+    <button class="btn btn-check" (click)="check()" *ngIf="canCheck" [disabled]="actionInFlight">Check</button>
+    <button class="btn btn-call"  (click)="call()"  *ngIf="!canCheck" [disabled]="actionInFlight">
         Call ${{ callAmount }}<ng-container *ngIf="isCallAllIn"> (All In)</ng-container>
     </button>
     <div class="raise-group" *ngIf="raiseMax >= raiseMin && !canOnlyCall">
@@ -27,9 +27,9 @@
                    [(ngModel)]="raiseAmount"
                    (blur)="clampRaise()" />
         </div>
-        <button class="btn btn-raise" (click)="raise()" [disabled]="!raiseValid">{{ isBet ? 'Bet' : 'Raise' }}</button>
+        <button class="btn btn-raise" (click)="raise()" [disabled]="!raiseValid || actionInFlight">{{ isBet ? 'Bet' : 'Raise' }}</button>
     </div>
-    <button class="btn btn-allin" (click)="allIn()" *ngIf="!canOnlyCall">All In</button>
+    <button class="btn btn-allin" (click)="allIn()" *ngIf="!canOnlyCall" [disabled]="actionInFlight">All In</button>
 </div>
 
 <!-- Pre-select an action while waiting for your turn -->
@@ -62,14 +62,14 @@
         <span>Chat</span>
         <button class="chat-toggle" (click)="chatCollapsed = true" title="Minimize">─</button>
     </div>
-    <div class="chat-messages">
+    <div class="chat-messages" #chatScroll>
         <div class="chat-msg" *ngFor="let m of chatMessages">
             <span class="chat-user">{{ m.name }}:</span> {{ m.message }}
         </div>
     </div>
     <p class="chat-error" *ngIf="chatError">{{ chatError }}</p>
     <div class="chat-input-row">
-        <input [(ngModel)]="chatInput" placeholder="Say something…"
+        <input [(ngModel)]="chatInput" placeholder="Say something…" maxlength="200"
                (keydown)="chatEnter($event)" />
         <button (click)="sendChat()">Send</button>
     </div>
@@ -84,7 +84,7 @@
 <div class="rebuy-overlay" *ngIf="kickMessage">
     <div class="rebuy-card">
         <div class="rebuy-icon">⏱</div>
-        <h2>Removed for Inactivity</h2>
+        <h2>{{ kickTitle }}</h2>
         <p class="rebuy-bank">{{ kickMessage }}</p>
         <p style="color:#8899a6;font-size:13px;">Returning to lobby…</p>
     </div>
@@ -101,7 +101,7 @@
         <ng-container *ngIf="bankBalance > 0">
             <label class="rebuy-label">Buy back in</label>
             <div class="rebuy-row">
-                <input type="range" min="1" [max]="bankBalance" [(ngModel)]="rebuyAmount" />
+                <input type="range" min="1" [max]="rebuyMax" [(ngModel)]="rebuyAmount" />
                 <span class="rebuy-value">${{ rebuyAmount }}</span>
             </div>
             <div class="rebuy-actions">

@@ -16,25 +16,40 @@ export class WebSocketService implements OnDestroy {
     readonly chat$ = new Subject<ChatBroadcast>();
     readonly chatBlocked$ = new Subject<string>();
     readonly kicked$ = new Subject<string>();
+    /** Server-side errors for this user (e.g. "You are not seated in this lobby."). */
+    readonly error$ = new Subject<string>();
+    /** STOMP ERROR frames — the server rejects a CONNECT with an invalid/expired JWT. */
+    readonly stompError$ = new Subject<string>();
 
     private lobbyId = '';
 
     connect(lobbyId: string, token: string, userId: number): void {
+        // Tear down any previous client first — otherwise it keeps running
+        // (and auto-reconnecting) alongside the new one, still subscribed to
+        // the old lobby and feeding the same subjects.
+        this.disconnect();
         this.lobbyId = lobbyId;
 
-        this.client = new Client({
+        const client = new Client({
             brokerURL: environment.wsUrl,
             connectHeaders: { Authorization: `Bearer ${token}` },
             reconnectDelay: 5000,
-            onConnect: () => this.onConnected(lobbyId, userId),
-            onStompError: frame =>
-                console.error('STOMP error', frame),
+            onConnect: () => this.onConnected(client, lobbyId, userId),
+            onStompError: frame => {
+                console.error('STOMP error', frame);
+                if (client === this.client) this.stompError$.next(frame.headers['message'] ?? '');
+            },
         });
+        this.client = client;
 
-        this.client.activate();
+        client.activate();
     }
 
-    private onConnected(lobbyId: string, userId: number): void {
+    private onConnected(client: Client, lobbyId: string, userId: number): void {
+        // A late onConnect from a client that has since been replaced must not
+        // subscribe the current client to its (old) lobby.
+        if (client !== this.client) return;
+
         // Clear stale subscriptions from a previous session before re-subscribing.
         // This fires on initial connect AND on each auto-reconnect.
         this.subs.forEach(s => s.unsubscribe());
@@ -58,18 +73,24 @@ export class WebSocketService implements OnDestroy {
                 const body = JSON.parse(msg.body) as { reason: string };
                 this.kicked$.next(body.reason ?? 'kicked');
             }),
+            this.client.subscribe(`/topic/game/${lobbyId}/error/${userId}`, (msg: IMessage) => {
+                const body = JSON.parse(msg.body) as { error: string };
+                this.error$.next(body.error ?? 'Something went wrong.');
+            }),
         );
 
         // Register this WebSocket session with the lobby
         this.client.publish({ destination: `/app/game/${lobbyId}/join`, body: '' });
     }
 
-    sendAction(action: string, amount: number): void {
-        if (!this.client?.connected) return;
+    /** Returns false if the action could not be sent (not connected). */
+    sendAction(action: string, amount: number): boolean {
+        if (!this.client?.connected) return false;
         this.client.publish({
             destination: `/app/game/${this.lobbyId}/action`,
             body: JSON.stringify({ action, amount }),
         });
+        return true;
     }
 
     sendLeave(): void {
@@ -80,12 +101,14 @@ export class WebSocketService implements OnDestroy {
         });
     }
 
-    sendChat(message: string): void {
-        if (!this.client?.connected) return;
+    /** Returns false if the message could not be sent (not connected). */
+    sendChat(message: string): boolean {
+        if (!this.client?.connected) return false;
         this.client.publish({
             destination: `/app/game/${this.lobbyId}/chat`,
             body: JSON.stringify({ message }),
         });
+        return true;
     }
 
     disconnect(): void {

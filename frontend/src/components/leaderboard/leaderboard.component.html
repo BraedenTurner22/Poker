@@ -18,8 +18,9 @@
     </div>
 
     <div class="spinner" *ngIf="loading">Loading…</div>
+    <div class="spinner" *ngIf="!loading && loadError">Couldn't load the leaderboards. Please try again later.</div>
 
-    <div class="boards-row" *ngIf="!loading">
+    <div class="boards-row" *ngIf="!loading && !loadError">
 
         <!-- Schools board -->
         <div class="board-col">

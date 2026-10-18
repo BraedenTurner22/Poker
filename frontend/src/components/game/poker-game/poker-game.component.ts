@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import Phaser from 'phaser';
-import { Subscription } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { PokerGameScene } from '../scenes/PokerGameScene';
 import { EventBus } from '../EventBus';
 import { AuthService } from '../../../services/auth.service';
@@ -23,6 +23,7 @@ import {
 })
 export class PokerGameComponent implements OnInit, OnDestroy {
     @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
+    @ViewChild('chatScroll') chatScroll?: ElementRef<HTMLElement>;
 
     // ─── Phaser ──────────────────────────────────────────────────────────────────
     private phaserGame!: Phaser.Game;
@@ -47,6 +48,9 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     raiseAmount = 0;
     raiseMin    = 0;
     raiseMax    = 0;
+    /** Set once an action is sent; cleared when the next state arrives. Blocks double-submits. */
+    actionInFlight = false;
+    private wasMyTurn = false;
 
     // ─── Pre-selected action ─────────────────────────────────────────────────────
     pendingAction: 'FOLD' | 'CHECK_FOLD' | null = null;
@@ -64,9 +68,22 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     bankBalance     = 0;
     rebuyCountdown  = 30;
     private rebuyTimer?: ReturnType<typeof setInterval>;
+    /** True while the profile fetch that opens the popup is in flight. */
+    private rebuyOpening = false;
+
+    /** The server caps a stack at 100 big blinds — don't offer more than it will add. */
+    get rebuyMax(): number {
+        const bb = this.gameState?.bigBlind ?? 0;
+        if (bb <= 0) return this.bankBalance;
+        const room = Math.max(0, 100 * bb - (this.myPlayer?.chips ?? 0));
+        return Math.min(this.bankBalance, room);
+    }
 
     // ─── Inactivity kick ─────────────────────────────────────────────────────────
     kickMessage = '';
+    kickTitle   = 'Removed for Inactivity';
+    private kickTimer?: ReturnType<typeof setTimeout>;
+    private sceneReadyHandler?: () => void;
 
     statusMsg = '';
 
@@ -84,7 +101,12 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit(): void {
-        this.myUserId = this.auth.getUser()!.id;
+        const user = this.auth.getUser();
+        if (!user) {
+            this.router.navigate(['/']);
+            return;
+        }
+        this.myUserId = user.id;
 
         // The canvas only appears once Phaser's scene is ready and the first
         // game state is seeded — until then show a connecting overlay instead
@@ -97,6 +119,11 @@ export class PokerGameComponent implements OnInit, OnDestroy {
 
         const playResponse = (history.state as any)?.playResponse as PlayResponse | undefined;
         if (playResponse) {
+            // The browser keeps history.state across reloads and back/forward
+            // navigation, so this snapshot would otherwise be reused stale —
+            // e.g. pressing Back after leaving would re-enter a lobby we're no
+            // longer seated in. Consume it so those paths go through rejoin.
+            history.replaceState({ ...history.state, playResponse: undefined }, '');
             this.auth.setActiveLobby(playResponse.lobbyId);
             this.initFromPlayResponse(playResponse);
             return;
@@ -112,14 +139,14 @@ export class PokerGameComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.auth.rejoinLobby(activeLobbyId).subscribe({
+        this.subs.push(this.auth.rejoinLobby(activeLobbyId).subscribe({
             next: r => this.initFromPlayResponse(r),
             error: () => {
                 clearTimeout(this.connectingTimeoutWarning);
                 this.auth.clearActiveLobby();
                 this.router.navigate(['/play']);
             },
-        });
+        }));
     }
 
     private initFromPlayResponse(playResponse: PlayResponse): void {
@@ -139,16 +166,21 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         // Seed the scene once it is ready.  We prefer the freshest available
         // state: if a WebSocket broadcast arrived before create() finished we
         // use that; otherwise we fall back to the REST-response snapshot.
-        EventBus.once('current-scene-ready', () => {
+        this.sceneReadyHandler = () => {
+            this.sceneReadyHandler = undefined;
             EventBus.emit('set-player-identity', identity);
-            EventBus.emit('game-state', this.latestGameState ?? restState);
-            const priv = restPrivate ?? this.latestPrivateState;
+            // Also seeds the action panel / rebuy logic, not just the scene.
+            this.onGameState(this.latestGameState ?? restState);
+            // Prefer a WS private state that beat the scene to it — it is newer
+            // than the REST snapshot (which may be from the previous hand).
+            const priv = this.latestPrivateState ?? restPrivate;
             if (priv) EventBus.emit('private-state', priv);
 
             clearTimeout(this.connectingTimeoutWarning);
             this.connected = true;
             this.cdr.detectChanges();
-        });
+        };
+        EventBus.once('current-scene-ready', this.sceneReadyHandler);
 
         const token = this.auth.getToken()!;
         this.ws.connect(playResponse.lobbyId, token, this.myUserId);
@@ -156,33 +188,19 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.subs.push(
             this.ws.gameState$.subscribe(state => {
                 this.latestGameState = state;
-                this.gameState = state;
-                const already = this.myPlayer?.betThisRound ?? 0;
-                this.raiseMin = state.currentBetAmount === 0
-                    ? state.bigBlind
-                    : state.currentBetAmount + state.lastRaiseSize;
-                this.raiseMax = already + (this.myPlayer?.chips ?? 0);
-                this.raiseAmount = Math.min(
-                    Math.max(this.raiseAmount, this.raiseMin), this.raiseMax);
-                this.runPendingAction(state);
-
-                // Rebuy popup: show when hand ends and we have no chips
-                if (state.phase === 'HAND_COMPLETE'
-                    && (this.myPlayer?.chips ?? 1) === 0
-                    && !this.showRebuyPopup) {
-                    this.openRebuyPopup();
-                }
-
-                EventBus.emit('game-state', state);
-                this.cdr.detectChanges();
+                this.onGameState(state);
             }),
             this.ws.privateState$.subscribe(p => {
                 this.latestPrivateState = p;
                 EventBus.emit('private-state', p);
             }),
             this.ws.chat$.subscribe(msg => {
+                const el = this.chatScroll?.nativeElement;
+                const atBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 24;
                 this.chatMessages = [...this.chatMessages.slice(-49), msg];
                 this.cdr.detectChanges();
+                // Keep the newest message in view unless the user scrolled up to read history.
+                if (el && atBottom) el.scrollTop = el.scrollHeight;
             }),
             this.ws.chatBlocked$.subscribe(reason => {
                 this.chatError = reason;
@@ -194,15 +212,89 @@ export class PokerGameComponent implements OnInit, OnDestroy {
                 }, 4000);
             }),
             this.ws.kicked$.subscribe(() => {
-                this.auth.clearActiveLobby();
-                this.kickMessage = 'You were removed from the table due to inactivity.';
-                this.cdr.detectChanges();
-                setTimeout(() => {
-                    this.ws.disconnect();
-                    this.router.navigate(['/play']);
-                }, 4000);
+                this.removedFromTable('Removed for Inactivity',
+                    'You were removed from the table due to inactivity.');
+            }),
+            // The only per-user errors are join failures (lobby gone / not seated)
+            this.ws.error$.subscribe(error => {
+                if (!this.kickMessage) this.removedFromTable('No Longer Seated', error);
+            }),
+            // The server refuses CONNECT with an expired/invalid token; without this
+            // the client would silently retry every 5s forever.
+            this.ws.stompError$.subscribe(message => {
+                if (this.kickMessage) return;
+                if (!this.auth.isLoggedIn() || /token|authoriz|authenticat/i.test(message)) {
+                    this.sessionExpired();
+                }
             }),
         );
+    }
+
+    private onGameState(state: GameStateDto): void {
+        this.gameState = state;
+        // Any new state means the server has processed (or ignored) whatever we sent.
+        this.actionInFlight = false;
+
+        // Our seat is gone (e.g. evicted after the disconnect grace period, then
+        // the STOMP client auto-reconnected) — don't leave the user on a ghost table.
+        if (!state.players.some(p => p.userId === this.myUserId)) {
+            if (!this.kickMessage) {
+                this.removedFromTable('No Longer Seated',
+                    'You are no longer seated at this table.');
+            }
+            return;
+        }
+
+        const already = this.myPlayer?.betThisRound ?? 0;
+        this.raiseMin = state.currentBetAmount === 0
+            ? state.bigBlind
+            : state.currentBetAmount + state.lastRaiseSize;
+        this.raiseMax = already + (this.myPlayer?.chips ?? 0);
+        const myTurn = this.isMyTurn;
+        // Start each new turn at the minimum raise rather than whatever was
+        // left on the slider from a previous street/hand.
+        const base = myTurn && !this.wasMyTurn ? this.raiseMin : this.raiseAmount;
+        this.wasMyTurn = myTurn;
+        this.raiseAmount = Math.min(Math.max(base, this.raiseMin), this.raiseMax);
+        this.runPendingAction(state);
+
+        // Rebuy popup: show once we're out of chips and not live in a hand —
+        // at hand end, or while sitting out (a busted player is FOLDED from the
+        // next deal on). Checking only HAND_COMPLETE never re-offered it after
+        // a reload/reconnect, stranding the player at 0 chips with no way out.
+        const me = this.myPlayer;
+        if (me && me.chips === 0
+            && (state.phase === 'HAND_COMPLETE' || state.phase === 'WAITING' || me.state === 'FOLDED')
+            && !this.showRebuyPopup && !this.rebuyOpening && !this.kickMessage) {
+            this.openRebuyPopup();
+        } else if (me && me.chips > 0 && this.showRebuyPopup) {
+            // Chips arrived (e.g. a rebuy whose state beat a stale broadcast) — not out anymore.
+            this.clearRebuyTimer();
+            this.showRebuyPopup = false;
+        }
+
+        EventBus.emit('game-state', state);
+        this.cdr.detectChanges();
+    }
+
+    /** The JWT was rejected (expired mid-game) — nothing else will work until they sign in. */
+    private sessionExpired(): void {
+        this.auth.logout();
+        this.removedFromTable('Session Expired', 'Please sign in again.');
+    }
+
+    private removedFromTable(title: string, message: string): void {
+        this.auth.clearActiveLobby();
+        this.clearRebuyTimer();
+        this.showRebuyPopup = false;
+        this.kickTitle   = title;
+        this.kickMessage = message;
+        this.cdr.detectChanges();
+        clearTimeout(this.kickTimer);
+        this.kickTimer = setTimeout(() => {
+            this.ws.disconnect();
+            this.router.navigate(['/play']);
+        }, 4000);
     }
 
     ngOnDestroy(): void {
@@ -210,10 +302,16 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.clearRebuyTimer();
         clearTimeout(this.chatErrorTimer);
         clearTimeout(this.connectingTimeoutWarning);
+        clearTimeout(this.kickTimer);
+        if (this.sceneReadyHandler) {
+            EventBus.off('current-scene-ready', this.sceneReadyHandler);
+            this.sceneReadyHandler = undefined;
+        }
         if (this.phaserWindowResizeListener) {
             window.removeEventListener('resize', this.phaserWindowResizeListener);
         }
         this.phaserGame?.destroy(true);
+        if ((window as any).pokerGame === this.phaserGame) delete (window as any).pokerGame;
         this.ws.disconnect();
     }
 
@@ -255,6 +353,9 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         const onResize = () => {
             const w = window.innerWidth;
             const h = window.innerHeight;
+            // Re-read the DPR: browser zoom and moving to another monitor change it
+            // (and fire resize) — a stale value leaves the canvas blurry or oversized.
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             this.phaserGame.scale.resize(Math.floor(w * dpr), Math.floor(h * dpr));
             this.phaserGame.canvas.style.width  = w + 'px';
             this.phaserGame.canvas.style.height = h + 'px';
@@ -297,6 +398,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     /** True when every other live player is all-in — raising is pointless. */
     get canOnlyCall(): boolean {
         if (!this.gameState) return false;
+        // A short all-in didn't reopen raising for a seat that already acted
+        if (this.gameState.raiseClosedSeats?.includes(this.mySeat)) return true;
         const others = this.gameState.players.filter(p => p.seat !== this.mySeat);
         return others.some(p => p.state === 'ALL_IN')
             && others.every(p => p.state === 'FOLDED' || p.state === 'ALL_IN');
@@ -304,14 +407,22 @@ export class PokerGameComponent implements OnInit, OnDestroy {
 
     // ─── Actions ─────────────────────────────────────────────────────────────────
 
-    fold():  void { this.ws.sendAction('FOLD',   0); }
-    check(): void { this.ws.sendAction('CHECK',  0); }
-    call():  void { this.ws.sendAction('CALL',   0); }
+    fold():  void { this.send('FOLD',   0); }
+    check(): void { this.send('CHECK',  0); }
+    call():  void { this.send('CALL',   0); }
     raise(): void {
+        if (!this.raiseValid) return;
+        // Backend expects the increment over the current bet ("raise by");
+        // the slider holds the total "raise to" amount.
         const increment = this.raiseAmount - (this.gameState?.currentBetAmount ?? 0);
-        this.ws.sendAction('RAISE', increment);
+        this.send('RAISE', increment);
     }
-    allIn(): void { this.ws.sendAction('ALL_IN', 0); }
+    allIn(): void { this.send('ALL_IN', 0); }
+
+    private send(action: string, amount: number): void {
+        if (this.actionInFlight || !this.isMyTurn) return;
+        if (this.ws.sendAction(action, amount)) this.actionInFlight = true;
+    }
 
     /** True when no one has bet yet this street — action is a bet, not a raise. */
     get isBet(): boolean { return (this.gameState?.currentBetAmount ?? 0) === 0; }
@@ -321,7 +432,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     }
 
     clampRaise(): void {
-        this.raiseAmount = Math.max(this.raiseMin, Math.min(this.raiseMax, this.raiseAmount || this.raiseMin));
+        this.raiseAmount = Math.max(this.raiseMin,
+            Math.min(this.raiseMax, Math.floor(this.raiseAmount || this.raiseMin)));
     }
 
     // ─── Pre-selected actions ────────────────────────────────────────────────────
@@ -359,22 +471,28 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.subs.forEach(s => s.unsubscribe());
         this.subs = [];
         EventBus.emit('reset-table');
-        this.router.navigate(['/play']);
+        // Cash-out happens server-side after this STOMP leave; /play re-reads
+        // the bank shortly after so it doesn't show the pre-cash-out balance.
+        this.router.navigate(['/play'], { state: { leftTable: true } });
     }
 
     // ─── Rebuy ───────────────────────────────────────────────────────────────────
 
     private openRebuyPopup(): void {
-        this.auth.getProfile().subscribe({
+        this.rebuyOpening = true;
+        this.auth.getProfile().pipe(finalize(() => this.rebuyOpening = false)).subscribe({
             next: p => {
+                if (this.kickMessage || (this.myPlayer?.chips ?? 0) > 0) return;
                 this.bankBalance    = p.chips;
-                this.rebuyAmount    = Math.min(p.chips, 200);
+                this.rebuyAmount    = Math.min(this.rebuyMax, 200);
                 this.rebuyCountdown = 30;
                 this.showRebuyPopup = true;
                 this.cdr.detectChanges();
                 this.startRebuyTimer();
             },
-            error: () => {
+            error: e => {
+                if (AuthService.isAuthError(e)) { this.sessionExpired(); return; }
+                if (this.kickMessage || (this.myPlayer?.chips ?? 0) > 0) return;
                 this.rebuyCountdown = 30;
                 this.showRebuyPopup = true;
                 this.cdr.detectChanges();
@@ -403,7 +521,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     }
 
     confirmRebuy(): void {
-        if (this.rebuyAmount <= 0 || this.rebuyAmount > this.bankBalance) return;
+        if (this.rebuyAmount <= 0 || this.rebuyAmount > this.rebuyMax) return;
         this.clearRebuyTimer();
         this.auth.rebuy(this.lobbyId, this.rebuyAmount).subscribe({
             next: r => {
@@ -413,7 +531,11 @@ export class PokerGameComponent implements OnInit, OnDestroy {
                 this.cdr.detectChanges();
             },
             error: e => {
+                if (AuthService.isAuthError(e)) { this.sessionExpired(); return; }
                 this.statusMsg = e.error?.error ?? 'Rebuy failed.';
+                // The countdown was stopped before the request — resume it so the
+                // popup can't hang open forever with a frozen timer.
+                this.startRebuyTimer();
                 this.cdr.detectChanges();
             },
         });
@@ -430,7 +552,16 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     sendChat(): void {
         const msg = this.chatInput.trim();
         if (!msg) return;
-        this.ws.sendChat(msg);
+        // Keep the text if it wasn't sent (socket reconnecting) instead of dropping it
+        if (!this.ws.sendChat(msg)) {
+            this.chatError = 'Reconnecting — message not sent.';
+            clearTimeout(this.chatErrorTimer);
+            this.chatErrorTimer = setTimeout(() => {
+                this.chatError = '';
+                this.cdr.detectChanges();
+            }, 4000);
+            return;
+        }
         this.chatInput = '';
     }
 

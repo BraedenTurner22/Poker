@@ -34,6 +34,7 @@ export interface GameStateDto {
     turnDeadlineEpochMs: number;
     players: PlayerStateDto[];
     winnerSeats: number[];
+    raiseClosedSeats: number[];  // seats that may only call/fold (short all-in didn't reopen raising)
 }
 
 export interface PrivateStateDto {

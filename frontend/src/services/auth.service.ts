@@ -90,8 +90,39 @@ export class AuthService {
         return raw ? JSON.parse(raw) : null;
     }
 
+    /**
+     * True only for a stored, unexpired JWT. An expired token used to count
+     * as "logged in" — every authenticated call then 401/403'd while the UI
+     * kept showing the logged-in state (and the sign-in button never
+     * appeared), so expired sessions are cleared here instead.
+     */
     isLoggedIn(): boolean {
-        return !!this.getToken();
+        const token = this.getToken();
+        if (!token) return false;
+        if (AuthService.isTokenExpired(token)) {
+            this.logout();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * True for a 401/403 from an authenticated call — the stored token was
+     * rejected (Spring Security answers a missing/invalid/expired JWT with
+     * 403, the controllers use 401 for "User not found").
+     */
+    static isAuthError(e: { status?: number } | null | undefined): boolean {
+        return e?.status === 401 || e?.status === 403;
+    }
+
+    private static isTokenExpired(token: string): boolean {
+        try {
+            const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(atob(part));
+            return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+        } catch {
+            return true;   // malformed token — treat as unusable
+        }
     }
 
     logout(): void {

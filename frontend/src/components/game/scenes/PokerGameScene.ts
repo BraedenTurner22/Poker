@@ -44,6 +44,11 @@ const BET_CLEAR_DIST = 140;
 const TEXT_RES = Math.min(window.devicePixelRatio || 1, 3) * 2;
 const FONT = 'Inter, "Segoe UI", system-ui, Arial, sans-serif';
 
+/** Must match the server's TURN_TIMEOUT_SECONDS. */
+const TURN_MS = 30000;
+/** Room for the name between the logo and the panel's right edge (design units). */
+const NAME_MAX_W = 116;
+
 const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'];
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'ace', 'jack', 'queen', 'king'];
 
@@ -90,12 +95,20 @@ export class PokerGameScene extends Phaser.Scene {
     private savedBets = new Map<number, number>();
 
     private lastBoardLen = 0;
+    /** Board slot → card image still flying in from the deck. */
+    private dealing = new Map<number, Phaser.GameObjects.Image>();
+    /** Estimated server clock minus client clock (ms), from fresh turn deadlines. */
+    private clockOffset: number | null = null;
+    private lastDeadline = 0;
     private lastW = 0;
     private lastH = 0;
     private winnerBannerTimer: Phaser.Time.TimerEvent | null = null;
 
     /** Domains we have already attempted to load logos for. */
     private loadedLogoKeys = new Set<string>();
+
+    /** EventBus handlers registered by this scene instance (removed on destroy). */
+    private busHandlers: [string, (...args: any[]) => void][] = [];
 
     constructor() { super({ key: 'PokerGameScene' }); }
 
@@ -127,11 +140,12 @@ export class PokerGameScene extends Phaser.Scene {
         // stale closures from a previous game session cannot intercept events intended
         // for the next scene (EventEmitter3 stops on exception, so a throwing stale
         // handler would silently block every live listener that follows it).
+        // Only remove *this* scene's handlers: Phaser defers game destruction to
+        // the next frame, so a blanket removeAllListeners here could also strip
+        // the listeners a newer scene instance has already registered.
         this.events.once('destroy', () => {
-            EventBus.removeAllListeners('set-player-identity');
-            EventBus.removeAllListeners('game-state');
-            EventBus.removeAllListeners('private-state');
-            EventBus.removeAllListeners('reset-table');
+            for (const [event, fn] of this.busHandlers) EventBus.off(event, fn, this);
+            this.busHandlers = [];
         });
 
         EventBus.emit('current-scene-ready', this);
@@ -337,28 +351,43 @@ export class PokerGameScene extends Phaser.Scene {
 
     // ─── EventBus ───────────────────────────────────────────────────────────────
 
+    private listen(event: string, fn: (...args: any[]) => void): void {
+        EventBus.on(event, fn, this);
+        this.busHandlers.push([event, fn]);
+    }
+
     private setupEventBusListeners(): void {
-        EventBus.on('set-player-identity', (data: { userId: number; seat: number }) => {
+        this.listen('set-player-identity', (data: { userId: number; seat: number }) => {
             this.myUserId = data.userId;
             this.mySeat   = data.seat;
         });
 
-        EventBus.on('game-state', (state: GameStateDto) => {
+        this.listen('game-state', (state: GameStateDto) => {
+            const prevPhase = this.gameState?.phase;
             this.gameState = state;
-            if (state.phase === 'WAITING') this.holeCards = [];
+            this.sampleClockOffset(state);
+            // A new hand (or WAITING) drops last hand's hole cards so they don't
+            // show face-up until the new private state lands. Safe because the
+            // server preserves publish order: public state always precedes that
+            // hand's private state (WebSocketConfig.setPreservePublishOrder).
+            if (state.phase === 'WAITING'
+                || (state.phase === 'PRE_FLOP' && prevPhase !== undefined && prevPhase !== 'PRE_FLOP')) {
+                this.holeCards = [];
+            }
             this.renderAll();
         });
 
-        EventBus.on('private-state', (state: PrivateStateDto) => {
+        this.listen('private-state', (state: PrivateStateDto) => {
             this.holeCards = state.holeCards;
             this.renderMyCards();
         });
 
-        EventBus.on('reset-table', () => {
+        this.listen('reset-table', () => {
             this.gameState    = null;
             this.holeCards    = [];
             this.mySeat       = -1;
             this.lastBoardLen = 0;
+            this.cancelDeals();
             this.prevPhase    = '';
             this.savedBets.clear();
             this.seatDisplays.forEach((sd, d) => {
@@ -378,32 +407,37 @@ export class PokerGameScene extends Phaser.Scene {
     private renderAll(): void {
         if (!this.gameState) return;
         const newPhase = this.gameState.phase;
+        const handJustEnded = newPhase === 'HAND_COMPLETE' && this.prevPhase !== 'HAND_COMPLETE';
 
-        if (this.isStreetTransition(this.prevPhase, newPhase)) {
-            this.animateBetsIntoPot();
-        }
-
-        this.savedBets.clear();
+        const bets = new Map<number, number>();
         for (let d = 0; d < 8; d++) {
             const actual = this.displayToActualSeat(d);
             const p      = this.gameState.players.find(pl => pl.seat === actual);
-            if (p && p.betThisRound > 0) this.savedBets.set(d, p.betThisRound);
+            const bet    = p ? this.displayedBet(p) : 0;
+            if (bet > 0) bets.set(d, bet);
         }
+        // Sweep bets into the pot whenever the table's bets clear: a new street,
+        // the start of an all-in run-out (round reset, phase unchanged) or the
+        // hand ending (incl. a fold-win) — not on every broadcast.
+        if (this.savedBets.size > 0 && bets.size === 0) {
+            this.animateBetsIntoPot();
+        }
+        this.savedBets = bets;
         this.prevPhase = newPhase;
 
         this.renderBoard();
         this.renderPlayers();
         this.renderPot();
         this.renderPhase();
-        this.renderWinnerBanner();
+        this.renderWinnerBanner(handJustEnded);
     }
 
-    private isStreetTransition(prev: string, curr: string): boolean {
-        const transitions = new Set([
-            'PRE_FLOP→FLOP', 'FLOP→TURN', 'TURN→RIVER',
-            'RIVER→SHOWDOWN', 'RIVER→HAND_COMPLETE',
-        ]);
-        return transitions.has(`${prev}→${curr}`);
+    /**
+     * A fold-win leaves round contributions in place but has already paid the
+     * pot out, so bets aren't shown on a finished hand (they'd double-count).
+     */
+    private displayedBet(p: PlayerStateDto): number {
+        return this.gameState?.phase === 'HAND_COMPLETE' ? 0 : p.betThisRound;
     }
 
     // ─── Bet collect animation ───────────────────────────────────────────────────
@@ -446,7 +480,10 @@ export class PokerGameScene extends Phaser.Scene {
 
         this.deckStack.forEach(card => card.setVisible(inHand));
 
-        if (board.length < this.lastBoardLen) this.lastBoardLen = 0;
+        if (board.length < this.lastBoardLen) {
+            this.lastBoardLen = 0;
+            this.cancelDeals();
+        }
 
         for (let i = 0; i < 5; i++) {
             const slot    = this.boardSlots[i];
@@ -455,7 +492,8 @@ export class PokerGameScene extends Phaser.Scene {
                 const key = cardTextureKey(board[i].rank, board[i].suit);
                 outline.setVisible(false);
                 if (i < this.lastBoardLen) {
-                    slot.setTexture(key).setVisible(true);
+                    // Still flying in — the deal tween reveals it when it lands.
+                    if (!this.dealing.has(i)) slot.setTexture(key).setVisible(true);
                 } else {
                     this.dealBoardCard(i, key, (i - this.lastBoardLen) * 180);
                 }
@@ -474,6 +512,7 @@ export class PokerGameScene extends Phaser.Scene {
         const scale = BOARD_CARD_SCALE * this.s;
         const moving = this.add.image(deck.x, deck.y, 'card_back')
             .setScale(scale).setDepth(8);
+        this.dealing.set(slotIndex, moving);
 
         this.tweens.add({
             targets: moving, x: slot.x, y: slot.y,
@@ -487,6 +526,7 @@ export class PokerGameScene extends Phaser.Scene {
                             targets: moving, scaleX: scale, duration: 90, ease: 'Linear',
                             onComplete: () => {
                                 slot.setTexture(textureKey).setVisible(true);
+                                this.dealing.delete(slotIndex);
                                 moving.destroy();
                             },
                         });
@@ -494,6 +534,19 @@ export class PokerGameScene extends Phaser.Scene {
                 });
             },
         });
+    }
+
+    /**
+     * Drops deal animations from a board that's been cleared (new hand / table
+     * reset). Tweens pause while the tab is hidden, so without this a stale
+     * deal could land later and paint last hand's card onto the new board.
+     */
+    private cancelDeals(): void {
+        for (const moving of this.dealing.values()) {
+            this.tweens.killTweensOf(moving);
+            moving.destroy();
+        }
+        this.dealing.clear();
     }
 
     // ─── Players ────────────────────────────────────────────────────────────────
@@ -527,11 +580,13 @@ export class PokerGameScene extends Phaser.Scene {
 
             this.drawLogoCircle(sd, player.collegeDomain, player.collegeName, isFolded);
 
-            sd.usernameText.setText(player.name)
-                .setColor(isFolded ? '#5a6a80' : '#e8eef7');
+            this.setNameText(sd, player.name);
+            sd.usernameText.setColor(isFolded ? '#5a6a80' : '#e8eef7');
             sd.chipsText.setText(`$${player.chips}`)
                 .setColor(isFolded ? '#5a6a80' : '#ffd700');
-            const isOut = player.chips === 0 && handOver;
+            // A FOLDED seat with 0 chips is a busted player sitting the hand out
+            // (you can't fold with nothing behind — you'd be all-in).
+            const isOut = player.chips === 0 && (handOver || isFolded);
             sd.stateText.setText(
                 isAllIn ? 'ALL IN' : isOut ? 'OUT OF MONEY' : isActive ? '' : 'FOLDED'
             ).setColor(isAllIn ? '#ff9944' : isOut ? '#f87171' : '#5a6a80');
@@ -575,8 +630,19 @@ export class PokerGameScene extends Phaser.Scene {
                 sd.card2.setVisible(false);
             }
 
-            const bet = player.betThisRound;
+            const bet = this.displayedBet(player);
             this.betLabels[d].setText(bet > 0 ? `$${bet}` : '').setVisible(bet > 0);
+        }
+    }
+
+    /** Sets the seat name, ellipsizing it so long names stay inside the panel. */
+    private setNameText(sd: SeatDisplay, name: string): void {
+        const t = sd.usernameText;
+        if (t.getData('fullName') === name) return;
+        t.setData('fullName', name);
+        t.setText(name);
+        for (let n = name.length - 1; n > 0 && t.width > NAME_MAX_W; n--) {
+            t.setText(name.slice(0, n).trimEnd() + '…');
         }
     }
 
@@ -620,7 +686,7 @@ export class PokerGameScene extends Phaser.Scene {
     private renderEmptySeat(sd: SeatDisplay, displaySlot: number): void {
         this.drawSeatPanel(sd, 0x223855, 1, true);
         sd.logoImage.setVisible(false);
-        sd.usernameText.setText('');
+        sd.usernameText.setText('').setData('fullName', '');
         sd.chipsText.setText('');
         sd.stateText.setText('');
         sd.badgeGraphics.clear();
@@ -654,12 +720,19 @@ export class PokerGameScene extends Phaser.Scene {
         this.phaseText.setText(phaseLabel[this.gameState!.phase] ?? '');
     }
 
-    private renderWinnerBanner(): void {
+    private renderWinnerBanner(handJustEnded: boolean): void {
         const state = this.gameState!;
-        if (state.phase !== 'HAND_COMPLETE' || state.winnerSeats.length === 0) {
+        if (state.phase !== 'HAND_COMPLETE') {
             this.winnerBanner.setVisible(false);
             return;
         }
+        // A later HAND_COMPLETE broadcast can drop a winner whose seat was just
+        // vacated (disconnected all-in) — leave the banner up until its timeout.
+        if (state.winnerSeats.length === 0) return;
+        // Only (re)show on the transition into HAND_COMPLETE — later broadcasts
+        // in the same phase (rebuys, departures) and resizes re-run renderAll()
+        // and would otherwise re-pop the banner after its 4s timeout.
+        if (!handJustEnded) return;
         const winners = state.players
             .filter(p => state.winnerSeats.includes(p.seat))
             .map(p => p.name);
@@ -686,8 +759,9 @@ export class PokerGameScene extends Phaser.Scene {
             if (this.gameState.currentPlayerSeat !== actual) continue;
             if (this.gameState.turnDeadlineEpochMs <= 0) continue;
 
-            const remaining = Math.max(0, this.gameState.turnDeadlineEpochMs - Date.now());
-            const fraction  = Math.min(1, remaining / 30000);
+            const serverNow = Date.now() + (this.clockOffset ?? 0);
+            const remaining = Math.max(0, this.gameState.turnDeadlineEpochMs - serverNow);
+            const fraction  = Math.min(1, remaining / TURN_MS);
             if (fraction <= 0) continue;
 
             const barW  = PANEL_W - 24;
@@ -702,6 +776,20 @@ export class PokerGameScene extends Phaser.Scene {
                 sd.timerArc.fillRoundedRect(-barW / 2, barY, fillW, 6, 3);
             }
         }
+    }
+
+    /**
+     * The deadline is server-clock time, so a skewed client clock would show the
+     * bar empty or stuck full. Every new deadline is broadcast the moment it's
+     * set (server now + TURN_MS), so each one bounds the offset from below
+     * (minus latency, or more for a mid-turn join); the max is the best estimate.
+     */
+    private sampleClockOffset(state: GameStateDto): void {
+        const deadline = state.turnDeadlineEpochMs;
+        if (deadline <= 0 || deadline === this.lastDeadline) return;
+        this.lastDeadline = deadline;
+        const sample = deadline - TURN_MS - Date.now();
+        this.clockOffset = this.clockOffset === null ? sample : Math.max(this.clockOffset, sample);
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
