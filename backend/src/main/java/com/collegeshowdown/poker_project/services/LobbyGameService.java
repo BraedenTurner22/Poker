@@ -250,6 +250,7 @@ public class LobbyGameService {
 
         applyAction(lobby, player, playerSeat, action, raiseAmount, workingPot);
         lobby.getPlayersActedThisRound().add(playerSeat);
+        lobby.recordBetWhenActed(playerSeat);
 
         logger.info("Lobby {} seat {} — action={} raiseAmt={}",
                 lobby.getId(), playerSeat, action, raiseAmount);
@@ -322,10 +323,10 @@ public class LobbyGameService {
 
     /**
      * Raises the current bet to {@code newRoundContribution} if it's higher.
-     * A full raise (increment >= last raise size) sets the new minimum and
-     * reopens raising for everyone; an incomplete one (a short all-in) still
-     * makes everyone match it, but players who had already acted may only
-     * call or fold.
+     * A full raise (increment >= last raise size) sets the new minimum; an
+     * incomplete one (a short all-in) still makes everyone match it, but
+     * players who had already acted may only call or fold unless the bet has
+     * since grown by a full raise in total (see Lobby.getRaiseClosedSeats).
      */
     private void applyBetIncrease(Lobby lobby, int playerSeat, int newRoundContribution) {
         if (newRoundContribution <= lobby.getCurrentBetAmount()) return; // a call, possibly short
@@ -336,9 +337,6 @@ public class LobbyGameService {
         if (increment >= lobby.getLastRaiseSize()) {
             lobby.setLastRaiseSize(increment);
             lobby.setLastAggressorIndex(playerSeat);
-            lobby.getRaiseClosedSeats().clear();
-        } else {
-            lobby.getRaiseClosedSeats().addAll(lobby.getPlayersActedThisRound());
         }
         // Every active player's contribution is <= the old bet, so all of
         // them now owe chips and must act again.
@@ -394,7 +392,7 @@ public class LobbyGameService {
         lobby.resetRoundContributions();
         lobby.setCurrentBetAmount(0);
         lobby.setLastRaiseSize(lobby.getBigBlind());
-        lobby.getRaiseClosedSeats().clear();
+        lobby.resetBetWhenLastActed();
 
         // Fewer than 2 players can still bet (rest are all-in): no more betting
         // rounds — reveal the remaining streets one by one, then showdown.
@@ -490,8 +488,11 @@ public class LobbyGameService {
      * false if the seat must stay put for now. An ALL_IN player has no more
      * decisions to make but is still entitled to whatever they're owed at
      * showdown — folding them here would strip their equity from every pot.
-     * Their seat is instead marked pending and vacated once the hand
-     * concludes (see concludeHand/concludeFoldWin).
+     * The same goes for anyone still in the hand once an all-in run-out has
+     * begun (e.g. the player who called the all-in with chips behind): the
+     * betting is over, so there's nothing left to fold out of. Their seat is
+     * instead marked pending and vacated once the hand concludes (see
+     * concludeHand/concludeFoldWin).
      */
     public boolean handlePlayerDeparture(Lobby lobby, int seat) {
         synchronized (lobby) {
@@ -502,10 +503,12 @@ public class LobbyGameService {
         ConnectedPlayer player = lobby.getPlayersAtTable()[seat];
         if (player == null || player.getPlayerState() == PlayerState.FOLDED) return true;
 
-        if (player.getPlayerState() == PlayerState.ALL_IN) {
+        // currentPlayerIndex is -1 only while an all-in run-out reveals the board
+        if (player.getPlayerState() == PlayerState.ALL_IN || lobby.getCurrentPlayerIndex() == -1) {
             lobby.getPendingDepartureSeats().add(seat);
-            logger.info("Seat {} in lobby {} disconnected while ALL_IN — deferring seat removal until showdown",
-                    seat, lobby.getId());
+            logger.info("Seat {} in lobby {} left while {} — deferring seat removal until showdown",
+                    seat, lobby.getId(),
+                    player.getPlayerState() == PlayerState.ALL_IN ? "ALL_IN" : "in a run-out");
             return false;
         }
 
@@ -523,9 +526,6 @@ public class LobbyGameService {
         if (countNonFolded(lobby) == 1) {
             potManagerService.recalculatePots(lobby);
             concludeFoldWin(lobby);
-        } else if (lobby.getCurrentPlayerIndex() == -1) {
-            // An all-in run-out is already revealing the board — advancing
-            // again would start a second, parallel run-out chain.
         } else if (isBettingRoundComplete(lobby) || noDecisionLeft(lobby)) {
             cancelTurnTimer(lobby);
             advancePhase(lobby);
@@ -825,7 +825,7 @@ public class LobbyGameService {
         lobby.setSmallBlindSeat(-1);
         lobby.setBigBlindSeat(-1);
         lobby.setTurnDeadlineEpochMs(0);
-        lobby.getRaiseClosedSeats().clear();
+        lobby.resetBetWhenLastActed();
 
         // Every seated player with chips comes back ACTIVE for the new hand —
         // a fold or all-in only lasts for the hand it happened in. A busted

@@ -476,6 +476,31 @@ class GameEngineTest {
         assertEquals(600, totalChipsInPlay(lobby));
     }
 
+    @Test
+    void callerLeavingDuringAllInRunOutKeepsTheirEquity() {
+        game.setRunOutStepMillis(50); // keep the run-out going while bob leaves
+        Lobby lobby = lowStakesLobby();
+        ConnectedPlayer alice = seat(lobby, 0, "alice", 100); // SB
+        ConnectedPlayer bob = seat(lobby, 1, "bob", 300);     // BB
+        game.startHand(lobby);
+
+        act(lobby, PlayerAction.ALL_IN); // alice shoves 100
+        act(lobby, PlayerAction.CALL);   // bob calls, 200 behind
+        assertEquals(-1, lobby.getCurrentPlayerIndex(), "board should be running out");
+        assertEquals(PlayerState.ACTIVE, bob.getPlayerState());
+
+        // Bob leaves mid run-out — the betting is over, he must not be folded
+        assertFalse(game.handlePlayerDeparture(lobby, 1), "seat removal must be deferred");
+        assertEquals(PlayerState.ACTIVE, bob.getPlayerState());
+        assertTrue(lobby.getPendingDepartureSeats().contains(1));
+
+        awaitHandComplete(lobby);
+        assertEquals(PlayerState.ACTIVE, bob.getPlayerState(), "bob's hand went to showdown");
+        assertEquals(2, java.util.stream.Stream.of(alice, bob)
+                .filter(p -> p.getCards().size() == 7).count(), "both hands were evaluated");
+        assertEquals(400, totalChipsInPlay(lobby));
+    }
+
     // ─── Next hand reset ─────────────────────────────────────────────────────────
 
     @Test
@@ -775,6 +800,54 @@ class GameEngineTest {
         assertEquals(2, lobby.getCurrentPlayerIndex());
         act(lobby, PlayerAction.RAISE, 8);
         assertEquals(30, lobby.getCurrentBetAmount());
+    }
+
+    @Test
+    void shortAllInsThatTogetherMakeAFullRaiseReopenRaising() {
+        Lobby lobby = lowStakesLobby();
+        seat(lobby, 0, "alice", 500); // SB
+        seat(lobby, 1, "bob", 500);   // BB
+        seat(lobby, 2, "carol", 500); // UTG
+        seat(lobby, 3, "dave", 14);
+        seat(lobby, 4, "erin", 19);
+        game.startHand(lobby);
+
+        assertEquals(2, lobby.getCurrentPlayerIndex());
+        act(lobby, PlayerAction.RAISE, 8); // carol to 10 (full raise of 8)
+        act(lobby, PlayerAction.ALL_IN);   // dave to 14: +4, incomplete
+        assertTrue(lobby.getRaiseClosedSeats().contains(2));
+        act(lobby, PlayerAction.ALL_IN);   // erin to 19: +5 — carol now faces +9 >= 8
+        assertEquals(19, lobby.getCurrentBetAmount());
+        assertFalse(lobby.getRaiseClosedSeats().contains(2));
+        act(lobby, PlayerAction.CALL);     // alice
+        act(lobby, PlayerAction.CALL);     // bob
+
+        assertEquals(2, lobby.getCurrentPlayerIndex());
+        act(lobby, PlayerAction.RAISE, 8); // carol re-raises to 27
+        assertEquals(27, lobby.getCurrentBetAmount());
+        assertNotEquals(2, lobby.getCurrentPlayerIndex());
+    }
+
+    @Test
+    void raiserFacingOnlyShortAllInsSinceTheirRaiseStaysClosed() {
+        Lobby lobby = lowStakesLobby();
+        seat(lobby, 0, "alice", 500); // SB
+        seat(lobby, 1, "bob", 500);   // BB
+        seat(lobby, 2, "carol", 500); // UTG
+        seat(lobby, 3, "dave", 14);
+        seat(lobby, 4, "erin", 17);
+        game.startHand(lobby);
+
+        act(lobby, PlayerAction.RAISE, 8); // carol to 10
+        act(lobby, PlayerAction.ALL_IN);   // dave to 14 (+4)
+        act(lobby, PlayerAction.ALL_IN);   // erin to 17 (+3) — only +7 total for carol
+        act(lobby, PlayerAction.CALL);     // alice
+        act(lobby, PlayerAction.CALL);     // bob
+
+        assertEquals(2, lobby.getCurrentPlayerIndex());
+        act(lobby, PlayerAction.RAISE, 8);
+        assertEquals(17, lobby.getCurrentBetAmount(), "carol must not be allowed to re-raise");
+        assertEquals(2, lobby.getCurrentPlayerIndex());
     }
 
     // ─── Regression: blinds leave nobody to act ──────────────────────────────────

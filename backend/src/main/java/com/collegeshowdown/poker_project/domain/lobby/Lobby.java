@@ -125,12 +125,11 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     private boolean headsUpHand;
 
     /**
-     * Seats that already acted and then only faced an incomplete (short all-in)
-     * raise — they may call or fold but not re-raise until a full raise
-     * reopens the betting. Cleared on every full raise and every new street.
+     * The bet each seat faced (and matched or set) the last time it acted
+     * this street. Drives raiseClosedSeats; cleared on every new street.
      */
     @Transient
-    private Set<Integer> raiseClosedSeats = new HashSet<>();
+    private Map<Integer, Integer> betWhenLastActed = new HashMap<>();
 
     // Required for JPA
     protected Lobby() {
@@ -440,7 +439,23 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     public boolean isHeadsUpHand() { return headsUpHand; }
     public void setHeadsUpHand(boolean headsUpHand) { this.headsUpHand = headsUpHand; }
 
-    public Set<Integer> getRaiseClosedSeats() { return raiseClosedSeats; }
+    public void recordBetWhenActed(int seat) { betWhenLastActed.put(seat, currentBetAmount); }
+    public void resetBetWhenLastActed() { betWhenLastActed = new HashMap<>(); }
+
+    /**
+     * Seats that already acted this street and have since faced less than a
+     * full raise in total — they may call or fold but not re-raise. Several
+     * short all-ins that together add up to a full raise reopen it (NLHE
+     * rule), so this is measured from each seat's own last action rather
+     * than per all-in.
+     */
+    public Set<Integer> getRaiseClosedSeats() {
+        Set<Integer> closed = new HashSet<>();
+        betWhenLastActed.forEach((seat, bet) -> {
+            if (currentBetAmount - bet < lastRaiseSize) closed.add(seat);
+        });
+        return closed;
+    }
 
 
 
