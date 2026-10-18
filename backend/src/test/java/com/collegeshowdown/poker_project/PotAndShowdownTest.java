@@ -10,15 +10,24 @@ import com.collegeshowdown.poker_project.domain.lobby.StakesLevel;
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.domain.player.PlayerState;
 import com.collegeshowdown.poker_project.models.PlayerRecord;
+import com.collegeshowdown.poker_project.services.DealerService;
+import com.collegeshowdown.poker_project.services.LobbyGameService;
 import com.collegeshowdown.poker_project.services.PotManagerService;
 import com.collegeshowdown.poker_project.services.WinnerService;
+import com.collegeshowdown.poker_project.domain.lobby.GamePhase;
+import com.collegeshowdown.poker_project.domain.player.PlayerAction;
+import com.collegeshowdown.poker_project.service.GameStateBuilder;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import static com.collegeshowdown.poker_project.domain.card.Rank.*;
 import static com.collegeshowdown.poker_project.domain.card.Suit.*;
@@ -243,5 +252,212 @@ class PotAndShowdownTest {
 
         assertEquals(500, a.getActiveChips() + b.getActiveChips());
         assertEquals(500, a.getActiveChips());
+    }
+
+    // ─── Randomized chip conservation through the real engine ───────────────────
+
+    /** Chips that entered / left a table, for the conservation check. */
+    private static final class Ledger {
+        long boughtIn;
+        long cashedOut;
+        final List<PlayerRecord> departed = new ArrayList<>();
+    }
+
+    private static PlayerRecord record(int id) {
+        PlayerRecord record = new PlayerRecord("r" + id, "r" + id + "@umass.edu",
+                "x", "umass.edu", "UMass", "LOCAL");
+        try {
+            Field f = PlayerRecord.class.getDeclaredField("id");
+            f.setAccessible(true);
+            f.set(record, id);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+        return record;
+    }
+
+    /**
+     * Plays thousands of random hands — short and uneven stacks, random
+     * folds / calls / raises / shoves, illegal actions, players leaving and
+     * (re)joining mid-hand and during all-in run-outs, mid-hand rebuys — and
+     * after every single step asserts that no chip was created or destroyed:
+     * stacks + pots + cashed-out == bought-in. Also checks the pots always
+     * match the recorded contributions, every pot is paid out by the end of
+     * the hand, and no card is ever dealt twice in a hand.
+     */
+    @Test
+    void randomHandsConserveChips() throws InterruptedException {
+        LobbyGameService engine = new LobbyGameService(new DealerService(), potManager, winnerService,
+                new GameStateBuilder(), new SimpMessagingTemplate((message, timeout) -> true), null);
+        engine.setRunOutStepMillis(0);
+        Random rng = new Random(424242L);
+        int[] ids = {10_000};
+
+        for (int table = 0; table < 150; table++) {
+            StakesLevel stakes = StakesLevel.values()[rng.nextInt(StakesLevel.values().length)];
+            Lobby lobby = new Lobby(LobbyType.GLOBAL, stakes);
+            Ledger ledger = new Ledger();
+
+            for (int hand = 0; hand < 12; hand++) {
+                // Keep at least two funded players seated
+                synchronized (lobby) {
+                    long funded = java.util.Arrays.stream(lobby.getPlayersAtTable())
+                            .filter(p -> p != null && p.getActiveChips() > 0).count();
+                    while (funded < 2 + rng.nextInt(3) && lobby.tableCount() < Lobby.TABLE_SIZE) {
+                        joinRandom(lobby, rng, ledger, ids);
+                        funded++;
+                    }
+                }
+                engine.startHand(lobby);
+                assertConserved(lobby, ledger);
+
+                for (int step = 0; ; step++) {
+                    assertTrue(step < 2000, "hand never finished");
+                    synchronized (lobby) {
+                        if (lobby.getGamePhase() == GamePhase.HAND_COMPLETE
+                                || lobby.getGamePhase() == GamePhase.WAITING) break;
+                    }
+                    int roll = rng.nextInt(100);
+                    if (roll < 4) {
+                        depart(engine, lobby, rng, ledger);
+                    } else if (roll < 6) {
+                        synchronized (lobby) {
+                            if (lobby.tableCount() < Lobby.TABLE_SIZE) joinRandom(lobby, rng, ledger, ids);
+                        }
+                    } else if (roll < 8) {
+                        rebuyRandom(lobby, rng, ledger);
+                    } else if (lobby.getCurrentPlayerIndex() == -1) {
+                        Thread.sleep(1); // all-in run-out in progress
+                    } else {
+                        randomAction(engine, lobby, rng);
+                    }
+                    assertConserved(lobby, ledger);
+                }
+
+                synchronized (lobby) {
+                    for (Pot pot : lobby.getAllActivePots()) {
+                        assertEquals(0, pot.getAmountInPot(), "pot left unpaid at end of hand");
+                    }
+                    // Emulates LobbyManagerService.leaveTable for seats that left while all-in
+                    for (int seat : new ArrayList<>(lobby.getPendingDepartureSeats())) {
+                        ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
+                        if (p == null) continue;
+                        ledger.cashedOut += p.getActiveChips();
+                        ledger.departed.add(p.playerRecord);
+                        lobby.getPlayersAtTable()[seat] = null;
+                    }
+                    lobby.getPendingDepartureSeats().clear();
+                    assertConserved(lobby, ledger);
+                }
+            }
+        }
+    }
+
+    private void joinRandom(Lobby lobby, Random rng, Ledger ledger, int[] ids) {
+        int seat = -1;
+        for (int i = 0; i < Lobby.TABLE_SIZE; i++) if (lobby.getPlayersAtTable()[i] == null) { seat = i; break; }
+        if (seat == -1) return;
+        // Sometimes the same account comes back (possibly in the hand it left)
+        PlayerRecord rec = !ledger.departed.isEmpty() && rng.nextInt(3) == 0
+                ? ledger.departed.remove(rng.nextInt(ledger.departed.size()))
+                : record(ids[0]++);
+        for (ConnectedPlayer p : lobby.getPlayersAtTable()) {
+            if (p != null && p.playerRecord.getId().equals(rec.getId())) return; // already seated
+        }
+        int bb = lobby.getBigBlind();
+        int chips = switch (rng.nextInt(4)) {
+            case 0 -> 1 + rng.nextInt(bb + 1);       // shorter than the blinds
+            case 1 -> 1 + rng.nextInt(10 * bb);
+            default -> 1 + rng.nextInt(100 * bb);
+        };
+        ConnectedPlayer p = new ConnectedPlayer(rec);
+        p.buyIn(chips);
+        if (lobby.getGamePhase() != GamePhase.WAITING) p.setPlayerState(PlayerState.FOLDED);
+        lobby.getPlayersAtTable()[seat] = p;
+        ledger.boughtIn += chips;
+    }
+
+    /** Mirrors WebSocketsController.removePlayerFromLobby + leaveTable's cash-out. */
+    private void depart(LobbyGameService engine, Lobby lobby, Random rng, Ledger ledger) {
+        synchronized (lobby) {
+            int seat = rng.nextInt(Lobby.TABLE_SIZE);
+            ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
+            if (p == null) return;
+            if (engine.handlePlayerDeparture(lobby, seat)) {
+                ledger.cashedOut += p.getActiveChips();
+                ledger.departed.add(p.playerRecord);
+                lobby.getPlayersAtTable()[seat] = null;
+            }
+        }
+    }
+
+    /** Mirrors LobbyManagerService.rebuy's table-stakes rule. */
+    private void rebuyRandom(Lobby lobby, Random rng, Ledger ledger) {
+        synchronized (lobby) {
+            int seat = rng.nextInt(Lobby.TABLE_SIZE);
+            ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
+            if (p == null) return;
+            boolean handInProgress = lobby.getGamePhase() != GamePhase.WAITING
+                    && lobby.getGamePhase() != GamePhase.HAND_COMPLETE;
+            boolean inCurrentHand = handInProgress && p.getPlayerState() != PlayerState.FOLDED
+                    && (!p.getCards().isEmpty() || lobby.getHandContributions().getOrDefault(p, 0) > 0);
+            if (inCurrentHand) return;
+            int amount = 1 + rng.nextInt(20 * lobby.getBigBlind());
+            p.addChips(amount);
+            ledger.boughtIn += amount;
+            if (handInProgress) p.setPlayerState(PlayerState.FOLDED);
+        }
+    }
+
+    private void randomAction(LobbyGameService engine, Lobby lobby, Random rng) {
+        int seat;
+        PlayerAction action;
+        int amount = 0;
+        synchronized (lobby) {
+            seat = lobby.getCurrentPlayerIndex();
+            if (seat < 0) return;
+            ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
+            if (p == null) return;
+            int owed = lobby.getCurrentBetAmount() - lobby.getRoundContribution(p);
+            int roll = rng.nextInt(100);
+            if (roll < 15) action = PlayerAction.FOLD;
+            else if (roll < 55) action = owed > 0 ? PlayerAction.CALL : PlayerAction.CHECK;
+            else if (roll < 60) action = PlayerAction.CHECK; // illegal when facing a bet
+            else if (roll < 85) {
+                action = PlayerAction.RAISE;
+                amount = rng.nextInt(3) == 0
+                        ? rng.nextInt(lobby.getLastRaiseSize() + 1)            // often below the minimum
+                        : lobby.getLastRaiseSize() + rng.nextInt(4 * lobby.getBigBlind() + 1);
+            } else action = PlayerAction.ALL_IN;
+        }
+        engine.processPlayerAction(lobby, seat, action, amount);
+    }
+
+    private void assertConserved(Lobby lobby, Ledger ledger) {
+        synchronized (lobby) {
+            long stacks = 0;
+            Set<Card> dealt = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+            Set<String> faces = new HashSet<>();
+            for (ConnectedPlayer p : lobby.getPlayersAtTable()) {
+                if (p == null) continue;
+                assertTrue(p.getActiveChips() >= 0, "negative stack");
+                stacks += p.getActiveChips();
+                dealt.addAll(p.getCards().stream().limit(2).toList());
+            }
+            dealt.addAll(lobby.getBoard());
+            for (Card card : dealt) {
+                assertTrue(faces.add(card.getRank() + " " + card.getSuit()), "card dealt twice: " + card);
+            }
+            long pots = lobby.getAllActivePots().stream().mapToLong(Pot::getAmountInPot).sum();
+            assertEquals(ledger.boughtIn, stacks + pots + ledger.cashedOut,
+                    "chips created or destroyed (stacks=" + stacks + ", pots=" + pots + ")");
+
+            boolean handInProgress = lobby.getGamePhase() != GamePhase.WAITING
+                    && lobby.getGamePhase() != GamePhase.HAND_COMPLETE;
+            if (handInProgress) {
+                long contributed = lobby.getHandContributions().values().stream().mapToLong(Integer::longValue).sum();
+                assertEquals(contributed, pots, "pots don't match contributions");
+            }
+        }
     }
 }
