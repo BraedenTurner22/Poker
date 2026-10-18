@@ -317,6 +317,13 @@ public class WebSocketsController {
 
 
 
+    /** Published on the transport thread once a CONNECT passes StompAuthInterceptor. */
+    @EventListener
+    public void handleConnect(SessionConnectEvent event) {
+        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
+        if (sessionId != null) connectedSessions.add(sessionId);
+    }
+
     /**
      * Handles WebSocket disconnect. A reload (or a brief network blip — the
      * STOMP client auto-reconnects) closes the socket the same way a real
@@ -325,13 +332,6 @@ public class WebSocketsController {
      * lobby+user is connected by then (i.e. they never came back, and no other
      * tab is still open on the seat).
      */
-    /** Published on the transport thread once a CONNECT passes StompAuthInterceptor. */
-    @EventListener
-    public void handleConnect(SessionConnectEvent event) {
-        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
-        if (sessionId != null) connectedSessions.add(sessionId);
-    }
-
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
