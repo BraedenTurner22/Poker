@@ -10,8 +10,10 @@ import com.collegeshowdown.poker_project.models.PlayerRecord;
 import com.collegeshowdown.poker_project.repositories.PlayerRepository;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.annotation.PreDestroy;
@@ -444,13 +446,39 @@ public class LobbyManagerService {
                 boolean handInProgress = lobby.getGamePhase() != GamePhase.WAITING
                         && lobby.getGamePhase() != GamePhase.HAND_COMPLETE;
                 ConnectedPlayer[] table = lobby.getPlayersAtTable();
+                Set<ConnectedPlayer> seated = new HashSet<>();
                 for (int seat = 0; seat < Lobby.TABLE_SIZE; seat++) {
                     ConnectedPlayer player = table[seat];
                     if (player == null) continue;
+                    seated.add(player);
                     int refund = player.getActiveChips()
                             + (handInProgress ? lobby.getHandContributions().getOrDefault(player, 0) : 0);
                     if (cashOut(player, refund)) table[seat] = null;
                 }
+                if (handInProgress) refundDepartedContributions(lobby, seated);
+            }
+        }
+    }
+
+    /**
+     * A player who folded and left mid-hand already cashed out their stack,
+     * with what they'd put in the pot settled as a loss. The pot was going to
+     * the hand's winner; unwound instead, those chips go back to the player
+     * who bet them (and the loss is reversed) rather than vanishing.
+     * {@code seated} were refunded by the seat loop — ConnectedPlayer equality
+     * is by player ID, so this also skips someone who left and sat back down
+     * at this same table.
+     */
+    private void refundDepartedContributions(Lobby lobby, Set<ConnectedPlayer> seated) {
+        for (Map.Entry<ConnectedPlayer, Integer> e : lobby.getHandContributions().entrySet()) {
+            int contributed = e.getValue();
+            if (contributed <= 0 || seated.contains(e.getKey())) continue;
+            Integer userId = e.getKey().playerRecord.getId();
+            try {
+                playerRepository.depositToBank(userId, contributed, contributed);
+            } catch (RuntimeException ex) {
+                logger.error("Shutdown refund of {} pot chips to departed player {} failed",
+                        contributed, userId, ex);
             }
         }
     }

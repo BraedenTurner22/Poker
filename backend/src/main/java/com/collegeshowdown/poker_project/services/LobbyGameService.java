@@ -502,10 +502,14 @@ public class LobbyGameService {
         ConnectedPlayer player = lobby.getPlayersAtTable()[seat];
         if (player == null || player.getPlayerState() == PlayerState.FOLDED) return true;
 
-        if (player.getPlayerState() == PlayerState.ALL_IN) {
+        // Same for an ACTIVE player once an all-in run-out is revealing the
+        // board (currentPlayerIndex == -1): they already matched every bet
+        // and have no decision left, so folding them would hand their whole
+        // called stake to the all-in players.
+        if (player.getPlayerState() == PlayerState.ALL_IN || lobby.getCurrentPlayerIndex() == -1) {
             lobby.getPendingDepartureSeats().add(seat);
-            logger.info("Seat {} in lobby {} disconnected while ALL_IN — deferring seat removal until showdown",
-                    seat, lobby.getId());
+            logger.info("Seat {} in lobby {} departed with no decision left ({}) — deferring seat removal until showdown",
+                    seat, lobby.getId(), player.getPlayerState());
             return false;
         }
 
@@ -523,9 +527,6 @@ public class LobbyGameService {
         if (countNonFolded(lobby) == 1) {
             potManagerService.recalculatePots(lobby);
             concludeFoldWin(lobby);
-        } else if (lobby.getCurrentPlayerIndex() == -1) {
-            // An all-in run-out is already revealing the board — advancing
-            // again would start a second, parallel run-out chain.
         } else if (isBettingRoundComplete(lobby) || noDecisionLeft(lobby)) {
             cancelTurnTimer(lobby);
             advancePhase(lobby);

@@ -476,6 +476,30 @@ class GameEngineTest {
         assertEquals(600, totalChipsInPlay(lobby));
     }
 
+    @Test
+    void playerLeavingDuringAllInRunOutKeepsTheirCalledStake() {
+        Lobby lobby = lowStakesLobby();
+        seat(lobby, 0, "alice", 100);
+        ConnectedPlayer bob = seat(lobby, 1, "bob", 300);
+        game.startHand(lobby);
+
+        synchronized (lobby) { // hold the run-out until bob has left
+            act(lobby, PlayerAction.ALL_IN); // alice (SB) shoves 100
+            act(lobby, PlayerAction.CALL);   // bob calls, 200 behind
+            assertEquals(-1, lobby.getCurrentPlayerIndex(), "board is running out");
+
+            // Bob has nothing left to decide; leaving must not fold his 100
+            // in the pot over to alice.
+            assertFalse(game.handlePlayerDeparture(lobby, 1));
+            assertTrue(lobby.getPendingDepartureSeats().contains(1));
+            assertEquals(PlayerState.ACTIVE, bob.getPlayerState());
+        }
+
+        awaitHandComplete(lobby);
+        assertEquals(5, lobby.getBoard().size(), "hand goes to showdown, not a fold win");
+        assertEquals(400, totalChipsInPlay(lobby));
+    }
+
     // ─── Next hand reset ─────────────────────────────────────────────────────────
 
     @Test
