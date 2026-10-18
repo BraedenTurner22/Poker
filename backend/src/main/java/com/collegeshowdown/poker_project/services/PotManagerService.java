@@ -6,6 +6,7 @@ import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
 import com.collegeshowdown.poker_project.domain.player.PlayerState;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -113,7 +114,22 @@ public class PotManagerService {
             int potAmount = slicePerPlayer * contributors.size();
 
             if (potAmount > 0 && !eligible.isEmpty()) {
-                newPots.add(new Pot(potAmount, eligible));
+                // A slice only one player reached, who is still in, is just
+                // their own uncalled bet coming back.
+                boolean uncalled = contributors.size() == 1 && eligible.equals(contributors);
+                Pot last = newPots.isEmpty() ? null : newPots.get(newPots.size() - 1);
+
+                // Consecutive slices contested by the same players are one pot.
+                // Kept separate, each slice would hand its own odd chip to the
+                // same player, skewing a split (e.g. 26 chips paid 14 / 12).
+                if (!uncalled && last != null
+                        && new HashSet<>(last.getPlayersInPot()).equals(new HashSet<>(eligible))) {
+                    last.addToAmountToPot(potAmount);
+                } else {
+                    Pot pot = new Pot(potAmount, eligible);
+                    pot.uncalledBet = uncalled;
+                    newPots.add(pot);
+                }
             }
 
             prevLevel = level;

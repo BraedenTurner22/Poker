@@ -126,5 +126,23 @@ public class College {
         public static String getCollegeName(String domain) {
             return domainToCollege.getOrDefault(domain, "Unknown College");
         }
+
+        /**
+         * Maps an email domain to the supported school domain it belongs to —
+         * itself, or the nearest parent on a whole-label boundary (so
+         * "cs.umass.edu" → "umass.edu", but "evilumass.edu" matches nothing).
+         * Case-insensitive. Returns null if no supported school matches.
+         */
+        public static String resolveDomain(String domain) {
+            if (domain == null) return null;
+            String d = domain.trim().toLowerCase(java.util.Locale.ROOT);
+            while (!d.isEmpty()) {
+                if (domainToCollege.containsKey(d)) return d;
+                int dot = d.indexOf('.');
+                if (dot < 0) return null;
+                d = d.substring(dot + 1);
+            }
+            return null;
+        }
     }
 }

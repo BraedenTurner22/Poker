@@ -43,10 +43,14 @@ public class LobbyGameService {
     private final Map<String, ScheduledFuture<?>> turnTimers = new ConcurrentHashMap<>();
     private final Map<String, ScheduledFuture<?>> runOutTasks = new ConcurrentHashMap<>();
 
-    /** Seats that had their turn timer fire at least once this hand (per lobby). */
+    /**
+     * User IDs whose turn timer fired at least once this hand (per lobby).
+     * Keyed by player, not seat: a seat can change hands mid-hand, and the
+     * newcomer must not inherit the previous occupant's missed hands.
+     */
     private final Map<String, Set<Integer>> timedOutThisHand = new ConcurrentHashMap<>();
-    /** Number of consecutive fully-missed hands per seat per lobby. */
-    private final Map<String, int[]> consecutiveMissedHands = new ConcurrentHashMap<>();
+    /** Number of consecutive fully-missed hands per user ID per lobby. */
+    private final Map<String, Map<Integer, Integer>> consecutiveMissedHands = new ConcurrentHashMap<>();
 
     private static final int TURN_TIMEOUT_SECONDS = 30;
     private static final int NEXT_HAND_DELAY_SECONDS = 5;
@@ -106,17 +110,29 @@ public class LobbyGameService {
 
             // Fresh per-hand inactivity tracking
             timedOutThisHand.put(lobby.getId(), ConcurrentHashMap.newKeySet());
-            consecutiveMissedHands.computeIfAbsent(lobby.getId(), k -> new int[Lobby.TABLE_SIZE]);
+            consecutiveMissedHands.computeIfAbsent(lobby.getId(), k -> new ConcurrentHashMap<>());
 
-            // The small blind moves one occupied seat clockwise from last hand's
-            int previousSb = lobby.getSmallBlindSeat();
+            // The big blind moves one player clockwise from last hand's, and
+            // the small blind is the player just before it. Moving the small
+            // blind instead made the old big blind post it again whenever
+            // someone sat down between the blinds, and let the next player
+            // skip the big blind whenever the big blind left.
+            int previousBb = lobby.getBigBlindSeat();
 
             resetLobby(lobby);
 
-            int sbSeat = previousSb == -1
-                    ? getFirstValidIndex(lobby, 0)
-                    : getNextValidIndex(lobby, previousSb);
-            int bbSeat = getNextValidIndex(lobby, sbSeat);
+            // Exactly two players dealt in: heads-up action order applies postflop
+            lobby.setHeadsUpHand(lobby.getActivePlayersList().size() == 2);
+
+            int sbSeat;
+            int bbSeat;
+            if (previousBb == -1) {
+                sbSeat = getFirstValidIndex(lobby, 0);
+                bbSeat = getNextValidIndex(lobby, sbSeat);
+            } else {
+                bbSeat = getNextValidIndex(lobby, previousBb);
+                sbSeat = getPreviousValidIndex(lobby, bbSeat);
+            }
 
             lobby.setSmallBlindSeat(sbSeat);
             lobby.setBigBlindSeat(bbSeat);
@@ -128,10 +144,19 @@ public class LobbyGameService {
             lobby.setCurrentBetAmount(lobby.getBigBlind());
             lobby.setLastRaiseSize(lobby.getBigBlind());
             lobby.resetPlayersActedThisRound();
+            lobby.setLastAggressorIndex(bbSeat);
+
+            // Short-stacked blinds can leave nobody with a decision (e.g. both
+            // blinds all-in heads-up) — there'd be no one to give the turn to.
+            if (noDecisionLeft(lobby)) {
+                logger.info("Hand started in lobby {} with no decisions left — running out the board",
+                        lobby.getId());
+                advancePhase(lobby);
+                return;
+            }
 
             int firstToAct = getNextValidIndex(lobby, bbSeat);
             lobby.setCurrentPlayerIndex(firstToAct);
-            lobby.setLastAggressorIndex(bbSeat);
 
             logger.info("Hand started in lobby {} — phase={}, first to act: seat {}",
                     lobby.getId(), lobby.getGamePhase(), firstToAct);
@@ -153,7 +178,9 @@ public class LobbyGameService {
             // Voluntary action — clear any timed-out mark for this hand
             // (Collections.emptySet() is immutable; use a null-check instead of getOrDefault)
             Set<Integer> timedOut = timedOutThisHand.get(lobby.getId());
-            if (timedOut != null) timedOut.remove(playerSeat);
+            ConnectedPlayer actor = playerSeat >= 0 && playerSeat < Lobby.TABLE_SIZE
+                    ? lobby.getPlayersAtTable()[playerSeat] : null;
+            if (timedOut != null && actor != null) timedOut.remove(actor.playerRecord.getId());
             processPlayerActionCore(lobby, playerSeat, action, raiseAmount);
         }
     }
@@ -208,6 +235,17 @@ public class LobbyGameService {
             }
         }
 
+        // A player who already acted and since only faced an incomplete
+        // (short all-in) raise may call or fold, but not re-raise.
+        int owed = lobby.getCurrentBetAmount() - lobby.getRoundContribution(player);
+        boolean isRaiseAttempt = action == PlayerAction.RAISE
+                || (action == PlayerAction.ALL_IN && player.getActiveChips() > owed);
+        if (isRaiseAttempt && lobby.getRaiseClosedSeats().contains(playerSeat)) {
+            logger.warn("Illegal {} from seat {} ignored: betting not reopened by an incomplete raise",
+                    action, playerSeat);
+            return;
+        }
+
         cancelTurnTimer(lobby);
 
         applyAction(lobby, player, playerSeat, action, raiseAmount, workingPot);
@@ -223,7 +261,7 @@ public class LobbyGameService {
             return;
         }
 
-        if (isBettingRoundComplete(lobby)) {
+        if (isBettingRoundComplete(lobby) || noDecisionLeft(lobby)) {
             advancePhase(lobby);
         } else {
             lobby.setCurrentPlayerIndex(getNextValidIndex(lobby, playerSeat));
@@ -257,15 +295,19 @@ public class LobbyGameService {
             case RAISE -> {
                 int already = lobby.getRoundContribution(player);
                 int callPortion = lobby.getCurrentBetAmount() - already;
-                int total = Math.min(callPortion + raiseAmount, player.getActiveChips());
+                int chips = player.getActiveChips();
+                // Validation guarantees raiseAmount is at least the minimum
+                // unless the player can't afford a full raise — then the only
+                // legal raise is all-in. long math: the amount is client-supplied.
+                boolean canAffordMinRaise = chips >= callPortion + lobby.getLastRaiseSize();
+                int total = canAffordMinRaise
+                        ? (int) Math.min((long) callPortion + raiseAmount, chips)
+                        : chips;
                 int actual = player.raise(total, workingPot);
                 lobby.addHandContribution(player, actual);
                 lobby.addRoundContribution(player, actual);
-                lobby.setCurrentBetAmount(lobby.getCurrentBetAmount() + raiseAmount);
-                lobby.setLastRaiseSize(raiseAmount);
-                lobby.setLastAggressorIndex(playerSeat);
-                lobby.resetPlayersActedThisRound();
-                lobby.getPlayersActedThisRound().add(playerSeat);
+                // The new bet is what was actually put in, not what was asked for
+                applyBetIncrease(lobby, playerSeat, lobby.getRoundContribution(player));
             }
 
             case ALL_IN -> {
@@ -273,35 +315,35 @@ public class LobbyGameService {
                 int actual = player.raise(chips, workingPot);
                 lobby.addHandContribution(player, actual);
                 lobby.addRoundContribution(player, actual);
-                int totalRoundContrib = lobby.getRoundContribution(player);
-                if (totalRoundContrib > lobby.getCurrentBetAmount()) {
-                    int increment = totalRoundContrib - lobby.getCurrentBetAmount();
-                    lobby.setCurrentBetAmount(totalRoundContrib);
-
-                    // Every active player's contribution this round is always
-                    // <= the old currentBetAmount (you can only ever call up to
-                    // it, never beyond), so anyone who hasn't already matched
-                    // this new, higher amount needs to act regardless of how
-                    // big the increment was — there's no active seat that could
-                    // be correctly skipped here. The one thing that *should*
-                    // depend on whether this was a full raise is the minimum
-                    // for the *next* real raise: an incomplete (short all-in)
-                    // raise doesn't reset that bar.
-                    //
-                    // (Simplification: formally, an incomplete raise also
-                    // shouldn't grant players who already called the *new*
-                    // amount the right to re-raise past the old minimum — that
-                    // would need per-seat raise-eligibility tracking this
-                    // engine doesn't have. Low-impact edge case, not modeled.)
-                    if (increment >= lobby.getLastRaiseSize()) {
-                        lobby.setLastRaiseSize(increment);
-                        lobby.setLastAggressorIndex(playerSeat);
-                    }
-                    lobby.resetPlayersActedThisRound();
-                    lobby.getPlayersActedThisRound().add(playerSeat);
-                }
+                applyBetIncrease(lobby, playerSeat, lobby.getRoundContribution(player));
             }
         }
+    }
+
+    /**
+     * Raises the current bet to {@code newRoundContribution} if it's higher.
+     * A full raise (increment >= last raise size) sets the new minimum and
+     * reopens raising for everyone; an incomplete one (a short all-in) still
+     * makes everyone match it, but players who had already acted may only
+     * call or fold.
+     */
+    private void applyBetIncrease(Lobby lobby, int playerSeat, int newRoundContribution) {
+        if (newRoundContribution <= lobby.getCurrentBetAmount()) return; // a call, possibly short
+
+        int increment = newRoundContribution - lobby.getCurrentBetAmount();
+        lobby.setCurrentBetAmount(newRoundContribution);
+
+        if (increment >= lobby.getLastRaiseSize()) {
+            lobby.setLastRaiseSize(increment);
+            lobby.setLastAggressorIndex(playerSeat);
+            lobby.getRaiseClosedSeats().clear();
+        } else {
+            lobby.getRaiseClosedSeats().addAll(lobby.getPlayersActedThisRound());
+        }
+        // Every active player's contribution is <= the old bet, so all of
+        // them now owe chips and must act again.
+        lobby.resetPlayersActedThisRound();
+        lobby.getPlayersActedThisRound().add(playerSeat);
     }
 
 
@@ -324,12 +366,35 @@ public class LobbyGameService {
 
 
 
+    /**
+     * True when no ACTIVE player has a decision to make: there are none, or
+     * the lone one has already matched everyone else (who are all-in or
+     * folded) — betting against nobody is meaningless.
+     */
+    private boolean noDecisionLeft(Lobby lobby) {
+        List<ConnectedPlayer> active = lobby.getActivePlayersList();
+        if (active.isEmpty()) return true;
+        if (active.size() > 1) return false;
+
+        ConnectedPlayer lone = active.get(0);
+        int highestOther = 0;
+        for (ConnectedPlayer p : lobby.getPlayersAtTable()) {
+            if (p != null && p != lone) {
+                highestOther = Math.max(highestOther, lobby.getRoundContribution(p));
+            }
+        }
+        return lobby.getRoundContribution(lone) >= highestOther;
+    }
+
+
+
     private void advancePhase(Lobby lobby) {
         potManagerService.recalculatePots(lobby);
         lobby.resetPlayersActedThisRound();
         lobby.resetRoundContributions();
         lobby.setCurrentBetAmount(0);
         lobby.setLastRaiseSize(lobby.getBigBlind());
+        lobby.getRaiseClosedSeats().clear();
 
         // Fewer than 2 players can still bet (rest are all-in): no more betting
         // rounds — reveal the remaining streets one by one, then showdown.
@@ -348,7 +413,12 @@ public class LobbyGameService {
             default -> { concludeHand(lobby); return; }
         }
 
-        int firstToAct = getNextValidIndex(lobby, prevSeat(lobby.getSmallBlindSeat()));
+        // Postflop the first live seat left of the button acts first. The
+        // button sits just before the small blind — except heads-up, where
+        // the button IS the small blind, so the big blind acts first.
+        int firstToAct = lobby.isHeadsUpHand()
+                ? getNextValidIndex(lobby, lobby.getSmallBlindSeat())
+                : getNextValidIndex(lobby, prevSeat(lobby.getSmallBlindSeat()));
         lobby.setCurrentPlayerIndex(firstToAct);
         lobby.setLastAggressorIndex(firstToAct);
 
@@ -439,6 +509,8 @@ public class LobbyGameService {
             return false;
         }
 
+        refundUncalledExcess(lobby, player);
+
         if (lobby.getCurrentPlayerIndex() == seat) {
             // Folding through the normal path advances the turn / hand correctly
             processPlayerActionCore(lobby, seat, PlayerAction.FOLD, 0);
@@ -451,12 +523,51 @@ public class LobbyGameService {
         if (countNonFolded(lobby) == 1) {
             potManagerService.recalculatePots(lobby);
             concludeFoldWin(lobby);
-        } else if (isBettingRoundComplete(lobby)) {
+        } else if (lobby.getCurrentPlayerIndex() == -1) {
+            // An all-in run-out is already revealing the board — advancing
+            // again would start a second, parallel run-out chain.
+        } else if (isBettingRoundComplete(lobby) || noDecisionLeft(lobby)) {
             cancelTurnTimer(lobby);
             advancePhase(lobby);
         }
         return true;
         }
+    }
+
+
+
+    /**
+     * A departing player's bet that nobody has called yet goes back to their
+     * stack (so leaveTable cashes it out) instead of being left in the pot
+     * for the players who never had to match it. The current bet drops back
+     * to what the remaining players actually face.
+     */
+    private void refundUncalledExcess(Lobby lobby, ConnectedPlayer player) {
+        int mine = lobby.getHandContributions().getOrDefault(player, 0);
+        int highestOther = 0;
+        for (Map.Entry<ConnectedPlayer, Integer> e : lobby.getHandContributions().entrySet()) {
+            if (e.getKey() != player) highestOther = Math.max(highestOther, e.getValue());
+        }
+        int excess = mine - highestOther;
+        if (excess <= 0) return;
+
+        // Any excess was bet this street: on earlier streets another player
+        // still in the hand matched it, or no further betting would happen.
+        player.addChips(excess);
+        lobby.addHandContribution(player, -excess);
+        lobby.addRoundContribution(player, -excess);
+
+        int highestRound = 0;
+        for (ConnectedPlayer p : lobby.getPlayersAtTable()) {
+            if (p != null) highestRound = Math.max(highestRound, lobby.getRoundContribution(p));
+        }
+        lobby.setCurrentBetAmount(highestRound);
+        // A raise increment can never exceed the bet it built, nor be below the big blind
+        lobby.setLastRaiseSize(Math.max(lobby.getBigBlind(),
+                Math.min(lobby.getLastRaiseSize(), highestRound)));
+        potManagerService.recalculatePots(lobby);
+        logger.info("Returned {} uncalled chips to departing player {} in lobby {}",
+                excess, player.playerRecord.getId(), lobby.getId());
     }
 
 
@@ -482,13 +593,19 @@ public class LobbyGameService {
         }
         // Must be mutable — resetLobby clears this list next hand
         lobby.setWinners(new java.util.ArrayList<>(List.of(winner)));
+        // Every bet has been swept into the pot — clear the bet labels, as
+        // advancePhase does on the showdown path
+        lobby.resetRoundContributions();
         lobby.setGamePhase(GamePhase.HAND_COMPLETE);
         cancelTurnTimer(lobby);
         cancelRunOut(lobby);
         logger.info("Hand complete in lobby {} — everyone folded to {}",
                 lobby.getId(), winner.playerRecord.getName());
-        processPendingDepartures(lobby);
+        // Broadcast the result while every winner is still seated — a winner
+        // who disconnected while all-in is vacated just below, and the
+        // winner banner can only name seated players.
         broadcastState(lobby);
+        processPendingDepartures(lobby);
         scheduleNextHand(lobby);
     }
 
@@ -501,18 +618,22 @@ public class LobbyGameService {
         lobby.setGamePhase(GamePhase.HAND_COMPLETE);
         cancelTurnTimer(lobby);
         logger.info("Hand complete in lobby {}", lobby.getId());
-        processPendingDepartures(lobby);
+        // Broadcast the result while every winner is still seated — a winner
+        // who disconnected while all-in is vacated just below, and the
+        // winner banner can only name seated players.
         broadcastState(lobby);
+        processPendingDepartures(lobby);
         scheduleNextHand(lobby);
     }
 
     /** Vacates any seats that disconnected while ALL_IN, now that the hand is over. */
     private void processPendingDepartures(Lobby lobby) {
-        if (lobbyManagerService == null) return;
+        if (lobbyManagerService == null || lobby.getPendingDepartureSeats().isEmpty()) return;
         for (int seat : new java.util.ArrayList<>(lobby.getPendingDepartureSeats())) {
             lobbyManagerService.leaveTable(lobby, seat);
         }
         lobby.getPendingDepartureSeats().clear();
+        broadcastState(lobby); // show the vacated seats
     }
 
 
@@ -527,6 +648,13 @@ public class LobbyGameService {
                     resetLobby(lobby);
                     lobby.setGamePhase(GamePhase.WAITING);
                     broadcastState(lobby);
+                    if (lobby.tableCount() == 0) {
+                        // Retired lobby — drop its per-lobby bookkeeping
+                        timedOutThisHand.remove(lobby.getId());
+                        consecutiveMissedHands.remove(lobby.getId());
+                        turnTimers.remove(lobby.getId());
+                        runOutTasks.remove(lobby.getId());
+                    }
                 }
             }
         }), NEXT_HAND_DELAY_SECONDS, TimeUnit.SECONDS);
@@ -539,8 +667,10 @@ public class LobbyGameService {
      */
     public void scheduleHandAfterRebuy(Lobby lobby) {
         scheduler.schedule(logged(() -> {
-            if (lobby.getGamePhase() == GamePhase.WAITING) {
-                startHand(lobby);
+            synchronized (lobby) {
+                if (lobby.getGamePhase() == GamePhase.WAITING) {
+                    startHand(lobby);
+                }
             }
         }), 500, TimeUnit.MILLISECONDS);
     }
@@ -555,22 +685,23 @@ public class LobbyGameService {
         synchronized (lobby) {
         String lobbyId = lobby.getId();
         Set<Integer> timedOut = timedOutThisHand.getOrDefault(lobbyId, Collections.emptySet());
-        int[] streaks = consecutiveMissedHands.computeIfAbsent(lobbyId, k -> new int[Lobby.TABLE_SIZE]);
+        Map<Integer, Integer> previous = consecutiveMissedHands.getOrDefault(lobbyId, Map.of());
+        Map<Integer, Integer> streaks = new ConcurrentHashMap<>();
         ConnectedPlayer[] table = lobby.getPlayersAtTable();
 
-        for (int seat = 0; seat < Lobby.TABLE_SIZE; seat++) {
-            if (table[seat] == null) { streaks[seat] = 0; continue; }
-            if (timedOut.contains(seat)) {
-                streaks[seat]++;
-            } else {
-                streaks[seat] = 0;
-            }
+        // Only players still seated keep a streak; anyone who left starts over
+        for (ConnectedPlayer p : table) {
+            if (p == null) continue;
+            int userId = p.playerRecord.getId();
+            streaks.put(userId, timedOut.contains(userId) ? previous.getOrDefault(userId, 0) + 1 : 0);
         }
+        consecutiveMissedHands.put(lobbyId, streaks);
 
         for (int seat = 0; seat < Lobby.TABLE_SIZE; seat++) {
-            if (streaks[seat] < INACTIVITY_HAND_LIMIT || table[seat] == null) continue;
+            if (table[seat] == null) continue;
             int userId = table[seat].playerRecord.getId();
-            streaks[seat] = 0;
+            if (streaks.get(userId) < INACTIVITY_HAND_LIMIT) continue;
+            streaks.put(userId, 0);
             logger.info("Removing seat {} (userId {}) from lobby {} due to inactivity",
                     seat, userId, lobbyId);
             messagingTemplate.convertAndSend(
@@ -608,27 +739,44 @@ public class LobbyGameService {
         long deadline = System.currentTimeMillis() + (TURN_TIMEOUT_SECONDS * 1000L);
         lobby.setTurnDeadlineEpochMs(deadline);
 
-        ScheduledFuture<?> future = scheduler.schedule(logged(() -> {
-            synchronized (lobby) {
-                int seat = lobby.getCurrentPlayerIndex();
-                ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
-                // Check when free; only fold if there's an outstanding bet to match
-                boolean canCheck = p != null
-                        && lobby.getRoundContribution(p) >= lobby.getCurrentBetAmount();
-                PlayerAction autoAction = canCheck ? PlayerAction.CHECK : PlayerAction.FOLD;
-                logger.info("Turn timer expired in lobby {} — auto {} for seat {}",
-                        lobbyId, autoAction, seat);
-                timedOutThisHand.computeIfAbsent(lobbyId, k -> ConcurrentHashMap.newKeySet()).add(seat);
-                processPlayerActionCore(lobby, seat, autoAction, 0);
-            }
-        }), TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        // Pin the timer to this exact turn: cancel(false) can't stop a timer
+        // that already fired and is blocked on the lobby lock, and it must not
+        // then act on whoever's turn it is by the time it gets in.
+        long generation = lobby.getTurnTimerGeneration();
+        int seat = lobby.getCurrentPlayerIndex();
+        ScheduledFuture<?> future = scheduler.schedule(
+                logged(() -> onTurnTimeout(lobby, generation, seat)),
+                TURN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         turnTimers.put(lobbyId, future);
+    }
+
+    private void onTurnTimeout(Lobby lobby, long generation, int seat) {
+        synchronized (lobby) {
+            if (lobby.getTurnTimerGeneration() != generation
+                    || lobby.getCurrentPlayerIndex() != seat || seat < 0) {
+                return; // stale — that turn already ended
+            }
+            String lobbyId = lobby.getId();
+            ConnectedPlayer p = lobby.getPlayersAtTable()[seat];
+            // Check when free; only fold if there's an outstanding bet to match
+            boolean canCheck = p != null
+                    && lobby.getRoundContribution(p) >= lobby.getCurrentBetAmount();
+            PlayerAction autoAction = canCheck ? PlayerAction.CHECK : PlayerAction.FOLD;
+            logger.info("Turn timer expired in lobby {} — auto {} for seat {}",
+                    lobbyId, autoAction, seat);
+            if (p != null) {
+                timedOutThisHand.computeIfAbsent(lobbyId, k -> ConcurrentHashMap.newKeySet())
+                        .add(p.playerRecord.getId());
+            }
+            processPlayerActionCore(lobby, seat, autoAction, 0);
+        }
     }
 
 
 
     private void cancelTurnTimer(Lobby lobby) {
+        lobby.bumpTurnTimerGeneration();
         lobby.setTurnDeadlineEpochMs(0);
         ScheduledFuture<?> existing = turnTimers.remove(lobby.getId());
         if (existing != null) existing.cancel(false);
@@ -677,17 +825,21 @@ public class LobbyGameService {
         lobby.setSmallBlindSeat(-1);
         lobby.setBigBlindSeat(-1);
         lobby.setTurnDeadlineEpochMs(0);
+        lobby.getRaiseClosedSeats().clear();
 
         // Every seated player with chips comes back ACTIVE for the new hand —
-        // a fold or all-in only lasts for the hand it happened in.
+        // a fold or all-in only lasts for the hand it happened in. A busted
+        // player (still ALL_IN from losing last hand) sits out as FOLDED until
+        // they rebuy; left ALL_IN they'd count as a live player in a hand
+        // they were never dealt into, and a mid-hand rebuy would flip them
+        // straight to ACTIVE.
         for (ConnectedPlayer player : lobby.getPlayersAtTable()) {
             if (player == null) continue;
             player.getCards().clear();
             player.getBestCards().clear();
             player.setHandRank(null);
-            if (player.getActiveChips() > 0) {
-                player.setPlayerState(PlayerState.ACTIVE);
-            }
+            player.setPlayerState(player.getActiveChips() > 0
+                    ? PlayerState.ACTIVE : PlayerState.FOLDED);
         }
         }
     }
@@ -727,7 +879,10 @@ public class LobbyGameService {
         for (int i = 0; i < Lobby.TABLE_SIZE; i++) {
             int candidate = (idx + i) % Lobby.TABLE_SIZE;
             ConnectedPlayer p = table[candidate];
-            if (p != null && p.getActiveChips() >= lobby.getSmallBlind()) {
+            // Any funded player can take the small blind — a short stack just
+            // posts all-in. Requiring a full small blind froze the lobby when
+            // every stack was shorter than it.
+            if (p != null && p.getPlayerState() == PlayerState.ACTIVE) {
                 return candidate;
             }
         }
@@ -749,5 +904,20 @@ public class LobbyGameService {
             }
         }
         throw new NoSuchElementException("No next valid player in lobby " + lobby.getId());
+    }
+
+
+
+    /** The nearest ACTIVE seat counter-clockwise from {@code currentIndex}. */
+    private int getPreviousValidIndex(Lobby lobby, int currentIndex) {
+        ConnectedPlayer[] table = lobby.getPlayersAtTable();
+        for (int i = 1; i <= Lobby.TABLE_SIZE; i++) {
+            int candidate = (currentIndex - i + Lobby.TABLE_SIZE) % Lobby.TABLE_SIZE;
+            ConnectedPlayer p = table[candidate];
+            if (p != null && p.getPlayerState() == PlayerState.ACTIVE) {
+                return candidate;
+            }
+        }
+        throw new NoSuchElementException("No previous valid player in lobby " + lobby.getId());
     }
 }

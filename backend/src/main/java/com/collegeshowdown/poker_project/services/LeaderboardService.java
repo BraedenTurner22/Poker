@@ -5,7 +5,6 @@ import com.collegeshowdown.poker_project.repositories.PlayerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -35,36 +34,30 @@ public class LeaderboardService {
     public record SchoolLeaderboardResult(List<SchoolEntry> top10, SchoolEntry mySchool) {}
 
     public SchoolLeaderboardResult schoolLeaderboard(String myCollegeDomain, Range range) {
-        List<PlayerRecord> all = range == Range.MONTHLY
-                ? playerRepository.findAllOrderedByMonthlyProfit()
-                : playerRepository.findAllOrderedByAllTimeProfit();
+        List<Object[]> rows = range == Range.MONTHLY
+                ? playerRepository.sumMonthlyProfitBySchool()
+                : playerRepository.sumAllTimeProfitBySchool();
 
-        // Aggregate per school
-        Map<String, Long>   profitByDomain = new LinkedHashMap<>();
-        Map<String, String> nameByDomain   = new LinkedHashMap<>();
-        for (PlayerRecord p : all) {
-            profitByDomain.merge(p.getCollegeDomain(), profitOf(p, range), Long::sum);
-            nameByDomain.putIfAbsent(p.getCollegeDomain(), p.getCollegeName());
-        }
-
-        // Sort domains by profit descending
-        List<String> sorted = profitByDomain.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .map(Map.Entry::getKey)
-                .toList();
+        // Sort schools by profit descending, ties by domain
+        List<Object[]> sorted = new ArrayList<>(rows);
+        sorted.sort(Comparator.<Object[]>comparingLong(r -> sumOf(r[2])).reversed()
+                .thenComparing(r -> (String) r[0]));
 
         List<SchoolEntry> top10 = new ArrayList<>();
         SchoolEntry mySchool = null;
         for (int i = 0; i < sorted.size(); i++) {
-            String domain  = sorted.get(i);
-            long   profit  = profitByDomain.get(domain);
-            String name    = nameByDomain.get(domain);
-            int    rank    = i + 1;
-            SchoolEntry e  = new SchoolEntry(name, domain, profit, rank);
+            Object[] r     = sorted.get(i);
+            String domain  = (String) r[0];
+            SchoolEntry e  = new SchoolEntry((String) r[1], domain, sumOf(r[2]), i + 1);
             if (i < 10) top10.add(e);
             if (domain.equals(myCollegeDomain)) mySchool = e;
         }
         return new SchoolLeaderboardResult(top10, mySchool);
+    }
+
+    /** JPQL SUM over an Integer column is a Long (null only for an empty group). */
+    private static long sumOf(Object sum) {
+        return sum == null ? 0L : ((Number) sum).longValue();
     }
 
     // ─── Player leaderboard (global) ─────────────────────────────────────────────
@@ -89,17 +82,17 @@ public class LeaderboardService {
             if (p.getId().equals(myUserId)) me = e;
         }
 
-        // If user isn't in top 10, find their rank
+        // If user isn't in top 10, find their rank: everyone ahead of them in
+        // the same (profit DESC, id ASC) order the top-10 page was cut from.
         if (me == null && myUserId != null) {
-            String sortProperty = range == Range.MONTHLY ? "monthlyChipDifference" : "totalChipDifference";
-            List<PlayerRecord> all = playerRepository.findAll(Sort.by(Sort.Direction.DESC, sortProperty));
-            for (int i = 0; i < all.size(); i++) {
-                if (all.get(i).getId().equals(myUserId)) {
-                    PlayerRecord p = all.get(i);
-                    me = new PlayerEntry(p.getName(), p.getCollegeName(),
-                            p.getCollegeDomain(), profitOf(p, range), i + 1);
-                    break;
-                }
+            PlayerRecord p = playerRepository.findById(myUserId).orElse(null);
+            if (p != null) {
+                int profit = (int) profitOf(p, range);
+                long ahead = range == Range.MONTHLY
+                        ? playerRepository.countAheadByMonthlyProfit(profit, p.getId())
+                        : playerRepository.countAheadByAllTimeProfit(profit, p.getId());
+                me = new PlayerEntry(p.getName(), p.getCollegeName(),
+                        p.getCollegeDomain(), profit, (int) ahead + 1);
             }
         }
         return new PlayerLeaderboardResult(top10, me);
@@ -110,18 +103,30 @@ public class LeaderboardService {
     public PlayerLeaderboardResult schoolPlayerLeaderboard(String collegeDomain, Integer myUserId, Range range) {
         if (collegeDomain == null) return new PlayerLeaderboardResult(List.of(), null);
 
-        List<PlayerRecord> all = range == Range.MONTHLY
-                ? playerRepository.findByCollegeDomainOrderedByMonthlyProfit(collegeDomain)
-                : playerRepository.findByCollegeDomainOrderedByAllTimeProfit(collegeDomain);
+        List<PlayerRecord> top = range == Range.MONTHLY
+                ? playerRepository.findByCollegeDomainOrderedByMonthlyProfit(collegeDomain, PageRequest.of(0, 10))
+                : playerRepository.findByCollegeDomainOrderedByAllTimeProfit(collegeDomain, PageRequest.of(0, 10));
 
         List<PlayerEntry> top10 = new ArrayList<>();
         PlayerEntry me = null;
-        for (int i = 0; i < all.size(); i++) {
-            PlayerRecord p = all.get(i);
+        for (int i = 0; i < top.size(); i++) {
+            PlayerRecord p = top.get(i);
             PlayerEntry e = new PlayerEntry(p.getName(), p.getCollegeName(),
                     p.getCollegeDomain(), profitOf(p, range), i + 1);
-            if (i < 10) top10.add(e);
+            top10.add(e);
             if (p.getId().equals(myUserId)) me = e;
+        }
+
+        if (me == null && myUserId != null) {
+            PlayerRecord p = playerRepository.findById(myUserId).orElse(null);
+            if (p != null && collegeDomain.equals(p.getCollegeDomain())) {
+                int profit = (int) profitOf(p, range);
+                long ahead = range == Range.MONTHLY
+                        ? playerRepository.countAheadInSchoolByMonthlyProfit(collegeDomain, profit, p.getId())
+                        : playerRepository.countAheadInSchoolByAllTimeProfit(collegeDomain, profit, p.getId());
+                me = new PlayerEntry(p.getName(), p.getCollegeName(),
+                        p.getCollegeDomain(), profit, (int) ahead + 1);
+            }
         }
         return new PlayerLeaderboardResult(top10, me);
     }

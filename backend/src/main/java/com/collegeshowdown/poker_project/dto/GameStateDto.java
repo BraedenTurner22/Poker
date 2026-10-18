@@ -15,5 +15,6 @@ public record GameStateDto(
     int bigBlindSeat,
     long turnDeadlineEpochMs, // epoch millis when timer expires; 0 if no active timer
     List<PlayerStateDto> players,
-    List<Integer> winnerSeats // populated at HAND_COMPLETE
+    List<Integer> winnerSeats, // populated at HAND_COMPLETE
+    List<Integer> raiseClosedSeats // seats that may only call/fold after a short all-in
 ) {}

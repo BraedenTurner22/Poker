@@ -27,6 +27,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
         config.setApplicationDestinationPrefixes("/app");
+        // The outbound channel is a thread pool: without this, two messages to
+        // the same session (e.g. a new hand's public state and its private
+        // hole cards) can reach the client in either order.
+        config.setPreservePublishOrder(true);
+        // Deliberately NOT StompEndpointRegistry.setPreserveReceiveOrder(true):
+        // its OrderedMessageChannelDecorator catches and only logs exceptions
+        // thrown by inbound interceptors, so StompAuthInterceptor's rejection
+        // of an expired/invalid token would no longer produce a STOMP ERROR
+        // frame — the client would hang on CONNECT instead of being sent back
+        // to sign in. (The SUBSCRIBE-vs-join race it would fix is already
+        // covered by the REST play/rejoin response carrying the initial state.)
     }
 
     @Override

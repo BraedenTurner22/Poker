@@ -11,6 +11,8 @@ import com.collegeshowdown.poker_project.services.ChatModerationService;
 import com.collegeshowdown.poker_project.services.LobbyGameService;
 import com.collegeshowdown.poker_project.services.LobbyManagerService;
 
+import jakarta.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -24,6 +26,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,11 +47,23 @@ public class WebSocketsController {
     private final Map<String, String> sessionLobbyMap = new ConcurrentHashMap<>();
     /** sessionId → userId */
     private final Map<String, Integer> sessionUserMap = new ConcurrentHashMap<>();
-    /** "lobbyId:userId" → most recent sessionId — lets a reconnect cancel a pending eviction. */
+    /**
+     * "lobbyId:userId" → session of the most recent join or (last-session)
+     * disconnect for that seat. A grace-period eviction only proceeds if it is
+     * still the latest event, so a reconnect (newer join) cancels it.
+     */
     private final Map<String, String> activeSessionByLobbyUser = new ConcurrentHashMap<>();
+    /**
+     * "lobbyId:userId" → every currently-connected session joined to that seat.
+     * The same user can have several (two tabs, or a reload whose new socket
+     * joins before the old one's disconnect is processed); closing one of them
+     * must not evict the seat while another is still connected.
+     */
+    private final Map<String, Set<String>> liveSessionsByLobbyUser = new ConcurrentHashMap<>();
 
     private static final int DISCONNECT_GRACE_SECONDS = 20;
     private final ScheduledExecutorService disconnectScheduler = Executors.newScheduledThreadPool(2);
+    private long disconnectGraceMillis = DISCONNECT_GRACE_SECONDS * 1000L;
 
     public WebSocketsController(LobbyManagerService lobbyManagerService,
             LobbyGameService lobbyGameService,
@@ -60,6 +75,16 @@ public class WebSocketsController {
         this.gameStateBuilder = gameStateBuilder;
         this.messagingTemplate = messagingTemplate;
         this.chatModerationService = chatModerationService;
+    }
+
+    /** Test hook — shortens the disconnect grace period. */
+    void setDisconnectGraceMillis(long millis) {
+        this.disconnectGraceMillis = millis;
+    }
+
+    @PreDestroy
+    void shutdown() {
+        disconnectScheduler.shutdownNow();
     }
 
 
@@ -86,37 +111,58 @@ public class WebSocketsController {
         Lobby lobby = lobbyManagerService.getLobbyById(lobbyId);
         if (lobby == null) {
             logger.warn("JOIN for unknown lobby {}", lobbyId);
-            sendError(sessionId, lobbyId, "Lobby not found.");
+            sendError(userId, lobbyId, "Lobby not found.");
             return;
         }
 
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) {
-            logger.warn("User {} not found in lobby {}", userId, lobbyId);
-            sendError(sessionId, lobbyId, "You are not seated in this lobby.");
-            return;
-        }
+        // Everything below reads (and the pending-departure cancel mutates)
+        // lobby state, so it runs under the lobby lock like the game engine.
+        synchronized (lobby) {
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            if (seat == -1) {
+                logger.warn("User {} not found in lobby {}", userId, lobbyId);
+                sendError(userId, lobbyId, "You are not seated in this lobby.");
+                return;
+            }
 
-        // Track this session for disconnect cleanup, and mark it as the latest
-        // session for this lobby+user so a pending grace-period eviction (if any)
-        // from a previous session knows to back off.
-        sessionLobbyMap.put(sessionId, lobbyId);
-        sessionUserMap.put(sessionId, userId);
-        activeSessionByLobbyUser.put(lobbyId + ":" + userId, sessionId);
+            // Track this session for disconnect cleanup, and mark it as the latest
+            // session for this lobby+user so a pending grace-period eviction (if any)
+            // from a previous session knows to back off.
+            String key = lobbyId + ":" + userId;
+            String previousLobby = sessionLobbyMap.put(sessionId, lobbyId);
+            if (previousLobby != null && !previousLobby.equals(lobbyId)) {
+                removeLiveSession(previousLobby + ":" + userId, sessionId);
+            }
+            sessionUserMap.put(sessionId, userId);
+            // The add must happen inside compute(): computeIfAbsent(...).add()
+            // can add to a set that a concurrent disconnect (not under the
+            // lobby lock) has just emptied and dropped from the map, leaving
+            // this live session invisible to the grace-period check.
+            liveSessionsByLobbyUser.compute(key, (k, sessions) -> {
+                Set<String> s = sessions != null ? sessions : ConcurrentHashMap.newKeySet();
+                s.add(sessionId);
+                return s;
+            });
+            activeSessionByLobbyUser.put(key, sessionId);
 
-        logger.info("User {} joined lobby {} at seat {} (session {})", userId, lobbyId, seat, sessionId);
+            // They came back after their grace period expired while ALL_IN:
+            // the seat was only marked for removal at hand end — keep it.
+            lobby.getPendingDepartureSeats().remove(seat);
 
-        // Send the current game state to the joining client
-        GameStateDto state = gameStateBuilder.build(lobby);
-        messagingTemplate.convertAndSend("/topic/game/" + lobbyId + "/state", state);
+            logger.info("User {} joined lobby {} at seat {} (session {})", userId, lobbyId, seat, sessionId);
 
-        // If a hand is already underway (it may have started before this client
-        // finished subscribing), deliver their hole cards immediately.
-        var player = lobby.getPlayersAtTable()[seat];
-        if (player != null && !player.getCards().isEmpty()) {
-            messagingTemplate.convertAndSend(
-                    "/topic/game/" + lobbyId + "/private/" + userId,
-                    gameStateBuilder.buildPrivate(player));
+            // Send the current game state to the joining client
+            GameStateDto state = gameStateBuilder.build(lobby);
+            messagingTemplate.convertAndSend("/topic/game/" + lobbyId + "/state", state);
+
+            // If a hand is already underway (it may have started before this client
+            // finished subscribing), deliver their hole cards immediately.
+            var player = lobby.getPlayersAtTable()[seat];
+            if (player != null && !player.getCards().isEmpty()) {
+                messagingTemplate.convertAndSend(
+                        "/topic/game/" + lobbyId + "/private/" + userId,
+                        gameStateBuilder.buildPrivate(player));
+            }
         }
     }
 
@@ -144,22 +190,29 @@ public class WebSocketsController {
         }
 
         int userId = Integer.parseInt(principal.getName());
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) {
-            logger.warn("Action from user {} who is not seated in lobby {}", userId, lobbyId);
-            return;
-        }
 
         PlayerAction action;
         try {
-            action = PlayerAction.valueOf(msg.action().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            logger.warn("Unknown action '{}' from user {} in lobby {}", msg.action(), userId, lobbyId);
+            action = PlayerAction.valueOf(msg.action().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            logger.warn("Unknown action '{}' from user {} in lobby {}",
+                    msg == null ? null : msg.action(), userId, lobbyId);
             return;
         }
 
-        logger.info("Action in lobby {} seat {}: {} amount={}", lobbyId, seat, action, msg.amount());
-        lobbyGameService.processPlayerAction(lobby, seat, action, msg.amount());
+        // Seat lookup and the action must be atomic: otherwise the seat could be
+        // vacated (and re-filled by someone else) in between, and the action
+        // would be applied to the wrong player.
+        synchronized (lobby) {
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            if (seat == -1) {
+                logger.warn("Action from user {} who is not seated in lobby {}", userId, lobbyId);
+                return;
+            }
+
+            logger.info("Action in lobby {} seat {}: {} amount={}", lobbyId, seat, action, msg.amount());
+            lobbyGameService.processPlayerAction(lobby, seat, action, msg.amount());
+        }
     }
 
 
@@ -174,18 +227,25 @@ public class WebSocketsController {
     public void chat(@DestinationVariable String lobbyId,
             @Payload ChatMessage msg, Principal principal) {
 
-        if (principal == null || msg.message() == null || msg.message().isBlank()) return;
+        if (principal == null || msg == null || msg.message() == null || msg.message().isBlank()) return;
 
         Lobby lobby = lobbyManagerService.getLobbyById(lobbyId);
         if (lobby == null) return;
 
         int userId = Integer.parseInt(principal.getName());
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) return;
+        String name;
+        synchronized (lobby) {
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            if (seat == -1) return;
+            name = lobby.getPlayersAtTable()[seat].playerRecord.getName();
+        }
 
-        String name = lobby.getPlayersAtTable()[seat].playerRecord.getName();
         String text = msg.message().strip();
-        if (text.length() > 200) text = text.substring(0, 200);
+        if (text.length() > 200) {
+            // Don't split a surrogate pair (emoji) at the cut point.
+            int end = Character.isHighSurrogate(text.charAt(199)) ? 199 : 200;
+            text = text.substring(0, end);
+        }
 
         if (chatModerationService.containsBlockedTerm(text)) {
             messagingTemplate.convertAndSend(
@@ -214,10 +274,12 @@ public class WebSocketsController {
         if (principal == null) return;
         int userId = Integer.parseInt(principal.getName());
         String sessionId = headerAccessor.getSessionId();
+        String key = lobbyId + ":" + userId;
 
         sessionLobbyMap.remove(sessionId);
         sessionUserMap.remove(sessionId);
-        activeSessionByLobbyUser.remove(lobbyId + ":" + userId, sessionId);
+        removeLiveSession(key, sessionId);
+        activeSessionByLobbyUser.remove(key, sessionId);
 
         removePlayerFromLobby(lobbyId, userId);
     }
@@ -228,8 +290,9 @@ public class WebSocketsController {
      * Handles WebSocket disconnect. A reload (or a brief network blip — the
      * STOMP client auto-reconnects) closes the socket the same way a real
      * departure does, so we don't evict the seat immediately. Instead we wait
-     * a short grace period and only remove them if no newer session for this
-     * lobby+user has registered by then (i.e. they never came back).
+     * a short grace period and only remove them if no session for this
+     * lobby+user is connected by then (i.e. they never came back, and no other
+     * tab is still open on the seat).
      */
     @EventListener
     public void handleDisconnect(SessionDisconnectEvent event) {
@@ -242,16 +305,40 @@ public class WebSocketsController {
         if (lobbyId == null || userId == null) return;
 
         String key = lobbyId + ":" + userId;
+
+        // Another tab / newer socket for this seat is still connected — the
+        // seat isn't abandoned. That session's own disconnect starts the grace period.
+        if (removeLiveSession(key, sessionId)) return;
+
+        // This was the last live session: it becomes the latest event for the
+        // seat, so only a join that happens after it can cancel this eviction.
+        activeSessionByLobbyUser.put(key, sessionId);
+
         disconnectScheduler.schedule(() -> {
             try {
-                // If a newer session has since registered for this lobby+user,
-                // they reconnected — leave their seat alone.
+                // If a session has since (re)joined this lobby+user, or a later
+                // disconnect has its own grace period running, leave the seat alone.
+                if (liveSessionsByLobbyUser.containsKey(key)) return;
                 if (!activeSessionByLobbyUser.remove(key, sessionId)) return;
                 removePlayerFromLobby(lobbyId, userId);
             } catch (Exception e) {
                 logger.error("Grace-period eviction failed for lobby {} user {}", lobbyId, userId, e);
             }
-        }, DISCONNECT_GRACE_SECONDS, TimeUnit.SECONDS);
+        }, disconnectGraceMillis, TimeUnit.MILLISECONDS);
+    }
+
+
+
+    /**
+     * Removes a session from a seat's live-session set (dropping the set once
+     * empty). Returns true if other live sessions for that seat remain.
+     */
+    private boolean removeLiveSession(String key, String sessionId) {
+        Set<String> remaining = liveSessionsByLobbyUser.computeIfPresent(key, (k, sessions) -> {
+            sessions.remove(sessionId);
+            return sessions.isEmpty() ? null : sessions;
+        });
+        return remaining != null;
     }
 
 
@@ -261,28 +348,36 @@ public class WebSocketsController {
         Lobby lobby = lobbyManagerService.getLobbyById(lobbyId);
         if (lobby == null) return;
 
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) return;
+        // Seat lookup, departure, and vacating are one atomic step: two
+        // concurrent removals for the same user (explicit leave in one tab +
+        // grace-period eviction of another) could otherwise both resolve the
+        // same seat index, and the second would cash out whoever sat down there
+        // in between.
+        synchronized (lobby) {
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            if (seat == -1) return;
 
-        logger.info("User {} leaving lobby {} seat {}", userId, lobbyId, seat);
+            logger.info("User {} leaving lobby {} seat {}", userId, lobbyId, seat);
 
-        // Fold them out and settle the hand if they were the last opponent.
-        // An ALL_IN departure defers seat removal until the hand concludes
-        // (handled by LobbyGameService itself) so they keep their pot equity —
-        // in that case this returns false and the seat must stay put for now.
-        boolean canVacateNow = lobbyGameService.handlePlayerDeparture(lobby, seat);
+            // Fold them out and settle the hand if they were the last opponent.
+            // An ALL_IN departure defers seat removal until the hand concludes
+            // (handled by LobbyGameService itself) so they keep their pot equity —
+            // in that case this returns false and the seat must stay put for now.
+            boolean canVacateNow = lobbyGameService.handlePlayerDeparture(lobby, seat);
 
-        if (canVacateNow) {
-            lobbyManagerService.leaveTable(lobby, seat);
+            if (canVacateNow) {
+                lobbyManagerService.leaveTable(lobby, seat);
+            }
+            lobbyGameService.broadcastState(lobby);
         }
-        lobbyGameService.broadcastState(lobby);
     }
 
 
 
-    private void sendError(String sessionId, String lobbyId, String message) {
+    /** Sent on the requesting user's own error topic, not broadcast to the whole table. */
+    private void sendError(int userId, String lobbyId, String message) {
         messagingTemplate.convertAndSend(
-                "/topic/game/" + lobbyId + "/error",
+                "/topic/game/" + lobbyId + "/error/" + userId,
                 Map.of("error", message));
     }
 }

@@ -14,6 +14,7 @@ import com.collegeshowdown.poker_project.util.GoogleTokenVerifier;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -74,18 +75,22 @@ public class PlayerRESTController {
         }
 
         String email = identity.email();
-        String domain = extractDomain(email);
+        String emailDomain = extractDomain(email);
 
         if (!email.endsWith(".edu")) {
             return error(HttpStatus.BAD_REQUEST,
                     "Only .edu Google accounts are allowed.");
         }
 
-        String collegeName = College.DomainCollegeMap.getCollegeName(domain);
-        if (collegeName.equals("Unknown College")) {
+        // Students on a department/college subdomain (e.g. cs.umass.edu,
+        // andrew.cmu.edu) belong to the parent school — stored under its
+        // canonical domain so they share its lobbies and leaderboards.
+        String domain = College.DomainCollegeMap.resolveDomain(emailDomain);
+        if (domain == null) {
             return error(HttpStatus.BAD_REQUEST,
-                    "Your school (" + domain + ") is not yet supported. Check back soon!");
+                    "Your school (" + emailDomain + ") is not yet supported. Check back soon!");
         }
+        String collegeName = College.DomainCollegeMap.getCollegeName(domain);
 
         PlayerRecord record = playerRepository.findByEmail(email).orElse(null);
         if (record == null) {
@@ -96,11 +101,20 @@ public class PlayerRESTController {
                     domain,
                     collegeName,
                     "GOOGLE");
-            playerRepository.save(record);
+            try {
+                record = playerRepository.save(record);
+            } catch (DataIntegrityViolationException e) {
+                // A concurrent first sign-in for the same email (double click,
+                // two tabs) created the account first — use that one.
+                record = playerRepository.findByEmail(email).orElse(null);
+                if (record == null) throw e;
+            }
         } else if (!identity.name().equals(record.getName())) {
             // Keep the display name fresh with whatever Google reports now.
+            // A targeted UPDATE — saving the loaded entity would write its
+            // bank-balance snapshot back over any concurrent cash-out.
+            playerRepository.updateName(record.getId(), identity.name());
             record.setName(identity.name());
-            playerRepository.save(record);
         }
 
         String token = jwtUtil.generateToken(record.getId(), record.getName());
@@ -140,37 +154,40 @@ public class PlayerRESTController {
             return error(HttpStatus.UNAUTHORIZED, "User not found.");
         }
 
-        if (record.getTotalChips() < req.stakes().minimumBuyIn) {
-            return error(HttpStatus.BAD_REQUEST,
-                    "You need at least " + req.stakes().minimumBuyIn
-                    + " chips to join a " + req.stakes().name() + " table. "
-                    + "You have " + record.getTotalChips() + ".");
+        // Minimum buy-in / bank checks live in joinLobby, after its
+        // "already seated?" check — a seated player whose whole bank is on
+        // the table must still be able to get back to their seat.
+        LobbyAssignment assignment;
+        try {
+            assignment = lobbyManagerService.joinLobby(
+                    record, req.stakes(), req.schoolLobby(), req.buyInAmount());
+        } catch (LobbyManagerService.SeatingException e) {
+            return error(HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (req.buyInAmount() > 0 && req.buyInAmount() < req.stakes().minimumBuyIn) {
-            return error(HttpStatus.BAD_REQUEST,
-                    "Buy-in must be at least " + req.stakes().minimumBuyIn
-                    + " for a " + req.stakes().name() + " table.");
+        Lobby lobby = assignment.lobby();
+        // The game engine mutates this lobby on other threads (turn timers,
+        // next-hand scheduling); read it under its lock like every other reader.
+        synchronized (lobby) {
+            GameStateDto initialState = gameStateBuilder.build(lobby);
+
+            // Include the player's hole cards if the hand started immediately
+            // on join. Re-resolve the seat rather than trusting the index —
+            // never hand out another player's hole cards.
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            var seated = seat == -1 ? null : lobby.getPlayersAtTable()[seat];
+            var initialPrivate = (seated != null && !seated.getCards().isEmpty())
+                    ? gameStateBuilder.buildPrivate(seated)
+                    : null;
+
+            return ResponseEntity.ok(new PlayResponse(
+                    lobby.getId(),
+                    wsUrl,
+                    assignment.seat(),
+                    assignment.buyIn(),
+                    initialState,
+                    initialPrivate));
         }
-
-        LobbyAssignment assignment = lobbyManagerService.joinLobby(
-                record, req.stakes(), req.schoolLobby(), req.buyInAmount());
-
-        GameStateDto initialState = gameStateBuilder.build(assignment.lobby());
-
-        // Include the player's hole cards if the hand started immediately on join
-        var seated = assignment.lobby().getPlayersAtTable()[assignment.seat()];
-        var initialPrivate = (seated != null && !seated.getCards().isEmpty())
-                ? gameStateBuilder.buildPrivate(seated)
-                : null;
-
-        return ResponseEntity.ok(new PlayResponse(
-                assignment.lobby().getId(),
-                wsUrl,
-                assignment.seat(),
-                assignment.buyIn(),
-                initialState,
-                initialPrivate));
     }
 
 
@@ -189,22 +206,33 @@ public class PlayerRESTController {
         Lobby lobby = lobbyManagerService.getLobbyById(lobbyId);
         if (lobby == null) return error(HttpStatus.NOT_FOUND, "Lobby not found.");
 
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) return error(HttpStatus.NOT_FOUND, "You are not seated in this lobby.");
+        // Seat lookup and every read of it happen under the lobby's lock, so
+        // the seat can't change hands between finding it and reading its
+        // hole cards.
+        synchronized (lobby) {
+            int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
+            if (seat == -1) return error(HttpStatus.NOT_FOUND, "You are not seated in this lobby.");
 
-        var seated = lobby.getPlayersAtTable()[seat];
-        GameStateDto state = gameStateBuilder.build(lobby);
-        var privateState = !seated.getCards().isEmpty()
-                ? gameStateBuilder.buildPrivate(seated)
-                : null;
+            // They're back — if they'd been queued for removal at the end of
+            // the hand (disconnected while ALL_IN), keep their seat.
+            lobbyManagerService.cancelPendingDeparture(lobby, seat);
 
-        return ResponseEntity.ok(new PlayResponse(
-                lobby.getId(),
-                wsUrl,
-                seat,
-                seated.getActiveChips(),
-                state,
-                privateState));
+            var seated = lobby.getPlayersAtTable()[seat];
+            GameStateDto state = gameStateBuilder.build(lobby);
+            var privateState = !seated.getCards().isEmpty()
+                    ? gameStateBuilder.buildPrivate(seated)
+                    : null;
+
+            return ResponseEntity.ok(new PlayResponse(
+                    lobby.getId(),
+                    wsUrl,
+                    seat,
+                    // What they bought in for, not the current stack — the
+                    // client shows this as the buy-in, same as a fresh join.
+                    lobbyManagerService.getSessionBuyIn(userId),
+                    state,
+                    privateState));
+        }
     }
 
 
@@ -236,8 +264,8 @@ public class PlayerRESTController {
     /**
      * POST /api/game/rebuy
      *
-     * Tops up the player's active chip stack from their bank balance.
-     * Only valid while the player is still seated with 0 active chips.
+     * Tops up the player's active chip stack from their bank balance, up to
+     * the table maximum. Rejected while the player's stack is live in a hand.
      */
     @PostMapping("/game/rebuy")
     public ResponseEntity<?> rebuy(@Valid @RequestBody RebuyRequest req,
@@ -250,16 +278,17 @@ public class PlayerRESTController {
         Lobby lobby = lobbyManagerService.getLobbyById(req.lobbyId());
         if (lobby == null) return error(HttpStatus.NOT_FOUND, "Lobby not found.");
 
-        int seat = lobbyManagerService.getSeatForPlayer(lobby, userId);
-        if (seat == -1) return error(HttpStatus.BAD_REQUEST, "You are not seated in this lobby.");
-
-        if (record.getTotalChips() < req.amount()) {
-            return error(HttpStatus.BAD_REQUEST,
-                    "Insufficient bank balance. You have " + record.getTotalChips() + " chips.");
+        // Seat lookup, rule checks and the bank withdrawal all happen
+        // atomically inside rebuy(). `record` is only a snapshot and is never
+        // written back — saving it would overwrite newer bank changes.
+        int added;
+        try {
+            added = lobbyManagerService.rebuy(lobby, userId, req.amount());
+        } catch (LobbyManagerService.SeatingException e) {
+            return error(HttpStatus.BAD_REQUEST, e.getMessage());
         }
-
-        int added = lobbyManagerService.rebuy(lobby, seat, record, req.amount());
-        return ResponseEntity.ok(Map.of("added", added, "bankBalance", record.getTotalChips()));
+        int bankBalance = playerRepository.findTotalChipsById(userId).orElse(0);
+        return ResponseEntity.ok(Map.of("added", added, "bankBalance", bankBalance));
     }
 
 

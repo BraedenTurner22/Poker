@@ -13,8 +13,15 @@ public class Application {
         try {
             SpringApplication.run(Application.class, args);
         } catch (Throwable t) {
+            // spring-boot-devtools (commented out in pom.xml) restarts by throwing
+            // this out of main — exiting on it would kill every hot reload.
+            if (t.getClass().getName().endsWith("SilentExitException")) throw t;
             System.out.println("FAILURE !!!");
             t.printStackTrace();
+            // Without this the JVM exits 0 after a failed boot (bad DB creds,
+            // weak JWT secret, ...), so the host sees a "clean" exit rather
+            // than a crashed deploy.
+            System.exit(1);
         }
     }
 

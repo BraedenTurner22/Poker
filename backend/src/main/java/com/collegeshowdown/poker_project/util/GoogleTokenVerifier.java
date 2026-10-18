@@ -1,10 +1,12 @@
 package com.collegeshowdown.poker_project.util;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -18,10 +20,16 @@ public class GoogleTokenVerifier {
     private static final String TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token={token}";
 
     private final String clientId;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     public GoogleTokenVerifier(@Value("${google.oauth.client-id}") String clientId) {
         this.clientId = clientId;
+        // RestTemplate's default factory has no timeouts at all — a stalled
+        // call to Google would pin the sign-in request thread indefinitely.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5_000);
+        factory.setReadTimeout(5_000);
+        this.restTemplate = new RestTemplate(factory);
     }
 
     public record GoogleIdentity(String email, String name) {}
@@ -48,7 +56,7 @@ public class GoogleTokenVerifier {
             throw new GoogleTokenException("Your Google account email is not verified.");
         }
 
-        String normalizedEmail = ((String) email).toLowerCase().trim();
+        String normalizedEmail = ((String) email).toLowerCase(Locale.ROOT).trim();
         Object name = info.get("name");
         String resolvedName = (name instanceof String s && !s.isBlank())
                 ? s.trim()

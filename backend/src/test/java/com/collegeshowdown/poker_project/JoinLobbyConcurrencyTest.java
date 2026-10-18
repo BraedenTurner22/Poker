@@ -25,7 +25,9 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Regression test for a real production bug: two near-simultaneous
@@ -62,8 +64,10 @@ class JoinLobbyConcurrencyTest {
                 mock(SimpMessagingTemplate.class),
                 null); // LobbyManagerService back-reference unused on the join path
 
+        PlayerRepository repo = mock(PlayerRepository.class);
+        when(repo.withdrawFromBank(anyInt(), anyInt())).thenReturn(1);
         LobbyManagerService lobbyManagerService =
-                new LobbyManagerService(lobbyGameService, mock(PlayerRepository.class));
+                new LobbyManagerService(lobbyGameService, repo);
 
         PlayerRecord record = player(1);
 

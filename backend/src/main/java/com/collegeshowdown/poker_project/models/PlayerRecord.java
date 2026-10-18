@@ -9,7 +9,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@Entity @Table(name = "players")
+import org.hibernate.annotations.DynamicUpdate;
+
+// @DynamicUpdate: a managed entity's flush writes only the columns that
+// actually changed. It does NOT protect save() of a detached copy (e.g. one
+// loaded in an earlier transaction) — that's a merge, which copies every
+// field, stale bank balance included, onto the current row. Existing rows are
+// therefore only ever changed through PlayerRepository's targeted UPDATEs
+// (withdrawFromBank / depositToBank / updateName), never save().
+@Entity @Table(name = "players") @DynamicUpdate
 public class PlayerRecord implements Serializable {
     private static final long serialVersionUID = 1L;
 

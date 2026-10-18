@@ -3,6 +3,7 @@ package com.collegeshowdown.poker_project.services;
 import com.collegeshowdown.poker_project.domain.card.Card;
 import com.collegeshowdown.poker_project.domain.lobby.Lobby;
 import com.collegeshowdown.poker_project.domain.player.ConnectedPlayer;
+import com.collegeshowdown.poker_project.domain.player.PlayerState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +17,16 @@ public class DealerService {
     private final static Logger logger = LoggerFactory.getLogger(DealerService.class);
 
     /**
-     * Deal 2 hole cards to each active player.
+     * Deal 2 hole cards to each player in the hand. Blinds are posted before
+     * the deal, so this includes a blind poster who is already ALL_IN; only
+     * FOLDED seats (busted players sitting the hand out) are skipped.
      */
     public void dealHoleCards(Lobby lobby) {
         logger.info("Dealing hole cards to {} players", lobby.tableCount());
 
         for (int i = 0; i < 2; i++) {
             for (ConnectedPlayer player : lobby.getPlayersAtTable()) {
-                if (player != null && player.isActive()) {
+                if (player != null && player.getPlayerState() != PlayerState.FOLDED) {
                     List<Card> holeCards = new ArrayList<>();
                     holeCards.add(lobby.getDeck().dealCard());
                     player.addCards(holeCards);

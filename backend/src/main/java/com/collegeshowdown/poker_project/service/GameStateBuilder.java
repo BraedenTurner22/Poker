@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -27,7 +26,11 @@ public class GameStateBuilder {
                 .toList();
 
         ConnectedPlayer[] table = lobby.getPlayersAtTable();
+        // An uncalled-bet pot is the bettor's own chips on their way back —
+        // displayChipsFor shows them in that player's stack, so listing them
+        // as a pot too made the table show that money twice.
         List<PotDto> pots = lobby.getAllActivePots().stream()
+                .filter(pot -> returningTo(pot, lobby) == null)
                 .map(pot -> toPotDto(pot, table))
                 .toList();
 
@@ -48,7 +51,8 @@ public class GameStateBuilder {
                 lobby.getBigBlindSeat(),
                 lobby.getTurnDeadlineEpochMs(),
                 players,
-                winnerSeats);
+                winnerSeats,
+                new ArrayList<>(lobby.getRaiseClosedSeats()));
     }
 
     /**
@@ -105,9 +109,14 @@ public class GameStateBuilder {
         if (phase == GamePhase.WAITING || phase == GamePhase.PRE_FLOP) return false;
 
         // Fold-win: single non-folded player — nothing to reveal.
+        // Only count players actually dealt into this hand: a busted (0-chip)
+        // player keeps their ALL_IN state from the hand they lost and is never
+        // reset to ACTIVE or dealt cards, so counting them would make a plain
+        // fold-win look like a 2-player showdown and expose the winner's cards.
         int nonFolded = 0;
         for (ConnectedPlayer p : lobby.getPlayersAtTable()) {
-            if (p != null && p.getPlayerState() != PlayerState.FOLDED) nonFolded++;
+            if (p != null && p.getPlayerState() != PlayerState.FOLDED
+                    && !p.getCards().isEmpty()) nonFolded++;
         }
         if (nonFolded < 2) return false;
 
@@ -123,23 +132,43 @@ public class GameStateBuilder {
     }
 
     /**
-     * Returns the chip count to display for a player.
-     * For ALL_IN players, getActiveChips() is 0, but any portion of their
-     * hand contribution that exceeds every other player's contribution is
-     * uncallable and guaranteed to be returned — show it as chips behind.
+     * Returns the chip count to display for a player: their stack plus any
+     * uncalled bet the engine has split off into its own pot (it goes straight
+     * back to them, so it is shown as chips behind and left out of the pot
+     * list in {@link #build}).
+     *
+     * Only an uncalled-bet pot counts — not "my contribution minus everyone
+     * else's": that is also true mid-round right after a shove, before the
+     * others have had the chance to call, and at HAND_COMPLETE the pots have
+     * already been paid into getActiveChips() (an all-in winner's stack was
+     * shown without their winnings).
      */
     private int displayChipsFor(ConnectedPlayer p, Lobby lobby) {
-        if (p.getPlayerState() != PlayerState.ALL_IN) {
-            return p.getActiveChips();
+        int returning = 0;
+        for (Pot pot : lobby.getAllActivePots()) {
+            if (returningTo(pot, lobby) == p) returning += pot.getAmountInPot();
         }
-        Map<ConnectedPlayer, Integer> contributions = lobby.getHandContributions();
-        int mine = contributions.getOrDefault(p, 0);
-        int maxOthers = contributions.entrySet().stream()
-                .filter(e -> e.getKey() != p)
-                .mapToInt(Map.Entry::getValue)
-                .max()
-                .orElse(0);
-        return Math.max(0, mine - maxOthers);
+        return p.getActiveChips() + returning;
+    }
+
+    /**
+     * The player an uncalled-bet pot is definitely going back to, or null.
+     * Requires that no other player dealt into the hand is still ACTIVE: the
+     * blinds step can flag the big blind's excess over a short all-in small
+     * blind as "uncalled" while the rest of the table has yet to act on it.
+     * Once a betting round has closed, an uncalled pot implies every other
+     * live player is all-in or folded, so this only filters that case.
+     */
+    private ConnectedPlayer returningTo(Pot pot, Lobby lobby) {
+        if (!pot.isUncalledBet() || pot.getPlayersInPot().size() != 1) return null;
+        ConnectedPlayer owner = pot.getPlayersInPot().get(0);
+        for (ConnectedPlayer other : lobby.getPlayersAtTable()) {
+            if (other != null && other != owner && !other.getCards().isEmpty()
+                    && other.getPlayerState() == PlayerState.ACTIVE) {
+                return null;
+            }
+        }
+        return owner;
     }
 
     private PotDto toPotDto(Pot pot, ConnectedPlayer[] table) {

@@ -48,7 +48,9 @@ public class JwtUtil {
     public int extractUserId(String token) {
         try {
             return Integer.parseInt(validateAndParse(token).getSubject());
-        } catch (JwtException | NumberFormatException e) {
+        } catch (JwtException | IllegalArgumentException e) {
+            // IllegalArgumentException covers NumberFormatException and the
+            // empty-token case ("Bearer " with nothing after it).
             return -1;
         }
     }
@@ -57,7 +59,10 @@ public class JwtUtil {
         try {
             validateAndParse(token);
             return true;
-        } catch (JwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
+            // jjwt throws IllegalArgumentException (not JwtException) for an
+            // empty token — e.g. an "Authorization: Bearer " header — which
+            // otherwise escaped JwtAuthFilter as a 500 on every endpoint.
             return false;
         }
     }

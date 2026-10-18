@@ -254,4 +254,153 @@ class HandEvaluatorTest {
         assertEquals(List.of(acesUp),
                 AnalysisEngine.getWinners(new ConnectedPlayer[]{acesUp, kingsUp}));
     }
+
+    // ─── Edge cases ──────────────────────────────────────────────────────────────
+
+    private static List<ConnectedPlayer> winners(ConnectedPlayer... players) {
+        return AnalysisEngine.getWinners(players);
+    }
+
+    @Test
+    void wheelStraightLosesToSixHighStraight() {
+        ConnectedPlayer wheel = player(
+                c(ACE, HEARTS), c(TWO, SPADES), c(THREE, CLUBS), c(FOUR, DIAMONDS),
+                c(FIVE, HEARTS), c(KING, SPADES), c(NINE, CLUBS));
+        ConnectedPlayer sixHigh = player(
+                c(SIX, HEARTS), c(TWO, CLUBS), c(THREE, DIAMONDS), c(FOUR, SPADES),
+                c(FIVE, CLUBS), c(KING, HEARTS), c(NINE, DIAMONDS));
+        assertEquals(List.of(sixHigh), winners(wheel, sixHigh));
+    }
+
+    @Test
+    void wheelStraightFlushIsStraightFlushAndBeatsQuads() {
+        ConnectedPlayer steelWheel = player(
+                c(ACE, CLUBS), c(TWO, CLUBS), c(THREE, CLUBS), c(FOUR, CLUBS),
+                c(FIVE, CLUBS), c(KING, SPADES), c(KING, HEARTS));
+        assertEquals(HandRank.STRAIGHT_FLUSH, rankOf(steelWheel));
+        ConnectedPlayer quads = player(
+                c(KING, CLUBS), c(KING, DIAMONDS), c(KING, SPADES), c(KING, HEARTS),
+                c(FIVE, DIAMONDS), c(TWO, HEARTS), c(THREE, SPADES));
+        assertEquals(List.of(steelWheel), winners(steelWheel, quads));
+    }
+
+    @Test
+    void flushPlusStraightInDifferentSuitsIsOnlyAFlush() {
+        // 5-9 straight, but the five hearts don't form a run
+        ConnectedPlayer p = player(
+                c(NINE, HEARTS), c(EIGHT, HEARTS), c(SEVEN, HEARTS), c(SIX, SPADES),
+                c(FIVE, CLUBS), c(TWO, HEARTS), c(KING, HEARTS));
+        assertEquals(HandRank.FLUSH, rankOf(p));
+    }
+
+    @Test
+    void straightFlushUsesOnlyFlushSuitCards() {
+        // 4-8 spades straight flush plus an off-suit 9 that extends the plain straight
+        ConnectedPlayer p = player(
+                c(EIGHT, SPADES), c(SEVEN, SPADES), c(SIX, SPADES), c(FIVE, SPADES),
+                c(FOUR, SPADES), c(NINE, HEARTS), c(TEN, CLUBS));
+        assertEquals(HandRank.STRAIGHT_FLUSH, rankOf(p));
+        assertTrue(p.getBestCards().stream().allMatch(card -> card.getSuit() == SPADES));
+        assertEquals(EIGHT, p.getBestCards().get(0).getRank());
+    }
+
+    @Test
+    void threePairsUsesTopTwoAndBestKicker() {
+        // Board 8-8-5-5-K: Q-Q plays QQ88K, beating 8855 with an ace kicker
+        Card[] board = { c(EIGHT, HEARTS), c(EIGHT, SPADES), c(FIVE, CLUBS),
+                         c(FIVE, DIAMONDS), c(KING, HEARTS) };
+        ConnectedPlayer queens = player(board[0], board[1], board[2], board[3], board[4],
+                c(QUEEN, SPADES), c(QUEEN, CLUBS));
+        ConnectedPlayer aceKicker = player(board[0], board[1], board[2], board[3], board[4],
+                c(ACE, SPADES), c(TWO, CLUBS));
+        assertEquals(List.of(queens), winners(queens, aceKicker));
+        assertEquals(HandRank.TWO_PAIR, queens.getHandRank());
+        // Third pair (fives) can't be used as two pair, but its rank still counts as kicker
+        ConnectedPlayer threePairs = player(
+                c(NINE, HEARTS), c(NINE, SPADES), c(SEVEN, CLUBS), c(SEVEN, DIAMONDS),
+                c(SIX, HEARTS), c(SIX, SPADES), c(TWO, CLUBS));
+        ConnectedPlayer fourKicker = player(
+                c(NINE, CLUBS), c(NINE, DIAMONDS), c(SEVEN, HEARTS), c(SEVEN, SPADES),
+                c(FOUR, HEARTS), c(THREE, SPADES), c(TWO, DIAMONDS));
+        assertEquals(List.of(threePairs), winners(threePairs, fourKicker));
+    }
+
+    @Test
+    void fullHouseWithTripsAndTwoPairsUsesHigherPair() {
+        ConnectedPlayer tensFullOfKings = player(
+                c(TEN, HEARTS), c(TEN, SPADES), c(TEN, CLUBS), c(KING, DIAMONDS),
+                c(KING, HEARTS), c(FOUR, SPADES), c(FOUR, CLUBS));
+        ConnectedPlayer tensFullOfQueens = player(
+                c(TEN, DIAMONDS), c(TEN, HEARTS), c(TEN, SPADES), c(QUEEN, DIAMONDS),
+                c(QUEEN, HEARTS), c(ACE, SPADES), c(TWO, CLUBS));
+        assertEquals(List.of(tensFullOfKings), winners(tensFullOfKings, tensFullOfQueens));
+    }
+
+    @Test
+    void twoTripsUseHigherAsTripsAndLowerAsPair() {
+        ConnectedPlayer p = player(
+                c(FOUR, HEARTS), c(FOUR, SPADES), c(FOUR, CLUBS), c(JACK, DIAMONDS),
+                c(JACK, HEARTS), c(JACK, SPADES), c(TWO, CLUBS));
+        assertEquals(HandRank.FULL_HOUSE, rankOf(p));
+        assertEquals(JACK, p.getBestCards().get(0).getRank());
+        assertEquals(FOUR, p.getBestCards().get(4).getRank());
+    }
+
+    @Test
+    void quadsKickerDecides() {
+        Card[] board = { c(NINE, HEARTS), c(NINE, SPADES), c(NINE, CLUBS),
+                         c(NINE, DIAMONDS), c(TWO, HEARTS) };
+        ConnectedPlayer ace = player(board[0], board[1], board[2], board[3], board[4],
+                c(ACE, SPADES), c(THREE, CLUBS));
+        ConnectedPlayer king = player(board[0], board[1], board[2], board[3], board[4],
+                c(KING, SPADES), c(KING, CLUBS));
+        assertEquals(List.of(ace), winners(ace, king));
+    }
+
+    @Test
+    void flushWithSevenSuitedCardsUsesTopFive() {
+        ConnectedPlayer p = player(
+                c(TWO, HEARTS), c(FOUR, HEARTS), c(SIX, HEARTS), c(EIGHT, HEARTS),
+                c(TEN, HEARTS), c(QUEEN, HEARTS), c(ACE, HEARTS));
+        assertEquals(HandRank.FLUSH, rankOf(p));
+        assertEquals(List.of(ACE, QUEEN, TEN, EIGHT, SIX),
+                p.getBestCards().stream().map(Card::getRank).toList());
+        // Shared 5-heart board: higher 6th heart in hand wins, lower ones don't play
+        Card[] board = { c(TWO, HEARTS), c(FIVE, HEARTS), c(SEVEN, HEARTS),
+                         c(NINE, HEARTS), c(JACK, HEARTS) };
+        ConnectedPlayer kingHeart = player(board[0], board[1], board[2], board[3], board[4],
+                c(KING, HEARTS), c(THREE, CLUBS));
+        ConnectedPlayer threeHeart = player(board[0], board[1], board[2], board[3], board[4],
+                c(THREE, HEARTS), c(ACE, CLUBS));
+        assertEquals(List.of(kingHeart), winners(kingHeart, threeHeart));
+    }
+
+    @Test
+    void sameHandDifferentSuitsSplits() {
+        ConnectedPlayer a = player(
+                c(ACE, HEARTS), c(KING, HEARTS), c(QUEEN, CLUBS), c(JACK, CLUBS),
+                c(NINE, DIAMONDS), c(THREE, SPADES), c(TWO, SPADES));
+        ConnectedPlayer b = player(
+                c(ACE, SPADES), c(KING, DIAMONDS), c(QUEEN, CLUBS), c(JACK, CLUBS),
+                c(NINE, DIAMONDS), c(THREE, SPADES), c(TWO, SPADES));
+        assertEquals(2, winners(a, b).size());
+    }
+
+    @Test
+    void fifthKickerCountsButSixthDoesNot() {
+        Card[] board = { c(ACE, HEARTS), c(KING, SPADES), c(NINE, DIAMONDS),
+                         c(SEVEN, CLUBS), c(FOUR, HEARTS) };
+        // High card: A K 9 7 + best of hole; 6 beats 5 as fifth card
+        ConnectedPlayer six = player(board[0], board[1], board[2], board[3], board[4],
+                c(SIX, SPADES), c(TWO, CLUBS));
+        ConnectedPlayer five = player(board[0], board[1], board[2], board[3], board[4],
+                c(FIVE, SPADES), c(THREE, CLUBS));
+        assertEquals(List.of(six), winners(six, five));
+        // Both hole cards below the board's fifth card: board plays, split
+        ConnectedPlayer low1 = player(board[0], board[1], board[2], board[3], board[4],
+                c(THREE, SPADES), c(TWO, CLUBS));
+        ConnectedPlayer low2 = player(board[0], board[1], board[2], board[3], board[4],
+                c(THREE, DIAMONDS), c(TWO, HEARTS));
+        assertEquals(2, winners(low1, low2).size());
+    }
 }

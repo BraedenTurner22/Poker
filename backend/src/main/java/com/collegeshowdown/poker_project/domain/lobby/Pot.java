@@ -12,6 +12,13 @@ public class Pot {
     public List<ConnectedPlayer> playersInPot;
     public int currentAmountInPot;
 
+    /**
+     * True when this pot holds only its single contributor's own unmatched
+     * chips (an uncalled bet) — it goes straight back to them, which is a
+     * refund, not a win.
+     */
+    public boolean uncalledBet;
+
     /** Working pot: all active players eligible, empty to start. */
     public Pot(List<ConnectedPlayer> allPlayers) {
         this.playersInPot = new ArrayList<>(allPlayers);
@@ -34,6 +41,10 @@ public class Pot {
 
     public void emptyPot() {
         currentAmountInPot = 0;
+    }
+
+    public boolean isUncalledBet() {
+        return uncalledBet;
     }
 
     public List<ConnectedPlayer> getPlayersInPot() {

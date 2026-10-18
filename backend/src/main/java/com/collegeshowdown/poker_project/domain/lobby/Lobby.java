@@ -112,6 +112,26 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
     @Transient
     private long turnDeadlineEpochMs = 0;
 
+    /**
+     * Bumped every time a turn timer is started or cancelled. A timer that had
+     * already fired when it was cancelled may still be waiting on the lobby
+     * lock — it compares against this and does nothing if it's stale.
+     */
+    @Transient
+    private long turnTimerGeneration = 0;
+
+    /** True when exactly two players were dealt into the current hand (heads-up action order). */
+    @Transient
+    private boolean headsUpHand;
+
+    /**
+     * Seats that already acted and then only faced an incomplete (short all-in)
+     * raise — they may call or fold but not re-raise until a full raise
+     * reopens the betting. Cleared on every full raise and every new street.
+     */
+    @Transient
+    private Set<Integer> raiseClosedSeats = new HashSet<>();
+
     // Required for JPA
     protected Lobby() {
         this.lobbyType = null;
@@ -413,6 +433,14 @@ public class Lobby { // POJO, LobbyService does the heavy liftng
 
     public long getTurnDeadlineEpochMs() { return turnDeadlineEpochMs; }
     public void setTurnDeadlineEpochMs(long ms) { this.turnDeadlineEpochMs = ms; }
+
+    public long getTurnTimerGeneration() { return turnTimerGeneration; }
+    public void bumpTurnTimerGeneration() { this.turnTimerGeneration++; }
+
+    public boolean isHeadsUpHand() { return headsUpHand; }
+    public void setHeadsUpHand(boolean headsUpHand) { this.headsUpHand = headsUpHand; }
+
+    public Set<Integer> getRaiseClosedSeats() { return raiseClosedSeats; }
 
 
 
