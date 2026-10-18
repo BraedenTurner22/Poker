@@ -312,6 +312,35 @@ class LobbyManagerTest {
     }
 
     /** A fresh "load" of an existing simulated row. */
+    @Test
+    void retiringALobbyDropsTheGameServicesPerLobbyBookkeeping() throws Exception {
+        LobbyGameService game = new LobbyGameService(new DealerService(), new PotManagerService(),
+                new WinnerService(), new GameStateBuilder(), mock(SimpMessagingTemplate.class), null);
+        LobbyManagerService mgr = new LobbyManagerService(game, repo);
+        LobbyAssignment a = mgr.joinLobby(player(1, 1000), StakesLevel.LOW, false, 100);
+        LobbyAssignment b = mgr.joinLobby(player(2, 1000), StakesLevel.LOW, false, 100);
+        Lobby lobby = a.lobby();
+        assertNotEquals(GamePhase.WAITING, lobby.getGamePhase(), "two players start a hand");
+
+        Field timedOut = LobbyGameService.class.getDeclaredField("timedOutThisHand");
+        Field streaks = LobbyGameService.class.getDeclaredField("consecutiveMissedHands");
+        Field timers = LobbyGameService.class.getDeclaredField("turnTimers");
+        timedOut.setAccessible(true);
+        streaks.setAccessible(true);
+        timers.setAccessible(true);
+        assertTrue(((Map<?, ?>) timedOut.get(game)).containsKey(lobby.getId()));
+
+        // Last player leaves outside the next-hand task's window (which used to
+        // be the only place these entries were ever removed)
+        mgr.leaveTable(lobby, a.seat());
+        mgr.leaveTable(lobby, b.seat());
+        assertNull(mgr.getLobbyById(lobby.getId()));
+
+        assertFalse(((Map<?, ?>) timedOut.get(game)).containsKey(lobby.getId()));
+        assertFalse(((Map<?, ?>) streaks.get(game)).containsKey(lobby.getId()));
+        assertFalse(((Map<?, ?>) timers.get(game)).containsKey(lobby.getId()));
+    }
+
     private PlayerRecord rec(int id) {
         int bank = db.get(id)[0];
         PlayerRecord record = new PlayerRecord("p" + id, "p" + id + "@umass.edu",

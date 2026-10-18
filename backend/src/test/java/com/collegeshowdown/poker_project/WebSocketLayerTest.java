@@ -33,6 +33,7 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.io.BufferedReader;
@@ -391,10 +392,24 @@ class WebSocketLayerTest {
         m.invoke(controller, 150L);
     }
 
+    /** A session connects, then sends its JOIN. */
     private void join(String sessionId) {
+        connect(sessionId);
+        lateJoin(sessionId);
+    }
+
+    /** Just the JOIN frame being handled — with no connect, as for a JOIN that outlived its socket. */
+    private void lateJoin(String sessionId) {
         StompHeaderAccessor acc = StompHeaderAccessor.create(StompCommand.SEND);
         acc.setSessionId(sessionId);
         controller.joinGame(lobby.getId(), acc, principal(5));
+    }
+
+    private void connect(String sessionId) {
+        StompHeaderAccessor acc = StompHeaderAccessor.create(StompCommand.CONNECT);
+        acc.setSessionId(sessionId);
+        Message<byte[]> msg = MessageBuilder.createMessage(new byte[0], acc.getMessageHeaders());
+        controller.handleConnect(new SessionConnectEvent(this, msg));
     }
 
     private void disconnect(String sessionId) {
@@ -437,6 +452,31 @@ class WebSocketLayerTest {
         assertTrue(vacatedSeats.isEmpty(), "stale task from the first disconnect evicted the seat");
         Thread.sleep(300);
         assertEquals(List.of(3), vacatedSeats);
+    }
+
+    @Test
+    void joinProcessedAfterItsSocketClosedStillGetsTheSeatEvicted() throws Exception {
+        // The JOIN was still queued on the inbound executor when the socket
+        // closed, so the disconnect event ran first and found nothing to clean up.
+        connect("s1");
+        disconnect("s1");
+        lateJoin("s1");
+        Thread.sleep(400);
+        assertEquals(List.of(3), vacatedSeats, "dead session kept the seat alive");
+    }
+
+    @Test
+    void lateJoinDoesNotBlockLaterSessionsFromBeingEvicted() throws Exception {
+        connect("s1");
+        disconnect("s1");
+        join("s2");      // reconnected before the late JOIN from s1 was handled
+        lateJoin("s1");
+        Thread.sleep(400);
+        assertTrue(vacatedSeats.isEmpty(), "s2 is still connected");
+
+        disconnect("s2");
+        Thread.sleep(400);
+        assertEquals(List.of(3), vacatedSeats, "the dead s1 session must not count as live");
     }
 
     @Test

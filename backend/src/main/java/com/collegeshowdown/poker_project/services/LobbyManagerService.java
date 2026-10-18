@@ -402,6 +402,7 @@ public class LobbyManagerService {
                     lobbyById.remove(lobby.getId());
                     lobbies.values().forEach(pool -> pool.remove(lobby));
                 }
+                lobbyGameService.forgetLobby(lobby);
                 logger.info("Lobby {} is empty — removed", lobby.getId());
             }
         }
