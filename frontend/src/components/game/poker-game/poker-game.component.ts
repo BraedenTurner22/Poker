@@ -51,6 +51,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     /** Set once an action is sent; cleared when the next state arrives. Blocks double-submits. */
     actionInFlight = false;
     private wasMyTurn = false;
+    /** Phase of the last state seen on our turn — a new street is a new turn. */
+    private myTurnPhase = '';
 
     // ─── Pre-selected action ─────────────────────────────────────────────────────
     pendingAction: 'FOLD' | 'CHECK_FOLD' | null = null;
@@ -70,6 +72,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
     private rebuyTimer?: ReturnType<typeof setInterval>;
     /** True while the profile fetch that opens the popup is in flight. */
     private rebuyOpening = false;
+    /** Shown inside the popup — the status bar sits underneath its overlay. */
+    rebuyError = '';
 
     /** The server caps a stack at 100 big blinds — don't offer more than it will add. */
     get rebuyMax(): number {
@@ -252,9 +256,14 @@ export class PokerGameComponent implements OnInit, OnDestroy {
         this.raiseMax = already + (this.myPlayer?.chips ?? 0);
         const myTurn = this.isMyTurn;
         // Start each new turn at the minimum raise rather than whatever was
-        // left on the slider from a previous street/hand.
-        const base = myTurn && !this.wasMyTurn ? this.raiseMin : this.raiseAmount;
+        // left on the slider from a previous street/hand. Acting last on one
+        // street and first on the next (e.g. the big blind checking its option,
+        // heads-up or after the small blind folds) never leaves our turn, so
+        // a street change counts as a new turn too.
+        const newTurn = myTurn && (!this.wasMyTurn || state.phase !== this.myTurnPhase);
+        const base = newTurn ? this.raiseMin : this.raiseAmount;
         this.wasMyTurn = myTurn;
+        this.myTurnPhase = myTurn ? state.phase : '';
         this.raiseAmount = Math.min(Math.max(base, this.raiseMin), this.raiseMax);
         this.runPendingAction(state);
 
@@ -443,6 +452,8 @@ export class PokerGameComponent implements OnInit, OnDestroy {
             && !this.isMyTurn
             && this.gameState.phase !== 'WAITING'
             && this.gameState.phase !== 'HAND_COMPLETE'
+            // -1 = all-in run-out: no one acts again this hand
+            && this.gameState.currentPlayerSeat !== -1
             && this.myPlayer?.state === 'ACTIVE';
     }
 
@@ -486,6 +497,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
                 this.bankBalance    = p.chips;
                 this.rebuyAmount    = Math.min(this.rebuyMax, 200);
                 this.rebuyCountdown = 30;
+                this.rebuyError     = '';
                 this.showRebuyPopup = true;
                 this.cdr.detectChanges();
                 this.startRebuyTimer();
@@ -494,6 +506,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
                 if (AuthService.isAuthError(e)) { this.sessionExpired(); return; }
                 if (this.kickMessage || (this.myPlayer?.chips ?? 0) > 0) return;
                 this.rebuyCountdown = 30;
+                this.rebuyError     = '';
                 this.showRebuyPopup = true;
                 this.cdr.detectChanges();
                 this.startRebuyTimer();
@@ -533,6 +546,7 @@ export class PokerGameComponent implements OnInit, OnDestroy {
             error: e => {
                 if (AuthService.isAuthError(e)) { this.sessionExpired(); return; }
                 this.statusMsg = e.error?.error ?? 'Rebuy failed.';
+                this.rebuyError = this.statusMsg;
                 // The countdown was stopped before the request — resume it so the
                 // popup can't hang open forever with a frozen timer.
                 this.startRebuyTimer();
