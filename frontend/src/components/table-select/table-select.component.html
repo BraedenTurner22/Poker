@@ -32,12 +32,19 @@
     </div>
 
     <!-- Stakes tiles -->
+    <!-- Cards are divs, so they need role/tabindex/key handlers — without
+         them a keyboard user could never pick Medium or High stakes. -->
     <div class="stakes-grid">
         <div class="stake-card"
              *ngFor="let s of stakes"
+             role="button"
+             tabindex="0"
+             [attr.aria-pressed]="selectedStake.value === s.value"
              [class.selected]="selectedStake.value === s.value"
              [style.--accent]="s.color"
-             (click)="selectStake(s)">
+             (click)="selectStake(s)"
+             (keydown.enter)="selectStake(s)"
+             (keydown.space)="$event.preventDefault(); selectStake(s)">
             <div class="stake-name">{{ s.label }}</div>
             <div class="stake-blinds">{{ s.blinds }}</div>
             <div class="stake-range">Buy-in ${{ s.minBuyIn }} – ${{ s.maxBuyIn }}</div>
