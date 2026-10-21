@@ -16,10 +16,9 @@ import {
 
 @Component({
     selector: 'app-poker-game',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     templateUrl: './poker-game.component.html',
-    styleUrls: ['./poker-game.component.css'],
+    styleUrls: ['./poker-game.component.css']
 })
 export class PokerGameComponent implements OnInit, OnDestroy {
     @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;

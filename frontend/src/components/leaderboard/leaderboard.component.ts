@@ -11,10 +11,9 @@ interface PlayerEntry  { name: string; collegeName: string; collegeDomain: strin
 
 @Component({
     selector: 'app-leaderboard',
-    standalone: true,
     imports: [CommonModule],
     templateUrl: './leaderboard.component.html',
-    styleUrls: ['./leaderboard.component.css'],
+    styleUrls: ['./leaderboard.component.css']
 })
 export class LeaderboardComponent implements OnInit, OnDestroy {
     range: LeaderboardRange = 'all';

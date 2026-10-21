@@ -6,10 +6,9 @@ import { UserProfile } from '../../types/game.types';
 
 @Component({
     selector: 'app-main-menu',
-    standalone: true,
     imports: [CommonModule],
     templateUrl: './main-menu.component.html',
-    styleUrl: './main-menu.component.css',
+    styleUrl: './main-menu.component.css'
 })
 export class MainMenuComponent implements OnInit {
     isLoggedIn = false;

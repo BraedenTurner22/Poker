@@ -40,10 +40,9 @@ const STAKES: StakeOption[] = [
 
 @Component({
     selector: 'app-table-select',
-    standalone: true,
     imports: [CommonModule, FormsModule],
     templateUrl: './table-select.component.html',
-    styleUrls: ['./table-select.component.css'],
+    styleUrls: ['./table-select.component.css']
 })
 export class TableSelectComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly stakes = STAKES;
