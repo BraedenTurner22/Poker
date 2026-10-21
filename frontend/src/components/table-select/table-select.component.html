@@ -1,91 +1,95 @@
 <!-- Back arrow -->
 <button class="back-btn" (click)="back()">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    Home
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  Home
 </button>
 
 <!-- ── Sign in (if not logged in) ─────────────────────────────────────────── -->
-<div class="page" *ngIf="!isLoggedIn">
+@if (!isLoggedIn) {
+  <div class="page">
     <div class="auth-card">
-        <h2>Join the Showdown</h2>
-        <p class="auth-sub">Sign in with your .edu Google account to play</p>
-
-        <div class="google-btn-slot" #googleBtn></div>
-
-        <p class="status-msg">{{ statusMsg }}</p>
+      <h2>Join the Showdown</h2>
+      <p class="auth-sub">Sign in with your .edu Google account to play</p>
+      <div class="google-btn-slot" #googleBtn></div>
+      <p class="status-msg">{{ statusMsg }}</p>
     </div>
-</div>
+  </div>
+}
 
 <!-- ── Table selection (once logged in) ─────────────────────────────────── -->
-<div class="page" *ngIf="isLoggedIn">
+@if (isLoggedIn) {
+  <div class="page">
     <div class="select-header">
-        <h1>Choose Your Table</h1>
-        <p class="bank-info">Bank: <strong>${{ bankBalance }}</strong></p>
+      <h1>Choose Your Table</h1>
+      <p class="bank-info">Bank: <strong>${{ bankBalance }}</strong></p>
     </div>
-
-    <div class="return-banner" *ngIf="hasActiveLobby">
+    @if (hasActiveLobby) {
+      <div class="return-banner">
         <span>You're still seated at a table.</span>
         <button class="return-btn" (click)="returnToTable()">Return to your table</button>
-    </div>
-
+      </div>
+    }
     <!-- Stakes tiles -->
     <!-- Cards are divs, so they need role/tabindex/key handlers — without
-         them a keyboard user could never pick Medium or High stakes. -->
+    them a keyboard user could never pick Medium or High stakes. -->
     <div class="stakes-grid">
+      @for (s of stakes; track s) {
         <div class="stake-card"
-             *ngFor="let s of stakes"
-             role="button"
-             tabindex="0"
-             [attr.aria-pressed]="selectedStake.value === s.value"
-             [class.selected]="selectedStake.value === s.value"
-             [style.--accent]="s.color"
-             (click)="selectStake(s)"
-             (keydown.enter)="selectStake(s)"
-             (keydown.space)="$event.preventDefault(); selectStake(s)">
-            <div class="stake-name">{{ s.label }}</div>
-            <div class="stake-blinds">{{ s.blinds }}</div>
-            <div class="stake-range">Buy-in ${{ s.minBuyIn }} – ${{ s.maxBuyIn }}</div>
-            <div class="stake-desc">{{ s.description }}</div>
-            <div class="stake-check" *ngIf="selectedStake.value === s.value">✓</div>
+          role="button"
+          tabindex="0"
+          [attr.aria-pressed]="selectedStake.value === s.value"
+          [class.selected]="selectedStake.value === s.value"
+          [style.--accent]="s.color"
+          (click)="selectStake(s)"
+          (keydown.enter)="selectStake(s)"
+          (keydown.space)="$event.preventDefault(); selectStake(s)">
+          <div class="stake-name">{{ s.label }}</div>
+          <div class="stake-blinds">{{ s.blinds }}</div>
+          <div class="stake-range">Buy-in ${{ s.minBuyIn }} – ${{ s.maxBuyIn }}</div>
+          <div class="stake-desc">{{ s.description }}</div>
+          @if (selectedStake.value === s.value) {
+            <div class="stake-check">✓</div>
+          }
         </div>
+      }
     </div>
-
     <!-- Buy-in selector -->
     <div class="buyin-section">
-        <label class="buyin-label">
-            Buy-In Amount
-            <span class="buyin-range">(${{ selectedStake.minBuyIn }} – ${{ effectiveMax }})</span>
-        </label>
-        <div class="buyin-row">
-            <input type="range"
-                   [min]="selectedStake.minBuyIn"
-                   [max]="effectiveMax"
-                   step="1"
-                   [(ngModel)]="buyInAmount"
-                   [disabled]="effectiveMax < selectedStake.minBuyIn" />
-            <div class="buyin-input-wrap">
-                <span class="buyin-dollar">$</span>
-                <input type="number"
-                       class="buyin-number"
-                       [min]="selectedStake.minBuyIn"
-                       [max]="effectiveMax"
-                       [(ngModel)]="buyInAmount"
-                       (blur)="clampBuyIn()"
-                       [disabled]="effectiveMax < selectedStake.minBuyIn" />
+      <label class="buyin-label">
+        Buy-In Amount
+        <span class="buyin-range">(${{ selectedStake.minBuyIn }} – ${{ effectiveMax }})</span>
+      </label>
+      <div class="buyin-row">
+        <input type="range"
+          [min]="selectedStake.minBuyIn"
+          [max]="effectiveMax"
+          step="1"
+          [(ngModel)]="buyInAmount"
+          [disabled]="effectiveMax < selectedStake.minBuyIn" />
+          <div class="buyin-input-wrap">
+            <span class="buyin-dollar">$</span>
+            <input type="number"
+              class="buyin-number"
+              [min]="selectedStake.minBuyIn"
+              [max]="effectiveMax"
+              [(ngModel)]="buyInAmount"
+              (blur)="clampBuyIn()"
+              [disabled]="effectiveMax < selectedStake.minBuyIn" />
             </div>
+          </div>
+          @if (bankBalance < selectedStake.minBuyIn) {
+            <p class="buyin-warn">
+              You need at least ${{ selectedStake.minBuyIn }} to join this table.
+              You have ${{ bankBalance }} in your bank.
+            </p>
+          }
         </div>
-        <p class="buyin-warn" *ngIf="bankBalance < selectedStake.minBuyIn">
-            You need at least ${{ selectedStake.minBuyIn }} to join this table.
-            You have ${{ bankBalance }} in your bank.
-        </p>
-    </div>
-
-    <button class="join-btn" (click)="joinTable()" [disabled]="!buyInValid || joining">
-        {{ joining ? 'Joining…' : '🎲   Sit Down — $' + buyInAmount }}
-    </button>
-
-    <p class="status-msg center-msg">{{ statusMsg }}</p>
-</div>
+        <button class="join-btn" (click)="joinTable()" [disabled]="!buyInValid || joining">
+          {{ joining ? 'Joining…' : '🎲   Sit Down — $' + buyInAmount }}
+        </button>
+        <p class="status-msg center-msg">{{ statusMsg }}</p>
+      </div>
+    }

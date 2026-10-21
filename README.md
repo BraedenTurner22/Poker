@@ -8,7 +8,7 @@ A real-time, multiplayer Texas Hold'Em poker platform for college students. Play
 
 | Layer | Technology |
 |---|---|
-| Frontend | Angular 17 (standalone components), Phaser 3.88, @stomp/stompjs |
+| Frontend | Angular 21 (standalone components), Phaser 3.90, @stomp/stompjs |
 | Backend | Java 23, Spring Boot 3.4.3, Spring Security 6, JWT (jjwt 0.12.6) |
 | Database | PostgreSQL via Supabase (session pooler), JPA/Hibernate (`ddl-auto=update`) |
 | Real-time | STOMP over native WebSocket (`/ws`) |
@@ -107,6 +107,14 @@ cd frontend
 npm install
 npm run dev-nolog      # plain ng serve
 # Opens on http://localhost:4200
+```
+
+Frontend tests run under Vitest in headless Chromium (Phaser needs a real
+canvas). Download the browser once, then run them:
+
+```bash
+npx playwright install chromium-headless-shell
+npx ng test --watch=false
 ```
 
 ---

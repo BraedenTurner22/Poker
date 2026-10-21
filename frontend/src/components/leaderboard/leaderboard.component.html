@@ -1,141 +1,177 @@
 <button class="back-btn" (click)="back()">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    Home
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path d="M12 4L6 10L12 16" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  Home
 </button>
 
 <div class="page">
-    <h1 class="title">Leaderboards</h1>
+  <h1 class="title">Leaderboards</h1>
 
-    <!-- Range toggle -->
-    <div class="tabs">
-        <button class="tab-btn" [class.active]="range === 'all'"
-                (click)="setRange('all')">All Time</button>
-        <button class="tab-btn" [class.active]="range === 'month'"
-                (click)="setRange('month')">Past Month</button>
+  <!-- Range toggle -->
+  <div class="tabs">
+    <button class="tab-btn" [class.active]="range === 'all'"
+    (click)="setRange('all')">All Time</button>
+    <button class="tab-btn" [class.active]="range === 'month'"
+    (click)="setRange('month')">Past Month</button>
+  </div>
+
+  @if (loading) {
+    <div class="spinner">Loading…</div>
+  }
+  @if (!loading && loadError) {
+    <div class="spinner">Couldn't load the leaderboards. Please try again later.</div>
+  }
+
+  @if (!loading && !loadError) {
+    <div class="boards-row">
+      <!-- Schools board -->
+      <div class="board-col">
+        <h2 class="board-title">🏫 Schools</h2>
+        <div class="board">
+          <div class="board-header">
+            <span class="col-rank">#</span>
+            <span class="col-name">School</span>
+            <span class="col-profit">Profit</span>
+          </div>
+          @for (s of schoolTop10; track s) {
+            <div class="board-row" [class.top3]="s.rank <= 3">
+              <span class="col-rank rank-badge" [attr.data-rank]="s.rank">{{ s.rank }}</span>
+              <span class="col-name school-name">
+                @if (logoUrl(s.collegeDomain)) {
+                  <img [src]="logoUrl(s.collegeDomain)"
+                    class="school-logo" [alt]="s.collegeName" />
+                }
+                {{ s.collegeName }}
+              </span>
+              <span class="col-profit" [class.positive]="s.profit >= 0" [class.negative]="s.profit < 0">
+                {{ formatProfit(s.profit) }}
+              </span>
+            </div>
+          }
+          @if (schoolTop10.length === 0) {
+            <div class="empty">No data yet.</div>
+          }
+        </div>
+        @if (mySchool && mySchool.rank > 10) {
+          <div class="my-entry">
+            <span class="my-label">Your School</span>
+            <div class="board-row my-row">
+              <span class="col-rank">{{ mySchool.rank }}</span>
+              <span class="col-name school-name">
+                @if (logoUrl(mySchool.collegeDomain)) {
+                  <img [src]="logoUrl(mySchool.collegeDomain)"
+                    class="school-logo" [alt]="mySchool.collegeName" />
+                }
+                {{ mySchool.collegeName }}
+              </span>
+              <span class="col-profit" [class.positive]="mySchool.profit >= 0" [class.negative]="mySchool.profit < 0">
+                {{ formatProfit(mySchool.profit) }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+      <!-- Players board -->
+      <div class="board-col">
+        <h2 class="board-title">👤 Players</h2>
+        <div class="board">
+          <div class="board-header">
+            <span class="col-rank">#</span>
+            <span class="col-name">Player</span>
+            <span class="col-profit">Profit</span>
+          </div>
+          @for (p of playerTop10; track p) {
+            <div class="board-row" [class.top3]="p.rank <= 3">
+              <span class="col-rank rank-badge" [attr.data-rank]="p.rank">{{ p.rank }}</span>
+              <span class="col-name school-name">
+                @if (logoUrl(p.collegeDomain)) {
+                  <img [src]="logoUrl(p.collegeDomain)"
+                    class="school-logo" [alt]="p.collegeName" />
+                }
+                {{ p.name }}
+              </span>
+              <span class="col-profit" [class.positive]="p.profit >= 0" [class.negative]="p.profit < 0">
+                {{ formatProfit(p.profit) }}
+              </span>
+            </div>
+          }
+          @if (playerTop10.length === 0) {
+            <div class="empty">No data yet.</div>
+          }
+        </div>
+        @if (myEntry && myEntry.rank > 10) {
+          <div class="my-entry">
+            <span class="my-label">You</span>
+            <div class="board-row my-row">
+              <span class="col-rank">{{ myEntry.rank }}</span>
+              <span class="col-name school-name">
+                @if (logoUrl(myEntry.collegeDomain)) {
+                  <img [src]="logoUrl(myEntry.collegeDomain)"
+                    class="school-logo" [alt]="myEntry.collegeName" />
+                }
+                {{ myEntry.name }}
+              </span>
+              <span class="col-profit" [class.positive]="myEntry.profit >= 0" [class.negative]="myEntry.profit < 0">
+                {{ formatProfit(myEntry.profit) }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+      <!-- Players within your school -->
+      <div class="board-col">
+        <h2 class="board-title">🎓 Your School</h2>
+        @if (isLoggedIn) {
+          <div class="board">
+            <div class="board-header">
+              <span class="col-rank">#</span>
+              <span class="col-name">Player</span>
+              <span class="col-profit">Profit</span>
+            </div>
+            @for (p of schoolPlayerTop10; track p) {
+              <div class="board-row" [class.top3]="p.rank <= 3">
+                <span class="col-rank rank-badge" [attr.data-rank]="p.rank">{{ p.rank }}</span>
+                <span class="col-name school-name">
+                  @if (logoUrl(p.collegeDomain)) {
+                    <img [src]="logoUrl(p.collegeDomain)"
+                      class="school-logo" [alt]="p.collegeName" />
+                  }
+                  {{ p.name }}
+                </span>
+                <span class="col-profit" [class.positive]="p.profit >= 0" [class.negative]="p.profit < 0">
+                  {{ formatProfit(p.profit) }}
+                </span>
+              </div>
+            }
+            @if (schoolPlayerTop10.length === 0) {
+              <div class="empty">No data yet.</div>
+            }
+          </div>
+        }
+        @if (!isLoggedIn) {
+          <div class="empty signed-out">Log in to see your school's leaderboard.</div>
+        }
+        @if (mySchoolEntry && mySchoolEntry.rank > 10) {
+          <div class="my-entry">
+            <span class="my-label">You</span>
+            <div class="board-row my-row">
+              <span class="col-rank">{{ mySchoolEntry.rank }}</span>
+              <span class="col-name school-name">
+                @if (logoUrl(mySchoolEntry.collegeDomain)) {
+                  <img [src]="logoUrl(mySchoolEntry.collegeDomain)"
+                    class="school-logo" [alt]="mySchoolEntry.collegeName" />
+                }
+                {{ mySchoolEntry.name }}
+              </span>
+              <span class="col-profit" [class.positive]="mySchoolEntry.profit >= 0" [class.negative]="mySchoolEntry.profit < 0">
+                {{ formatProfit(mySchoolEntry.profit) }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
     </div>
-
-    <div class="spinner" *ngIf="loading">Loading…</div>
-    <div class="spinner" *ngIf="!loading && loadError">Couldn't load the leaderboards. Please try again later.</div>
-
-    <div class="boards-row" *ngIf="!loading && !loadError">
-
-        <!-- Schools board -->
-        <div class="board-col">
-            <h2 class="board-title">🏫 Schools</h2>
-            <div class="board">
-                <div class="board-header">
-                    <span class="col-rank">#</span>
-                    <span class="col-name">School</span>
-                    <span class="col-profit">Profit</span>
-                </div>
-                <div class="board-row" *ngFor="let s of schoolTop10" [class.top3]="s.rank <= 3">
-                    <span class="col-rank rank-badge" [attr.data-rank]="s.rank">{{ s.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(s.collegeDomain)" [src]="logoUrl(s.collegeDomain)"
-                             class="school-logo" [alt]="s.collegeName" />
-                        {{ s.collegeName }}
-                    </span>
-                    <span class="col-profit" [class.positive]="s.profit >= 0" [class.negative]="s.profit < 0">
-                        {{ formatProfit(s.profit) }}
-                    </span>
-                </div>
-                <div class="empty" *ngIf="schoolTop10.length === 0">No data yet.</div>
-            </div>
-            <div class="my-entry" *ngIf="mySchool && mySchool.rank > 10">
-                <span class="my-label">Your School</span>
-                <div class="board-row my-row">
-                    <span class="col-rank">{{ mySchool.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(mySchool.collegeDomain)" [src]="logoUrl(mySchool.collegeDomain)"
-                             class="school-logo" [alt]="mySchool.collegeName" />
-                        {{ mySchool.collegeName }}
-                    </span>
-                    <span class="col-profit" [class.positive]="mySchool.profit >= 0" [class.negative]="mySchool.profit < 0">
-                        {{ formatProfit(mySchool.profit) }}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Players board -->
-        <div class="board-col">
-            <h2 class="board-title">👤 Players</h2>
-            <div class="board">
-                <div class="board-header">
-                    <span class="col-rank">#</span>
-                    <span class="col-name">Player</span>
-                    <span class="col-profit">Profit</span>
-                </div>
-                <div class="board-row" *ngFor="let p of playerTop10" [class.top3]="p.rank <= 3">
-                    <span class="col-rank rank-badge" [attr.data-rank]="p.rank">{{ p.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(p.collegeDomain)" [src]="logoUrl(p.collegeDomain)"
-                             class="school-logo" [alt]="p.collegeName" />
-                        {{ p.name }}
-                    </span>
-                    <span class="col-profit" [class.positive]="p.profit >= 0" [class.negative]="p.profit < 0">
-                        {{ formatProfit(p.profit) }}
-                    </span>
-                </div>
-                <div class="empty" *ngIf="playerTop10.length === 0">No data yet.</div>
-            </div>
-            <div class="my-entry" *ngIf="myEntry && myEntry.rank > 10">
-                <span class="my-label">You</span>
-                <div class="board-row my-row">
-                    <span class="col-rank">{{ myEntry.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(myEntry.collegeDomain)" [src]="logoUrl(myEntry.collegeDomain)"
-                             class="school-logo" [alt]="myEntry.collegeName" />
-                        {{ myEntry.name }}
-                    </span>
-                    <span class="col-profit" [class.positive]="myEntry.profit >= 0" [class.negative]="myEntry.profit < 0">
-                        {{ formatProfit(myEntry.profit) }}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Players within your school -->
-        <div class="board-col">
-            <h2 class="board-title">🎓 Your School</h2>
-            <div class="board" *ngIf="isLoggedIn">
-                <div class="board-header">
-                    <span class="col-rank">#</span>
-                    <span class="col-name">Player</span>
-                    <span class="col-profit">Profit</span>
-                </div>
-                <div class="board-row" *ngFor="let p of schoolPlayerTop10" [class.top3]="p.rank <= 3">
-                    <span class="col-rank rank-badge" [attr.data-rank]="p.rank">{{ p.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(p.collegeDomain)" [src]="logoUrl(p.collegeDomain)"
-                             class="school-logo" [alt]="p.collegeName" />
-                        {{ p.name }}
-                    </span>
-                    <span class="col-profit" [class.positive]="p.profit >= 0" [class.negative]="p.profit < 0">
-                        {{ formatProfit(p.profit) }}
-                    </span>
-                </div>
-                <div class="empty" *ngIf="schoolPlayerTop10.length === 0">No data yet.</div>
-            </div>
-            <div class="empty signed-out" *ngIf="!isLoggedIn">Log in to see your school's leaderboard.</div>
-            <div class="my-entry" *ngIf="mySchoolEntry && mySchoolEntry.rank > 10">
-                <span class="my-label">You</span>
-                <div class="board-row my-row">
-                    <span class="col-rank">{{ mySchoolEntry.rank }}</span>
-                    <span class="col-name school-name">
-                        <img *ngIf="logoUrl(mySchoolEntry.collegeDomain)" [src]="logoUrl(mySchoolEntry.collegeDomain)"
-                             class="school-logo" [alt]="mySchoolEntry.collegeName" />
-                        {{ mySchoolEntry.name }}
-                    </span>
-                    <span class="col-profit" [class.positive]="mySchoolEntry.profit >= 0" [class.negative]="mySchoolEntry.profit < 0">
-                        {{ formatProfit(mySchoolEntry.profit) }}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-    </div>
+  }
 </div>

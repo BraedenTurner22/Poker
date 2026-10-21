@@ -1,5 +1,4 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef, NgZone } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, GOOGLE_CLIENT_ID } from '../../services/auth.service';
@@ -40,7 +39,7 @@ const STAKES: StakeOption[] = [
 
 @Component({
     selector: 'app-table-select',
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     templateUrl: './table-select.component.html',
     styleUrls: ['./table-select.component.css']
 })

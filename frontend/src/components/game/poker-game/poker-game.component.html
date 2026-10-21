@@ -2,43 +2,59 @@
 <div #gameContainer class="game-canvas-host"></div>
 
 <!-- Connecting overlay — shown until the scene is ready and seeded, so a
-     slow/cold-starting backend shows a message instead of a black screen -->
-<div class="rebuy-overlay" *ngIf="!connected">
+slow/cold-starting backend shows a message instead of a black screen -->
+@if (!connected) {
+  <div class="rebuy-overlay">
     <div class="rebuy-card">
-        <div class="rebuy-icon">♠</div>
-        <h2>Connecting…</h2>
-        <p class="rebuy-bank">{{ connectingMsg }}</p>
+      <div class="rebuy-icon">♠</div>
+      <h2>Connecting…</h2>
+      <p class="rebuy-bank">{{ connectingMsg }}</p>
     </div>
-</div>
+  </div>
+}
 
 <!-- Action panel — shown only on your turn -->
-<div class="action-panel" *ngIf="isMyTurn">
+@if (isMyTurn) {
+  <div class="action-panel">
     <button class="btn btn-fold"  (click)="fold()" [disabled]="actionInFlight">Fold</button>
-    <button class="btn btn-check" (click)="check()" *ngIf="canCheck" [disabled]="actionInFlight">Check</button>
-    <button class="btn btn-call"  (click)="call()"  *ngIf="!canCheck" [disabled]="actionInFlight">
-        Call ${{ callAmount }}<ng-container *ngIf="isCallAllIn"> (All In)</ng-container>
+    @if (canCheck) {
+      <button class="btn btn-check" (click)="check()" [disabled]="actionInFlight">Check</button>
+    }
+    @if (!canCheck) {
+      <button class="btn btn-call"  (click)="call()"  [disabled]="actionInFlight">
+        Call ${{ callAmount }}@if (isCallAllIn) {
+        (All In)
+      }
     </button>
-    <div class="raise-group" *ngIf="raiseMax >= raiseMin && !canOnlyCall">
-        <input type="range" [min]="raiseMin" [max]="raiseMax" step="1" [(ngModel)]="raiseAmount" />
-        <div class="raise-input-wrap">
-            <span class="raise-dollar">$</span>
-            <input type="number" class="raise-number"
-                   [min]="raiseMin" [max]="raiseMax"
-                   [(ngModel)]="raiseAmount"
-                   (blur)="clampRaise()" />
-        </div>
-        <button class="btn btn-raise" (click)="raise()" [disabled]="!raiseValid || actionInFlight">{{ isBet ? 'Bet' : 'Raise' }}</button>
+  }
+  @if (raiseMax >= raiseMin && !canOnlyCall) {
+    <div class="raise-group">
+      <input type="range" [min]="raiseMin" [max]="raiseMax" step="1" [(ngModel)]="raiseAmount" />
+      <div class="raise-input-wrap">
+        <span class="raise-dollar">$</span>
+        <input type="number" class="raise-number"
+          [min]="raiseMin" [max]="raiseMax"
+          [(ngModel)]="raiseAmount"
+          (blur)="clampRaise()" />
+      </div>
+      <button class="btn btn-raise" (click)="raise()" [disabled]="!raiseValid || actionInFlight">{{ isBet ? 'Bet' : 'Raise' }}</button>
     </div>
-    <button class="btn btn-allin" (click)="allIn()" *ngIf="!canOnlyCall" [disabled]="actionInFlight">All In</button>
+  }
+  @if (!canOnlyCall) {
+    <button class="btn btn-allin" (click)="allIn()" [disabled]="actionInFlight">All In</button>
+  }
 </div>
+}
 
 <!-- Pre-select an action while waiting for your turn -->
-<div class="action-panel preact-panel" *ngIf="canPreSelect">
+@if (canPreSelect) {
+  <div class="action-panel preact-panel">
     <button class="btn preact-btn" [class.selected]="pendingAction === 'FOLD'"
-            (click)="togglePending('FOLD')">Fold</button>
+    (click)="togglePending('FOLD')">Fold</button>
     <button class="btn preact-btn" [class.selected]="pendingAction === 'CHECK_FOLD'"
-            (click)="togglePending('CHECK_FOLD')">Check / Fold</button>
-</div>
+    (click)="togglePending('CHECK_FOLD')">Check / Fold</button>
+  </div>
+}
 
 <!-- Lobby ID -->
 <div class="lobby-id-badge" [title]="'Lobby ID: ' + lobbyId">Lobby {{ shortLobbyId }}</div>
@@ -48,74 +64,88 @@
 
 <!-- Leave table -->
 <button class="leave-btn" (click)="leaveTable()">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-         style="vertical-align:middle; margin-right:6px;">
-        <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    Leave Table
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+    style="vertical-align:middle; margin-right:6px;">
+    <path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  Leave Table
 </button>
 
 <!-- Chat panel -->
-<div class="chat-panel" *ngIf="!chatCollapsed">
+@if (!chatCollapsed) {
+  <div class="chat-panel">
     <div class="chat-header">
-        <span>Chat</span>
-        <button class="chat-toggle" (click)="chatCollapsed = true" title="Minimize">─</button>
+      <span>Chat</span>
+      <button class="chat-toggle" (click)="chatCollapsed = true" title="Minimize">─</button>
     </div>
     <div class="chat-messages" #chatScroll>
-        <div class="chat-msg" *ngFor="let m of chatMessages">
-            <span class="chat-user">{{ m.name }}:</span> {{ m.message }}
+      @for (m of chatMessages; track m) {
+        <div class="chat-msg">
+          <span class="chat-user">{{ m.name }}:</span> {{ m.message }}
         </div>
+      }
     </div>
-    <p class="chat-error" *ngIf="chatError">{{ chatError }}</p>
+    @if (chatError) {
+      <p class="chat-error">{{ chatError }}</p>
+    }
     <div class="chat-input-row">
-        <input [(ngModel)]="chatInput" placeholder="Say something…" maxlength="200"
-               (keydown)="chatEnter($event)" />
-        <button (click)="sendChat()">Send</button>
+      <input [(ngModel)]="chatInput" placeholder="Say something…" maxlength="200"
+        (keydown)="chatEnter($event)" />
+      <button (click)="sendChat()">Send</button>
     </div>
-</div>
-<button class="chat-pill" *ngIf="chatCollapsed"
-        (click)="chatCollapsed = false">💬 Chat</button>
+  </div>
+}
+@if (chatCollapsed) {
+  <button class="chat-pill"
+  (click)="chatCollapsed = false">💬 Chat</button>
+}
 
 <!-- Status bar -->
-<div class="status-bar" *ngIf="statusMsg">{{ statusMsg }}</div>
+@if (statusMsg) {
+  <div class="status-bar">{{ statusMsg }}</div>
+}
 
 <!-- Inactivity kick overlay -->
-<div class="rebuy-overlay" *ngIf="kickMessage">
+@if (kickMessage) {
+  <div class="rebuy-overlay">
     <div class="rebuy-card">
-        <div class="rebuy-icon">⏱</div>
-        <h2>{{ kickTitle }}</h2>
-        <p class="rebuy-bank">{{ kickMessage }}</p>
-        <p style="color:#8899a6;font-size:13px;">Returning to lobby…</p>
+      <div class="rebuy-icon">⏱</div>
+      <h2>{{ kickTitle }}</h2>
+      <p class="rebuy-bank">{{ kickMessage }}</p>
+      <p style="color:#8899a6;font-size:13px;">Returning to lobby…</p>
     </div>
-</div>
+  </div>
+}
 
 <!-- Rebuy popup -->
-<div class="rebuy-overlay" *ngIf="showRebuyPopup">
+@if (showRebuyPopup) {
+  <div class="rebuy-overlay">
     <div class="rebuy-card">
-        <div class="rebuy-icon">💸</div>
-        <h2>You're Out of Chips</h2>
-        <p class="rebuy-bank">Bank balance: <strong>${{ bankBalance }}</strong></p>
-        <p class="rebuy-countdown">Seat held for <strong>{{ rebuyCountdown }}s</strong></p>
-        <p class="rebuy-broke" *ngIf="rebuyError">{{ rebuyError }}</p>
-
-        <ng-container *ngIf="bankBalance > 0">
-            <label class="rebuy-label">Buy back in</label>
-            <div class="rebuy-row">
-                <input type="range" min="1" [max]="rebuyMax" [(ngModel)]="rebuyAmount" />
-                <span class="rebuy-value">${{ rebuyAmount }}</span>
-            </div>
-            <div class="rebuy-actions">
-                <button class="rebuy-btn confirm" (click)="confirmRebuy()">
-                    Rebuy ${{ rebuyAmount }}
-                </button>
-                <button class="rebuy-btn leave" (click)="declineRebuy()">Leave Table</button>
-            </div>
-        </ng-container>
-
-        <ng-container *ngIf="bankBalance <= 0">
-            <p class="rebuy-broke">You have no chips left in your bank.</p>
-            <button class="rebuy-btn leave full" (click)="declineRebuy()">Leave Table</button>
-        </ng-container>
+      <div class="rebuy-icon">💸</div>
+      <h2>You're Out of Chips</h2>
+      <p class="rebuy-bank">Bank balance: <strong>${{ bankBalance }}</strong></p>
+      <p class="rebuy-countdown">Seat held for <strong>{{ rebuyCountdown }}s</strong></p>
+      @if (rebuyError) {
+        <p class="rebuy-broke">{{ rebuyError }}</p>
+      }
+      @if (bankBalance > 0) {
+        <label class="rebuy-label">Buy back in</label>
+        <div class="rebuy-row">
+          <input type="range" min="1" [max]="rebuyMax" [(ngModel)]="rebuyAmount" />
+          <span class="rebuy-value">${{ rebuyAmount }}</span>
+        </div>
+        <div class="rebuy-actions">
+          <button class="rebuy-btn confirm" (click)="confirmRebuy()">
+            Rebuy ${{ rebuyAmount }}
+          </button>
+          <button class="rebuy-btn leave" (click)="declineRebuy()">Leave Table</button>
+        </div>
+      }
+      @if (bankBalance <= 0) {
+        <p class="rebuy-broke">You have no chips left in your bank.</p>
+        <button class="rebuy-btn leave full" (click)="declineRebuy()">Leave Table</button>
+      }
     </div>
-</div>
+  </div>
+}

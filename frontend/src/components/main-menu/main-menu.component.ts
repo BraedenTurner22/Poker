@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserProfile } from '../../types/game.types';
 
 @Component({
     selector: 'app-main-menu',
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './main-menu.component.html',
     styleUrl: './main-menu.component.css'
 })

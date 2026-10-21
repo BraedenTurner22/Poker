@@ -40,7 +40,7 @@ individual players, all-time or by the past month.
 
 Monorepo layout:
 - `backend/` — Java 23 / Spring Boot 3.4.3 REST + WebSocket (STOMP) server
-- `frontend/` — Angular 17 standalone-component SPA with a Phaser 3 game canvas
+- `frontend/` — Angular 21 standalone-component SPA with a Phaser 3 game canvas
 
 ---
 

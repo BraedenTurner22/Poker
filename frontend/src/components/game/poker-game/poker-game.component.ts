@@ -1,10 +1,9 @@
 import {
     Component, OnInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { Subscription, finalize } from 'rxjs';
 import { PokerGameScene } from '../scenes/PokerGameScene';
 import { EventBus } from '../EventBus';
@@ -16,7 +15,7 @@ import {
 
 @Component({
     selector: 'app-poker-game',
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     templateUrl: './poker-game.component.html',
     styleUrls: ['./poker-game.component.css']
 })

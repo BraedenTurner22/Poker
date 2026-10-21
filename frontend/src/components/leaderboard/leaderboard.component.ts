@@ -1,5 +1,4 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable, Subscription, catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +10,7 @@ interface PlayerEntry  { name: string; collegeName: string; collegeDomain: strin
 
 @Component({
     selector: 'app-leaderboard',
-    imports: [CommonModule],
+    imports: [],
     templateUrl: './leaderboard.component.html',
     styleUrls: ['./leaderboard.component.css']
 })

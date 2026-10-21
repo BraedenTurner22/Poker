@@ -27,12 +27,12 @@
     "build-nolog": "ng build"
   },
   "dependencies": {
-    "@angular/common": "^20.3.34",
-    "@angular/compiler": "^20.3.34",
-    "@angular/core": "^20.3.34",
-    "@angular/forms": "^20.3.34",
-    "@angular/platform-browser": "^20.3.34",
-    "@angular/router": "^20.3.34",
+    "@angular/common": "^21.2.25",
+    "@angular/compiler": "^21.2.25",
+    "@angular/core": "^21.2.25",
+    "@angular/forms": "^21.2.25",
+    "@angular/platform-browser": "^21.2.25",
+    "@angular/router": "^21.2.25",
     "@stomp/stompjs": "^7.3.0",
     "phaser": "^3.88.2",
     "rxjs": "~7.8.0",
@@ -40,18 +40,17 @@
     "zone.js": "~0.15.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^20.3.40",
-    "@angular/cli": "^20.3.40",
-    "@angular/compiler-cli": "^20.3.34",
-    "@types/jasmine": "~5.1.0",
-    "jasmine-core": "~5.1.0",
-    "karma": "~6.4.0",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.1.0",
+    "@angular/build": "^21.2.27",
+    "@angular/cli": "^21.2.27",
+    "@angular/compiler-cli": "^21.2.25",
+    "@vitest/browser-playwright": "^4.1.12",
     "playwright": "^1.60.0",
     "rollup": "^4.40.0",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.12"
+  },
+  "overrides": {
+    "vite": "7.3.7",
+    "@modelcontextprotocol/sdk": "^1.32.1"
   }
 }
