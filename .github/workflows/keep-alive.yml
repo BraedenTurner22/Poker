@@ -1,0 +1,29 @@
+# Render's free tier spins a web service down after 15 minutes without
+# traffic, and the next visitor waits through a cold start. Pinging the
+# health endpoint every 10 minutes keeps the backend awake.
+#
+# Notes:
+# - GitHub can start scheduled runs several minutes late under load, so the
+#   interval leaves headroom under Render's 15-minute idle timeout.
+# - GitHub disables scheduled workflows after 60 days with no commits to the
+#   repo; re-enable it from the Actions tab if that happens.
+# - One always-on free service uses ~744 of the 750 free instance hours per
+#   month, so this only fits if it's the workspace's only free service.
+name: Keep backend awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping health endpoint
+        run: |
+          # --retry covers a cold start if the service did fall asleep
+          curl --fail --silent --show-error \
+            --max-time 90 --retry 3 --retry-delay 10 --retry-all-errors \
+            https://api.playcollegeshowdown.com/actuator/health
